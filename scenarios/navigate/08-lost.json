@@ -1,0 +1,67 @@
+{
+  "id": "navigate-08-lost",
+  "track": "navigate",
+  "order": 8,
+  "tier": 3,
+  "title": "Lost in the tree",
+  "story": "You opened a new terminal tab and don't remember where it left you. Report the full path of where you are, then get back to the top of the {{project}} project.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "deep": [
+      "seqs/tmp",
+      "pdbs/relaxed",
+      "logs/old",
+      "seqs/filtered"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/runs/{{run}}/{{deep}}",
+      "files": {
+        "~/{{project}}/runs/{{run}}/{{deep}}/": {},
+        "~/{{project}}/README.txt": {
+          "lib": "text:readme"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report your full starting path: answer and the path",
+      "check": {
+        "answer": "/home/student/{{project}}/runs/{{run}}/{{deep}}"
+      }
+    },
+    {
+      "text": "Go to the top of the {{project}} project",
+      "check": {
+        "cwd": "~/{{project}}"
+      }
+    }
+  ],
+  "hints": [
+    "`pwd` prints the full path. `~/{{project}}` gets you to the top."
+  ],
+  "solution": [
+    "pwd",
+    "answer /home/student/{{project}}/runs/{{run}}/{{deep}}",
+    "cd ~/{{project}}"
+  ]
+}

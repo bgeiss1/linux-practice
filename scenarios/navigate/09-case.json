@@ -1,0 +1,65 @@
+{
+  "id": "navigate-09-case",
+  "track": "navigate",
+  "order": 9,
+  "tier": 3,
+  "title": "It said Projects",
+  "story": "Your labmate's message says: \"the {{target}} structures are in Projects/{{project}}/Structures, read the README there.\" Get there and read it.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "PD-L1",
+      "IL-7R",
+      "HER2",
+      "TNF-alpha"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/projects/{{project}}/structures/README.txt": "Structures for {{target}}. Chain A is the target.\n",
+        "~/projects/{{project}}/structures/target.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/projects/{{project}}/Notes/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Get into the structures folder your labmate meant",
+      "check": {
+        "cwd": "~/projects/{{project}}/structures"
+      }
+    },
+    {
+      "text": "Read its README",
+      "check": {
+        "ran": [
+          "cat",
+          "less",
+          "more",
+          "head",
+          "tail"
+        ],
+        "arg": "~/projects/{{project}}/structures/README.txt"
+      }
+    }
+  ],
+  "hints": [
+    "Linux treats capital and small letters as different. Check the real names with `ls`."
+  ],
+  "solution": [
+    "ls",
+    "cd projects/{{project}}/structures",
+    "cat README.txt"
+  ]
+}

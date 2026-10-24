@@ -1,0 +1,58 @@
+{
+  "id": "navigate-05-absolute",
+  "track": "navigate",
+  "order": 5,
+  "tier": 2,
+  "title": "Over to scratch",
+  "story": "Big files don't belong in your home folder. Your labmate copied a dataset to /scratch/student/{{dataset}}. Go there using its full path, then count how many PDB files it holds.",
+  "vars": {
+    "dataset": [
+      "pdl1_targets",
+      "kinase_panel",
+      "nanobody_set",
+      "cytokine_set"
+    ],
+    "n": {
+      "range": [
+        3,
+        7
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/projects",
+      "files": {
+        "~/projects/": {},
+        "/scratch/student/{{dataset}}/target_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{n}}"
+        },
+        "/scratch/student/{{dataset}}/MANIFEST.txt": "Structures for the next design round.\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Go to /scratch/student/{{dataset}}",
+      "check": {
+        "cwd": "/scratch/student/{{dataset}}"
+      }
+    },
+    {
+      "text": "Report how many .pdb files are there: answer and the number",
+      "check": {
+        "answer": "{{n}}"
+      }
+    }
+  ],
+  "hints": [
+    "A path that starts with `/` is absolute: it works from anywhere.",
+    "`cd /scratch/student/{{dataset}}`, then `ls` and count."
+  ],
+  "solution": [
+    "cd /scratch/student/{{dataset}}",
+    "ls",
+    "answer {{n}}"
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "id": "navigate-06-sibling",
+  "track": "navigate",
+  "order": 6,
+  "tier": 2,
+  "title": "Next door",
+  "story": "You're in the inputs folder of {{pair.0}}. The target structures for {{pair.1}} are in the folder next door. Get to {{pair.1}}/inputs using .. in your path.",
+  "vars": {
+    "pair": {
+      "pick": 2,
+      "from": [
+        "binder_design",
+        "il7r_binders",
+        "spike_minibinders",
+        "pdl1_binders",
+        "tnf_traps",
+        "her2_binders"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/projects/{{pair.0}}/inputs",
+      "files": {
+        "~/projects/{{pair.0}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/projects/{{pair.1}}/inputs/target.pdb": {
+          "lib": "pdb:complex"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Go to ~/projects/{{pair.1}}/inputs using ..",
+      "check": {
+        "all": [
+          {
+            "cwd": "~/projects/{{pair.1}}/inputs"
+          },
+          {
+            "ran": "cd",
+            "argHas": ".."
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`..` is the folder above. `../..` is two folders up.",
+    "From here, `../..` is the projects folder. Add the rest of the path after it."
+  ],
+  "solution": [
+    "cd ../../{{pair.1}}/inputs"
+  ]
+}

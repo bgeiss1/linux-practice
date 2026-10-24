@@ -1,0 +1,57 @@
+{
+  "id": "navigate-01-where-am-i",
+  "track": "navigate",
+  "order": 1,
+  "tier": 1,
+  "title": "Step into your project",
+  "story": "Welcome to Geiss-01. You land in your home folder. Your design project lives in a folder called {{project}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/{{project}}/README.txt": {
+          "lib": "text:readme"
+        },
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/notes.txt": "Remember: cd moves you, pwd tells you where you are.\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Move into the {{project}} folder",
+      "check": {
+        "cwd": "~/{{project}}"
+      }
+    },
+    {
+      "text": "Confirm where you are with pwd",
+      "check": {
+        "ran": "pwd",
+        "inDir": "~/{{project}}"
+      }
+    }
+  ],
+  "hints": [
+    "`cd` (change directory) moves you into a folder. Type `ls` first to see the folder names.",
+    "Type `cd` followed by a space and the folder name. Tab completes it for you.",
+    "Type `cd {{project}}`, press Enter, then type `pwd`."
+  ],
+  "solution": [
+    "ls",
+    "cd {{project}}",
+    "pwd"
+  ]
+}

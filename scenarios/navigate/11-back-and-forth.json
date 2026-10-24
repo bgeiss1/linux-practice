@@ -1,0 +1,100 @@
+{
+  "id": "navigate-11-back-and-forth",
+  "track": "navigate",
+  "order": 11,
+  "tier": 4,
+  "title": "Compare two runs",
+  "story": "You need to decide whether {{runs.1}} or {{runs.0}} produced more designs. Look in both pdbs folders, use cd - to jump back to the first one you visited, then report the run with more designs.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 2,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    },
+    "fewer": {
+      "range": [
+        2,
+        4
+      ]
+    },
+    "more": {
+      "range": [
+        5,
+        8
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/runs/{{runs.0}}/pdbs/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{fewer}}"
+        },
+        "~/{{project}}/runs/{{runs.1}}/pdbs/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{more}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Visit both pdbs folders",
+      "check": {
+        "all": [
+          {
+            "ran": "cd",
+            "arg": "~/{{project}}/runs/{{runs.0}}/pdbs"
+          },
+          {
+            "ran": "cd",
+            "arg": "~/{{project}}/runs/{{runs.1}}/pdbs"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Use cd - to jump back",
+      "check": {
+        "ran": "cd",
+        "arg": "-",
+        "ok": true
+      }
+    },
+    {
+      "text": "Report the run with more designs: answer and its name",
+      "check": {
+        "answer": "{{runs.1}}"
+      }
+    }
+  ],
+  "hints": [
+    "`cd -` swaps between the last two folders."
+  ],
+  "solution": [
+    "cd runs/{{runs.0}}/pdbs",
+    "ls",
+    "cd ../../{{runs.1}}/pdbs",
+    "ls",
+    "cd -",
+    "answer {{runs.1}}"
+  ]
+}
