@@ -1,0 +1,77 @@
+{
+  "id": "navigate-03-hidden-files",
+  "track": "navigate",
+  "order": 3,
+  "tier": 1,
+  "title": "Find the hidden file",
+  "story": "Programs often keep their settings in hidden files, whose names start with a dot. Plain ls doesn't show them. There's one in your home folder for your design tools.",
+  "vars": {
+    "hidden": [
+      "designrc",
+      "mpnn_config",
+      "rosettarc",
+      "binder_settings"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/.{{hidden}}": "# settings for design tools\nnum_seqs = 8\nsampling_temp = 0.1\n",
+        "~/projects/": {},
+        "~/data/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "List everything in your home folder, hidden files included",
+      "check": {
+        "any": [
+          {
+            "ran": "ls",
+            "flags": "a",
+            "inDir": "~"
+          },
+          {
+            "ran": "ls",
+            "flags": "A",
+            "inDir": "~"
+          },
+          {
+            "ran": "ls",
+            "flags": "a",
+            "arg": "~"
+          },
+          {
+            "ran": "ls",
+            "flags": "A",
+            "arg": "~"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Report the design settings file's name: type answer and the name",
+      "check": {
+        "any": [
+          {
+            "answer": ".{{hidden}}"
+          },
+          {
+            "answer": "{{hidden}}"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`ls` has an option that shows all files, including the hidden ones.",
+    "`ls -a` shows everything. Look for a name that isn't `.bashrc`, `.` or `..`.",
+    "Type `ls -a`, then `answer .{{hidden}}`."
+  ],
+  "solution": [
+    "ls -a",
+    "answer .{{hidden}}"
+  ]
+}

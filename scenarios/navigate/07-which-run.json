@@ -1,0 +1,65 @@
+{
+  "id": "navigate-07-which-run",
+  "track": "navigate",
+  "order": 7,
+  "tier": 3,
+  "title": "Which run worked?",
+  "story": "Five RFdiffusion runs, but only one actually wrote output files. The rest crashed with empty outputs folders. Find the run that worked and go into its outputs folder.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 5,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    },
+    "good": {
+      "fromVar": "runs"
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/runs/{{runs.0}}/outputs/": {},
+        "~/{{project}}/runs/{{runs.1}}/outputs/": {},
+        "~/{{project}}/runs/{{runs.2}}/outputs/": {},
+        "~/{{project}}/runs/{{runs.3}}/outputs/": {},
+        "~/{{project}}/runs/{{runs.4}}/outputs/": {},
+        "~/{{project}}/runs/{{good}}/outputs/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 4
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Go into the outputs folder of the run that worked",
+      "check": {
+        "cwd": "~/{{project}}/runs/{{good}}/outputs"
+      }
+    }
+  ],
+  "hints": [
+    "`ls` can look inside a folder without going there: `ls runs/*/outputs`."
+  ],
+  "solution": [
+    "ls runs/*/outputs",
+    "cd runs/{{good}}/outputs"
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "passphraseSalt": "mip662-2026",
+  "tracks": [
+    {
+      "id": "session",
+      "title": "Start a session",
+      "blurb": "Log in, check the GPUs, ask Slurm for one, and load your software.",
+      "commands": [
+        "ssh",
+        "hostname",
+        "sinfo",
+        "nvidia-smi",
+        "srun",
+        "module",
+        "conda",
+        "exit"
+      ],
+      "scenarios": []
+    },
+    {
+      "id": "navigate",
+      "title": "Navigate",
+      "blurb": "Know where you are and move anywhere with relative and absolute paths.",
+      "commands": [
+        "pwd",
+        "cd",
+        "ls",
+        "ls -a"
+      ],
+      "scenarios": [
+        "navigate/01-where-am-i",
+        "navigate/02-up-and-home",
+        "navigate/03-hidden-files",
+        "navigate/04-one-path",
+        "navigate/05-absolute",
+        "navigate/06-sibling",
+        "navigate/07-which-run",
+        "navigate/08-lost",
+        "navigate/09-case",
+        "navigate/10-spaces",
+        "navigate/11-back-and-forth",
+        "navigate/12-follow-log"
+      ]
+    },
+    {
+      "id": "find",
+      "title": "Find files",
+      "blurb": "Track down files by name, pattern, size, date, or what's inside them.",
+      "commands": [
+        "find",
+        "ls -R",
+        "grep -r",
+        "*"
+      ],
+      "scenarios": []
+    },
+    {
+      "id": "read",
+      "title": "Read files",
+      "blurb": "Look inside PDB, FASTA, log, and score files without an editor.",
+      "commands": [
+        "cat",
+        "head",
+        "tail",
+        "less",
+        "wc",
+        "grep",
+        "sort",
+        "cut"
+      ],
+      "scenarios": []
+    },
+    {
+      "id": "manage",
+      "title": "Manage files",
+      "blurb": "Create, copy, rename, delete, archive, and set permissions.",
+      "commands": [
+        "mkdir",
+        "cp",
+        "mv",
+        "rm",
+        "chmod",
+        "tar"
+      ],
+      "scenarios": []
+    },
+    {
+      "id": "bash",
+      "title": "Run bash jobs",
+      "blurb": "Run scripts, pass arguments, save output, and fix common errors.",
+      "commands": [
+        "bash",
+        "./",
+        "chmod +x",
+        ">",
+        "2>",
+        "&"
+      ],
+      "scenarios": []
+    },
+    {
+      "id": "slurm",
+      "title": "Run Slurm jobs",
+      "blurb": "Submit, watch, cancel, and fix jobs on Geiss-01's 8 GPUs.",
+      "commands": [
+        "sbatch",
+        "squeue",
+        "scancel",
+        "sacct",
+        "seff"
+      ],
+      "scenarios": []
+    },
+    {
+      "id": "transfer",
+      "title": "Transfer files",
+      "blurb": "Move files between Geiss-01 and your own computer with scp.",
+      "commands": [
+        "scp",
+        "scp -r",
+        "tar"
+      ],
+      "scenarios": []
+    }
+  ]
+}

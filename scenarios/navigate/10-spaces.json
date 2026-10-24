@@ -1,0 +1,51 @@
+{
+  "id": "navigate-10-spaces",
+  "track": "navigate",
+  "order": 10,
+  "tier": 4,
+  "title": "Spaces in names",
+  "story": "A collaborator uploaded results into ~/shared, and named the folder \"{{spacey}}\". Get in and list what's there.",
+  "vars": {
+    "spacey": [
+      "round 2 designs",
+      "final models",
+      "run 3 good",
+      "best binders v2"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/shared/{{spacey}}/model_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 3
+        },
+        "~/shared/old/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Get into \"{{spacey}}\"",
+      "check": {
+        "cwd": "~/shared/{{spacey}}"
+      }
+    },
+    {
+      "text": "List its contents",
+      "check": {
+        "ran": "ls",
+        "inDir": "~/shared/{{spacey}}"
+      }
+    }
+  ],
+  "hints": [
+    "Quotes, or a backslash before each space."
+  ],
+  "solution": [
+    "cd ~/shared",
+    "cd \"{{spacey}}\"",
+    "ls"
+  ]
+}

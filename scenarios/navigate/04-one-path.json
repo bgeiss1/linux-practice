@@ -1,0 +1,74 @@
+{
+  "id": "navigate-04-one-path",
+  "track": "navigate",
+  "order": 4,
+  "tier": 2,
+  "title": "Three folders in one move",
+  "story": "Your ProteinMPNN outputs for {{run}} are in {{project}}/runs/{{run}}/outputs. Get there from your home folder in a single cd.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 3,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    },
+    "run": {
+      "fromVar": "runs"
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/{{project}}/runs/{{runs.0}}/outputs/seqs.fa": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/runs/{{runs.1}}/outputs/seqs.fa": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/runs/{{runs.2}}/outputs/seqs.fa": {
+          "lib": "fasta:designs"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "From home, go to {{project}}/runs/{{run}}/outputs with one cd",
+      "check": {
+        "all": [
+          {
+            "cwd": "~/{{project}}/runs/{{run}}/outputs"
+          },
+          {
+            "ran": "cd",
+            "inDir": "~",
+            "arg": "~/{{project}}/runs/{{run}}/outputs"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "A path can hold several folders separated by slashes.",
+    "Use `cd` with the whole path, `project/runs/run/outputs`. Tab completes each part."
+  ],
+  "solution": [
+    "cd {{project}}/runs/{{run}}/outputs"
+  ]
+}

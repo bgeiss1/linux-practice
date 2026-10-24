@@ -1,0 +1,58 @@
+{
+  "id": "navigate-02-up-and-home",
+  "track": "navigate",
+  "order": 2,
+  "tier": 1,
+  "title": "Climb back out",
+  "story": "You're deep inside {{project}}/{{sub}}. Step up one level to the project folder, then jump straight back to your home folder.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "sub": [
+      "inputs",
+      "outputs",
+      "scripts",
+      "logs"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/{{sub}}",
+      "files": {
+        "~/{{project}}/{{sub}}/": {},
+        "~/{{project}}/README.txt": {
+          "lib": "text:readme"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Go up one level, into {{project}}",
+      "check": {
+        "cwd": "~/{{project}}"
+      }
+    },
+    {
+      "text": "Go straight to your home folder",
+      "check": {
+        "cwd": "~"
+      }
+    }
+  ],
+  "hints": [
+    "Two dots, `..`, always means \"the folder above this one.\"",
+    "`cd ..` goes up one level. `cd ~` (or just `cd`) goes home from anywhere.",
+    "Type `cd ..`, then type `cd ~`."
+  ],
+  "solution": [
+    "cd ..",
+    "cd ~"
+  ]
+}

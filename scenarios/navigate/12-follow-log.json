@@ -1,0 +1,88 @@
+{
+  "id": "navigate-12-follow-log",
+  "track": "navigate",
+  "order": 12,
+  "tier": 4,
+  "title": "Follow the log",
+  "story": "Job {{job}} finished overnight. Its log in ~/{{project}} says where it saved its results. Go there and report the name of the PDB file it left behind.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "job": {
+      "range": [
+        47000,
+        47999
+      ]
+    },
+    "dataset": [
+      "pdl1_round3",
+      "il7r_round2",
+      "her2_round4"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "best": [
+      "design_017",
+      "design_042",
+      "design_008",
+      "design_113"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/slurm-{{job}}.out": "Job started on geiss-01\nLoaded 1 target\nScoring 128 designs\nWriting results to /scratch/student/{{dataset}}/{{run}}\nJob finished in 3:12:40\n",
+        "/scratch/student/{{dataset}}/{{run}}/{{best}}.pdb": {
+          "lib": "pdb:complex"
+        },
+        "/scratch/student/{{dataset}}/{{run}}/scores.txt": "{{best}} -42.1\n",
+        "/scratch/student/{{dataset}}/notes.txt": "old run\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Go to the folder named in the job log",
+      "check": {
+        "cwd": "/scratch/student/{{dataset}}/{{run}}"
+      }
+    },
+    {
+      "text": "Report the PDB file's name",
+      "check": {
+        "any": [
+          {
+            "answer": "{{best}}.pdb"
+          },
+          {
+            "answer": "{{best}}"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "Read the log."
+  ],
+  "solution": [
+    "cat slurm-{{job}}.out",
+    "cd /scratch/student/{{dataset}}/{{run}}",
+    "ls",
+    "answer {{best}}.pdb"
+  ]
+}
