@@ -1,0 +1,71 @@
+{
+  "id": "find-03-recursive",
+  "track": "find",
+  "order": 3,
+  "tier": 1,
+  "title": "Look in every folder",
+  "story": "{{who}} left you a note called NOTES_{{who}}.txt somewhere inside {{project}}. List every folder at once to spot it, then go there.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "who": [
+      "maria",
+      "kenji",
+      "amara",
+      "luis"
+    ],
+    "spot": [
+      "runs/run_02/logs",
+      "inputs/old",
+      "scripts/helpers",
+      "outputs/seqs"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/{{spot}}/NOTES_{{who}}.txt": "The good designs are in run_02.\n",
+        "~/{{project}}/runs/run_01/logs/": {},
+        "~/{{project}}/runs/run_02/logs/run.log": "ok\n",
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/scripts/run.sh": {
+          "lib": "slurm:mpnn"
+        },
+        "~/{{project}}/outputs/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "List every folder inside {{project}} in one command",
+      "check": {
+        "ran": "ls",
+        "flags": "R"
+      }
+    },
+    {
+      "text": "Go to the folder with the note",
+      "check": {
+        "cwd": "~/{{project}}/{{spot}}"
+      }
+    }
+  ],
+  "hints": [
+    "`ls` has an option that also lists everything inside every subfolder.",
+    "`ls -R` lists recursively. Each block starts with the folder's path.",
+    "Run `ls -R`, look for NOTES_{{who}}.txt, then `cd {{spot}}`."
+  ],
+  "solution": [
+    "ls -R",
+    "cd {{spot}}"
+  ]
+}

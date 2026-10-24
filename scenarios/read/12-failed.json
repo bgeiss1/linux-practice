@@ -1,0 +1,83 @@
+{
+  "id": "read-12-failed",
+  "track": "read",
+  "order": 12,
+  "tier": 4,
+  "title": "Why did it fail?",
+  "story": "Job {{jobid}} failed overnight. Read its log, find out which input file it couldn't open, and report that file's name.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "jobid": {
+      "range": [
+        48300,
+        48999
+      ]
+    },
+    "missing": [
+      "target_clean",
+      "pdl1_trimmed",
+      "receptor_A",
+      "complex_relaxed"
+    ],
+    "pos": {
+      "range": [
+        20,
+        50
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/slurm-{{jobid}}.out": {
+          "repeat": {
+            "n": 60,
+            "before": "Job started on geiss-01\n",
+            "text": "INFO preprocessing chunk {{n}}\n",
+            "insert": {
+              "at": "{{pos}}",
+              "text": "FileNotFoundError: [Errno 2] No such file or directory: 'inputs/{{missing}}.pdb'\n"
+            },
+            "after": "Traceback (most recent call last):\n  File \"run_inference.py\", line 88, in <module>\nRuntimeError: aborting\n"
+          }
+        },
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the name of the missing input file",
+      "check": {
+        "any": [
+          {
+            "answer": "{{missing}}.pdb"
+          },
+          {
+            "answer": "inputs/{{missing}}.pdb"
+          },
+          {
+            "answer": "{{missing}}"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "The last lines aren't always the real error."
+  ],
+  "solution": [
+    "grep -i error slurm-{{jobid}}.out",
+    "answer {{missing}}.pdb"
+  ]
+}

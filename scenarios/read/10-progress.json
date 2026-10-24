@@ -1,0 +1,59 @@
+{
+  "id": "read-10-progress",
+  "track": "read",
+  "order": 10,
+  "tier": 4,
+  "title": "How far along?",
+  "story": "Your RFdiffusion job is still running and writing to its log. Which design number is it working on right now?",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "jobid": {
+      "range": [
+        48300,
+        48999
+      ]
+    },
+    "ep": {
+      "range": [
+        12,
+        90
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/slurm-{{jobid}}.out": {
+          "repeat": {
+            "n": "{{ep}}",
+            "before": "Job started on geiss-01\nLoading weights\n",
+            "text": "Making design {{n}} of 100\n"
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the design number it's on",
+      "check": {
+        "answer": "{{ep}}"
+      }
+    }
+  ],
+  "hints": [
+    "The newest lines are at the end."
+  ],
+  "solution": [
+    "tail -n 1 slurm-{{jobid}}.out",
+    "answer {{ep}}"
+  ]
+}

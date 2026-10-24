@@ -52,10 +52,17 @@ const CHECKS = {
   // The student ran a command (optionally with flags or an argument).
   // { "ran": "ls", "flags": "a", "arg": "~/inputs", "argHas": "..", "ok": true, "inDir": "~/x" }
   // "arg" is compared as a path, resolved from the folder the command ran in.
+  // "lineHas" looks at the whole line as typed, before globs expand (e.g. "*.pdb").
   ran: (sh, v, ctx) => matchRan(sh, v, ctx),
 
   // The student used the answer command with this value (case-insensitive).
-  answer: (sh, v) => sh.answers.some((a) => a.trim().toLowerCase() === String(v).trim().toLowerCase()),
+  // Numbers match by value, so "017" and "17" both count.
+  answer: (sh, v) =>
+    sh.answers.some((a) => {
+      const given = a.trim().toLowerCase();
+      const want = String(v).trim().toLowerCase();
+      return given === want || (/^-?\d+(\.\d+)?$/.test(given) && /^-?\d+(\.\d+)?$/.test(want) && Number(given) === Number(want));
+    }),
 
   all: (sh, v, ctx) => v.every((c) => evaluate(c, sh, ctx)),
   any: (sh, v, ctx) => v.some((c) => evaluate(c, sh, ctx)),
@@ -71,6 +78,7 @@ function matchRan(sh, spec, ctx) {
       (!v.flags || [...v.flags].every((f) => e.flags.includes(f))) &&
       (!v.arg || e.args.some((a) => a === v.arg || (e.cwd && sh.vfs.resolve(a, e.cwd, sh.home) === norm(sh, v.arg)))) &&
       (!v.argHas || e.args.some((a) => a.includes(v.argHas))) &&
+      (!v.lineHas || (e.line ?? '').includes(v.lineHas)) &&
       (v.ok === undefined || (e.code === 0) === v.ok) &&
       (!v.inDir || e.cwd === norm(sh, v.inDir)),
   );

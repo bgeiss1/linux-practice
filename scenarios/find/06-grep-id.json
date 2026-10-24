@@ -1,0 +1,72 @@
+{
+  "id": "find-06-grep-id",
+  "track": "find",
+  "order": 6,
+  "tier": 2,
+  "title": "Which file has that sequence?",
+  "story": "Your PI liked sequence {{seqid}} and wants to know which FASTA file it came from. Search inside the files in seqs/ and report the file name.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seqid": [
+      "des_4471",
+      "des_0982",
+      "des_2210",
+      "des_7315"
+    ],
+    "files": {
+      "pick": 4,
+      "from": [
+        "round1",
+        "round2",
+        "round3",
+        "round4",
+        "round5",
+        "round6"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/seqs/{{files.0}}.fasta": ">des_1001\nMSEELLKKAEEL\n>{{seqid}}\nMKVLAEELLKRA\n",
+        "~/{{project}}/seqs/{{files.1}}.fasta": ">des_2002\nMTEEALRLAEEA\n",
+        "~/{{project}}/seqs/{{files.2}}.fasta": ">des_3003\nMSKEELIRKAAE\n>des_3004\nMSEEALKLAEEA\n",
+        "~/{{project}}/seqs/{{files.3}}.fasta": ">des_4004\nMQEELLRKAEEL\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the file that contains {{seqid}}",
+      "check": {
+        "any": [
+          {
+            "answer": "{{files.0}}.fasta"
+          },
+          {
+            "answer": "{{files.0}}"
+          },
+          {
+            "answer": "seqs/{{files.0}}.fasta"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`grep` searches inside files. `-r` makes it search every file in a folder.",
+    "`grep -r \"{{seqid}}\" seqs/` prints the file name before each match."
+  ],
+  "solution": [
+    "grep -r \"{{seqid}}\" seqs/",
+    "answer {{files.0}}.fasta"
+  ]
+}

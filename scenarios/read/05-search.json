@@ -1,0 +1,64 @@
+{
+  "id": "read-05-search",
+  "track": "read",
+  "order": 5,
+  "tier": 2,
+  "title": "Find the warning",
+  "story": "Somewhere in the 200-line relax log there's a WARNING about a clash. Report the residue it names.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "residue": [
+      "LYS42",
+      "ARG117",
+      "TRP23",
+      "GLU88",
+      "PHE61"
+    ],
+    "pos": {
+      "range": [
+        40,
+        180
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/logs",
+      "files": {
+        "~/{{project}}/logs/relax.log": {
+          "repeat": {
+            "n": 200,
+            "text": "INFO cycle {{n}}: energy decreasing\n",
+            "insert": {
+              "at": "{{pos}}",
+              "text": "WARNING: steric clash at residue {{residue}}\n"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the residue named in the warning",
+      "check": {
+        "answer": "{{residue}}"
+      }
+    }
+  ],
+  "hints": [
+    "Paging through 200 lines is slow. `less` can search with `/WARNING`, or `grep` can pull the line out.",
+    "`grep WARNING relax.log`"
+  ],
+  "solution": [
+    "grep WARNING relax.log",
+    "answer {{residue}}"
+  ]
+}

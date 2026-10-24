@@ -57,7 +57,8 @@ file paths, file contents, tasks, hints, and solution.
 | `{ "from": [...], "excluding": "other" }` | one value that isn't the other variable's |
 | `{ "range": [3, 7] }` | a whole number |
 
-`{{user}}` (student) and `{{home}}` (/home/student) are always available.
+`{{user}}` (student) and `{{home}}` (/home/student) are always available. Don't name a
+variable `i` or `n`: those are the counters for `count` and `repeat`.
 
 ## Files
 
@@ -72,6 +73,7 @@ Keys are paths (`~` is the home folder). A key ending in `/` is a folder.
 | `"age": "3d"` | modified 3 days ago (`30m`, `2h`, `3d`, `1w`) |
 | `"size": "150M"` | reports that size to `ls -l` and `find -size` |
 | `"exec": true` | executable |
+| `{ "repeat": { "n": 40, "text": "step {{n}}: ok\n", "before": "...", "after": "...", "insert": { "at": 12, "text": "WARNING ...\n" } } }` | a long file: `text` repeated `n` times with `{{n}}` = 1..n, plus an optional line dropped in at position `at` |
 
 Other `cluster` settings: `cwd`, `modules` (preloaded), `conda` (active env), `gpusBusy`
 (GPUs other users hold, default 2), and `jobRules`, which decide what happens when a
@@ -100,6 +102,6 @@ Tasks complete in order and stay complete. Pick checks that look at the outcome.
 | `{ "moduleLoaded": "anaconda" }`, `{ "condaEnv": "proteinmpnn" }` | environment state |
 | `{ "inInteractiveJob": 1 }`, `{ "notInInteractiveJob": true }` | inside an `srun --pty` job with at least N GPUs, or not |
 | `{ "jobSubmitted": { "name": "mpnn" } }`, `{ "jobState": { "name": "mpnn", "state": "CD" } }` | the student's Slurm jobs |
-| `{ "ran": "ls", "flags": "a", "arg": "~/x", "argHas": "..", "ok": true, "inDir": "~/x" }` | the student ran that command (all keys but `ran` optional) |
-| `{ "answer": "value" }` | the student typed `answer value` (case doesn't matter) |
+| `{ "ran": "ls", "flags": "a", "arg": "~/x", "argHas": "..", "lineHas": "*.pdb", "ok": true, "inDir": "~/x" }` | the student ran that command (all keys but `ran` optional; `lineHas` checks the line as typed, before wildcards expand) |
+| `{ "answer": "value" }` | the student typed `answer value` (case doesn't matter; numbers match by value, so 017 = 17) |
 | `{ "all": [...] }`, `{ "any": [...] }`, `{ "not": {...} }` | combine checks |

@@ -1,0 +1,69 @@
+{
+  "id": "read-03-tail",
+  "track": "read",
+  "order": 3,
+  "tier": 1,
+  "title": "Did it finish?",
+  "story": "Job {{jobid}} wrote a long log. The last line says how many designs it wrote. Show only the end of the log and report that number.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "jobid": {
+      "range": [
+        48300,
+        48999
+      ]
+    },
+    "ndes": {
+      "range": [
+        12,
+        96
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/slurm-{{jobid}}.out": {
+          "repeat": {
+            "n": 80,
+            "before": "Job started on geiss-01\n",
+            "text": "design step {{n}}: ok\n",
+            "after": "Job {{jobid}} finished: {{ndes}} designs written\n"
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Show the last lines of the log",
+      "check": {
+        "ran": "tail",
+        "arg": "~/{{project}}/slurm-{{jobid}}.out"
+      }
+    },
+    {
+      "text": "Report how many designs it wrote",
+      "check": {
+        "answer": "{{ndes}}"
+      }
+    }
+  ],
+  "hints": [
+    "`tail` is the opposite of `head`: it shows the end of a file.",
+    "`tail slurm-{{jobid}}.out` shows the last 10 lines.",
+    "Run `tail slurm-{{jobid}}.out`, then `answer {{ndes}}`."
+  ],
+  "solution": [
+    "tail slurm-{{jobid}}.out",
+    "answer {{ndes}}"
+  ]
+}

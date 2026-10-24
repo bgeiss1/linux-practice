@@ -1,0 +1,88 @@
+{
+  "id": "find-12-passed",
+  "track": "find",
+  "order": 12,
+  "tier": 4,
+  "title": "Gather the winners",
+  "story": "passed.txt in {{project}} lists the three designs that passed AlphaFold validation. Their PDB files are scattered across the run folders. Copy exactly those three into ~/final.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "w": {
+      "pick": 3,
+      "from": [
+        "des_014",
+        "des_027",
+        "des_031",
+        "des_046",
+        "des_052",
+        "des_068"
+      ]
+    },
+    "loc": {
+      "pick": 3,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/passed.txt": "{{w.0}}\n{{w.1}}\n{{w.2}}\n",
+        "~/{{project}}/runs/{{loc.0}}/{{w.0}}.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/{{project}}/runs/{{loc.1}}/{{w.1}}.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/{{project}}/runs/{{loc.2}}/{{w.2}}.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/{{project}}/runs/{{loc.0}}/des_090.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/{{project}}/runs/{{loc.1}}/des_091.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/{{project}}/runs/{{loc.2}}/des_092.pdb": {
+          "lib": "pdb:complex"
+        },
+        "~/final/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "~/final holds exactly the three passing designs",
+      "check": {
+        "dirHas": {
+          "path": "~/final",
+          "only": true,
+          "names": [
+            "{{w.0}}.pdb",
+            "{{w.1}}.pdb",
+            "{{w.2}}.pdb"
+          ]
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`find` each name, or let a wildcard do it."
+  ],
+  "solution": [
+    "cat passed.txt",
+    "cp runs/*/{{w.0}}.pdb runs/*/{{w.1}}.pdb runs/*/{{w.2}}.pdb ~/final/"
+  ]
+}

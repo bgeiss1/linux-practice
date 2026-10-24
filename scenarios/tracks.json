@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "passphraseSalt": "mip662-2026",
   "tracks": [
     {
@@ -53,7 +53,20 @@
         "grep -r",
         "*"
       ],
-      "scenarios": []
+      "scenarios": [
+        "find/01-by-name",
+        "find/02-wildcard",
+        "find/03-recursive",
+        "find/04-all-fasta",
+        "find/05-folders",
+        "find/06-grep-id",
+        "find/07-today",
+        "find/08-big-files",
+        "find/09-oom-log",
+        "find/10-design-number",
+        "find/11-moved-script",
+        "find/12-passed"
+      ]
     },
     {
       "id": "read",
@@ -69,7 +82,20 @@
         "sort",
         "cut"
       ],
-      "scenarios": []
+      "scenarios": [
+        "read/01-readme",
+        "read/02-header",
+        "read/03-tail",
+        "read/04-count-seqs",
+        "read/05-search",
+        "read/06-chain",
+        "read/07-column",
+        "read/08-best",
+        "read/09-csv",
+        "read/10-progress",
+        "read/11-diff",
+        "read/12-failed"
+      ]
     },
     {
       "id": "manage",
