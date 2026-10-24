@@ -1,0 +1,44 @@
+{
+  "id": "session-09-big-request",
+  "track": "session",
+  "order": 9,
+  "tier": 3,
+  "title": "Ask for more",
+  "story": "Your AlphaFold job needs {{gpus}} GPUs and {{mem}} GB of memory. Start an interactive session with exactly that.",
+  "vars": {
+    "gpus": [
+      2,
+      3,
+      4
+    ],
+    "mem": [
+      64,
+      96,
+      128
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "gpusBusy": 2,
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Start an interactive job with {{gpus}} GPUs and {{mem}}G memory",
+      "check": {
+        "inInteractiveJob": {
+          "gpus": "{{gpus}}",
+          "memGB": "{{mem}}"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`--gres=gpu:N` sets GPUs and `--mem=NG` sets memory: `srun --gres=gpu:{{gpus}} --mem={{mem}}G --pty bash`."
+  ],
+  "solution": [
+    "srun --gres=gpu:{{gpus}} --mem={{mem}}G --pty bash"
+  ]
+}

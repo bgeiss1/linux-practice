@@ -19,7 +19,7 @@ function checkShape(check, path, errors) {
     return;
   }
   if (type === 'all' || type === 'any') check[type].forEach((c, i) => checkShape(c, `${path}.${type}[${i}]`, errors));
-  if (type === 'not') checkShape(check.not, `${path}.not`, errors);
+  if (type === 'not' || type === 'laptop') checkShape(check[type], `${path}.${type}`, errors);
 }
 
 export function validate(def, { seeds = 20 } = {}) {
@@ -48,7 +48,8 @@ export function validate(def, { seeds = 20 } = {}) {
       break;
     }
     // {{i}} and {{n}} are counters for "count" and "repeat", filled in when files are built.
-    const leftover = JSON.stringify(session.def).match(/\{\{\s*(?![in]\s*\}\})[\w.]+\s*\}\}/g);
+    // {{task}} and {{job}} are filled in by Slurm for each job (see jobRules).
+    const leftover = JSON.stringify(session.def).match(/\{\{\s*(?!(?:i|n|task|job)\s*\}\})[\w.]+\s*\}\}/g);
     if (leftover) {
       errors.push(`undefined variable(s) ${[...new Set(leftover)].join(', ')}`);
       break;
@@ -58,8 +59,15 @@ export function validate(def, { seeds = 20 } = {}) {
       break;
     }
     const failedLines = [];
-    for (const line of session.def.solution) {
-      const r = session.run(line);
+    for (const step of session.def.solution) {
+      // { "nano": "run.sh", "text": "..." } opens the editor and saves that text.
+      // { "laptop": "scp ..." } runs a line in the laptop's terminal.
+      const line = typeof step === 'string' ? step : step.laptop ?? `nano ${step.nano}`;
+      const r = session.run(line, step.laptop ? 'laptop' : 'cluster');
+      if (typeof step === 'object' && step.nano) {
+        if (!r.edit) failedLines.push(`"${line}" did not open the editor`);
+        else session.save(r.edit.path, step.text);
+      }
       if (r.output.some((s) => s.cls === 'err')) failedLines.push(`"${line}" printed an error: ${r.output.filter((s) => s.cls === 'err').map((s) => s.text.trim()).join(' ')}`);
     }
     if (!session.complete) {

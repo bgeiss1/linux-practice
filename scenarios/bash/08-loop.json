@@ -1,0 +1,89 @@
+{
+  "id": "bash-08-loop",
+  "track": "bash",
+  "order": 8,
+  "tier": 3,
+  "title": "Do it to every file",
+  "story": "Your collaborator wants every design file to start with the target name, so design_01.pdb should become {{target}}_design_01.pdb. There are {{ndes}} of them in {{run}}. Use a for loop instead of typing {{ndes}} mv commands.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "ndes": {
+      "range": [
+        5,
+        8
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/{{run}}",
+      "files": {
+        "~/{{project}}/{{run}}/design_{{i}}.pdb": {
+          "lib": "pdb:complex",
+          "count": "{{ndes}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Rename every design_*.pdb to {{target}}_design_*.pdb",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/{{run}}/{{target}}_design_01.pdb"
+          },
+          {
+            "notExists": "~/{{project}}/{{run}}/design_01.pdb"
+          },
+          {
+            "not": {
+              "exists": "~/{{project}}/{{run}}/design_0{{ndes}}.pdb"
+            }
+          },
+          {
+            "isFile": "~/{{project}}/{{run}}/{{target}}_design_0{{ndes}}.pdb"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Use a for loop to do it",
+      "check": {
+        "ran": "mv",
+        "lineHas": "for "
+      }
+    }
+  ],
+  "hints": [
+    "`for f in design_*.pdb; do mv $f {{target}}_$f; done` runs mv once for each file, with `$f` set to its name."
+  ],
+  "solution": [
+    "for f in design_*.pdb; do mv $f {{target}}_$f; done"
+  ]
+}

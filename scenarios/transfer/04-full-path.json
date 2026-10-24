@@ -1,0 +1,61 @@
+{
+  "id": "transfer-04-full-path",
+  "track": "transfer",
+  "order": 4,
+  "tier": 2,
+  "title": "Where exactly is it?",
+  "story": "Somewhere under ~/{{project}} on Geiss-01 is {{file}}. Find where it is, then download it to Downloads on your laptop.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "file": [
+      "final_ranking.csv",
+      "best_designs.fasta",
+      "summary_report.txt"
+    ],
+    "deep": [
+      "analysis/round2/final",
+      "runs/run_05/post",
+      "outputs/2026_10_20/summary"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/{{deep}}/{{file}}": "results\n",
+        "~/{{project}}/runs/run_01/log.txt": "ok\n",
+        "~/{{project}}/analysis/notes.txt": "notes\n"
+      }
+    },
+    "laptop": {
+      "cwd": "~"
+    }
+  },
+  "tasks": [
+    {
+      "text": "Download {{file}} to ~/Downloads on your laptop",
+      "check": {
+        "laptop": {
+          "isFile": "~/Downloads/{{file}}"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "In the Geiss-01 tab, `find . -name {{file}}` shows where it is.",
+    "Then in the Laptop tab: `scp student@geiss-01:~/{{project}}/{{deep}}/{{file}} ~/Downloads/`"
+  ],
+  "solution": [
+    "find . -name {{file}}",
+    {
+      "laptop": "scp student@geiss-01:~/{{project}}/{{deep}}/{{file}} ~/Downloads/"
+    }
+  ]
+}

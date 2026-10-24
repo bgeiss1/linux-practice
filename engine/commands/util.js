@@ -99,6 +99,11 @@ export function readInputs(ctx, files) {
       ctx.failed = true;
       continue;
     }
+    if (node.archive || node.gz) {
+      ctx.coach('binary', node.archive
+        ? `\`${f}\` is an archive, not text. \`tar -tzf ${f}\` lists what's inside.`
+        : `\`${f}\` is compressed. \`gunzip ${f}\` turns it back into a normal file.`);
+    }
     inputs.push({ name: f, text: node.content });
   }
   return inputs;

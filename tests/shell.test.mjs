@@ -107,3 +107,66 @@ test('passphrase words are stable, distinct, and verifiable', () => {
   assert.deepEqual(verify('abc123', tracks, 'salt', phrase.toUpperCase().replace('-', ' ')).tracks, ['navigate', 'read']);
   assert.deepEqual(verify('xyz789', tracks, 'salt', phrase).tracks.length < 2, true);
 });
+
+test('tar, gzip and du', () => {
+  const sh = shell();
+  sh.run('tar -czf proj.tar.gz proj');
+  assert.match(text(sh.run('tar -tzf proj.tar.gz')), /proj\/inputs\/a\.pdb/);
+  sh.run('mkdir out');
+  sh.run('tar -xzf proj.tar.gz -C out');
+  assert.equal(sh.vfs.readFile('/home/student/out/proj/inputs/b.pdb'), 'ATOM 1\n');
+  sh.run('gzip proj/run.sh');
+  assert.ok(sh.vfs.get('/home/student/proj/run.sh.gz'));
+  sh.run('gunzip proj/run.sh.gz');
+  assert.ok(sh.vfs.get('/home/student/proj/run.sh'));
+  assert.match(text(sh.run('du -sh proj')), /\tproj\n$/);
+});
+
+test('variables, for loops and $( )', () => {
+  const sh = shell();
+  assert.equal(text(sh.run('X=pdl1; echo "target $X"')), 'target pdl1\n');
+  assert.equal(text(sh.run('for f in proj/inputs/*.pdb; do basename $f .pdb; done')), 'a\nb\n');
+  assert.equal(text(sh.run('n=$(ls proj/inputs | wc -l); echo $n')), '2\n');
+  sh.vfs.writeFile('/home/student/loop.sh', '#!/bin/bash\nfor f in "$@"\ndo\n  echo "got $f"\ndone\necho "$# args"\n', { mode: 0o755 });
+  assert.equal(text(sh.run('./loop.sh a b')), 'got a\ngot b\n2 args\n');
+  assert.match(errors(sh.run('for x in 1 2')), /needs `; do COMMANDS; done`/);
+});
+
+test('nano opens an editor and saving writes the file', () => {
+  const sh = shell();
+  const r = sh.run('nano notes.txt');
+  assert.equal(r.edit.path, '/home/student/notes.txt');
+  sh.saveEdit(r.edit.path, 'hello\n');
+  assert.equal(sh.vfs.readFile('/home/student/notes.txt'), 'hello\n');
+});
+
+test('design tools need their environment and a GPU', () => {
+  const sh = shell();
+  sh.run('cd proj');
+  assert.match(errors(sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /command not found/);
+  sh.run('module load anaconda');
+  sh.run('conda activate proteinmpnn');
+  assert.match(errors(sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /No CUDA GPUs/);
+  sh.run('srun --gres=gpu:1 --pty bash');
+  sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out');
+  assert.ok(sh.vfs.get('/home/student/proj/out/seqs/a.fa'));
+  sh.run('exit');
+  assert.equal(sh.cluster.condaEnv, 'proteinmpnn'); // activated before srun, so it stays
+});
+
+test('scp copies between the laptop and Geiss-01', () => {
+  const server = shell();
+  const laptop = new Shell({ kind: 'laptop', host: 'laptop', home: '/Users/student' });
+  laptop.vfs.mkdir('/Users/student/Downloads', { parents: true });
+  laptop.remotes['geiss-01'] = server;
+  laptop.run('scp student@geiss-01:~/proj/inputs/a.pdb ~/Downloads/');
+  assert.ok(laptop.vfs.get('/Users/student/Downloads/a.pdb'));
+  assert.match(errors(laptop.run('scp student@geiss-01:proj ~/Downloads/')), /not a regular file/);
+  laptop.run('scp -r student@geiss-01:proj ~/Downloads/');
+  assert.ok(laptop.vfs.get('/Users/student/Downloads/proj/inputs/b.pdb'));
+  laptop.run('scp ~/Downloads/a.pdb geiss-01:copy.pdb');
+  assert.ok(server.vfs.get('/home/student/copy.pdb'));
+  assert.match(errors(laptop.run('scp bob@geiss-01:x .')), /Permission denied/);
+  assert.match(errors(server.run('scp a.pdb laptop:')), /Connection refused/);
+  assert.match(errors(laptop.run('sbatch run.sh')), /command not found/);
+});

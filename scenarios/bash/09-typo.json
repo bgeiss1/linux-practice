@@ -1,0 +1,78 @@
+{
+  "id": "bash-09-typo",
+  "track": "bash",
+  "order": 9,
+  "tier": 3,
+  "title": "Fix the broken script",
+  "story": "setup_run.sh is supposed to make a run folder and copy the target into it, but it stops partway. Run it, read the error, fix the script, and run it again.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "typo": [
+      "mkdri",
+      "mkidr",
+      "mdkir"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/setup_run.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\nset -e\nRUN={{run}}\nmkdir -p $RUN\n{{typo}} -p $RUN/inputs\ncp target.pdb $RUN/inputs/\necho \"Set up $RUN\"\n"
+        },
+        "~/{{project}}/target.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run the fixed script so {{run}}/inputs/target.pdb exists",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/{{run}}/inputs/target.pdb"
+          },
+          {
+            "not": {
+              "fileContains": {
+                "path": "~/{{project}}/setup_run.sh",
+                "text": "{{typo}}"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "The error names the line's command. `nano setup_run.sh` to fix the spelling, then run it again."
+  ],
+  "solution": [
+    "./setup_run.sh",
+    {
+      "nano": "setup_run.sh",
+      "text": "#!/bin/bash\nset -e\nRUN={{run}}\nmkdir -p $RUN\nmkdir -p $RUN/inputs\ncp target.pdb $RUN/inputs/\necho \"Set up $RUN\"\n"
+    },
+    "./setup_run.sh"
+  ]
+}

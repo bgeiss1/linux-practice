@@ -16,7 +16,20 @@
         "conda",
         "exit"
       ],
-      "scenarios": []
+      "scenarios": [
+        "session/01-who-where",
+        "session/02-gpus",
+        "session/03-module-avail",
+        "session/04-module-load",
+        "session/05-conda",
+        "session/06-interactive",
+        "session/07-partitions",
+        "session/08-colabfold",
+        "session/09-big-request",
+        "session/10-mpnn",
+        "session/11-forgotten",
+        "session/12-rfdiffusion"
+      ]
     },
     {
       "id": "navigate",
@@ -109,7 +122,20 @@
         "chmod",
         "tar"
       ],
-      "scenarios": []
+      "scenarios": [
+        "manage/01-new-project",
+        "manage/02-copy-in",
+        "manage/03-rename",
+        "manage/04-clean-logs",
+        "manage/05-deep-folders",
+        "manage/06-executable",
+        "manage/07-backup",
+        "manage/08-disk-usage",
+        "manage/09-archive",
+        "manage/10-unpack",
+        "manage/11-organize",
+        "manage/12-quota"
+      ]
     },
     {
       "id": "bash",
@@ -123,7 +149,20 @@
         "2>",
         "&"
       ],
-      "scenarios": []
+      "scenarios": [
+        "bash/01-run-script",
+        "bash/02-permission",
+        "bash/03-argument",
+        "bash/04-save-output",
+        "bash/05-append",
+        "bash/06-first-script",
+        "bash/07-variable",
+        "bash/08-loop",
+        "bash/09-typo",
+        "bash/10-stderr",
+        "bash/11-every-run",
+        "bash/12-write-tool"
+      ]
     },
     {
       "id": "slurm",
@@ -136,7 +175,20 @@
         "sacct",
         "seff"
       ],
-      "scenarios": []
+      "scenarios": [
+        "slurm/01-submit",
+        "slurm/02-wait-read",
+        "slurm/03-read-request",
+        "slurm/04-cancel",
+        "slurm/05-no-gpu",
+        "slurm/06-wrap",
+        "slurm/07-timeout",
+        "slurm/08-oom",
+        "slurm/09-array",
+        "slurm/10-dependency",
+        "slurm/11-partition",
+        "slurm/12-from-scratch"
+      ]
     },
     {
       "id": "transfer",
@@ -147,7 +199,20 @@
         "scp -r",
         "tar"
       ],
-      "scenarios": []
+      "scenarios": [
+        "transfer/01-download",
+        "transfer/02-here",
+        "transfer/03-upload",
+        "transfer/04-full-path",
+        "transfer/05-folder",
+        "transfer/06-wildcard",
+        "transfer/07-upload-folder",
+        "transfer/08-bundle",
+        "transfer/09-unpack-home",
+        "transfer/10-upload-submit",
+        "transfer/11-top-designs",
+        "transfer/12-job-results"
+      ]
     }
   ]
 }

@@ -3,14 +3,18 @@
 export const HELP = `Commands on this practice server (try "man NAME" for details):
 
   Where am I        pwd  whoami  hostname  ls [-l -a -h -R -t]  cd [DIR | .. | ~ | -]
-  Files             mkdir [-p]  touch  cp [-r]  mv  rm [-r]  rmdir  chmod
+  Files             mkdir [-p]  touch  cp [-r]  mv  rm [-r]  rmdir  chmod  du -sh
+  Archives          tar -czf OUT.tar.gz DIR   tar -tzf FILE   tar -xzf FILE   gzip  gunzip
   Finding           find PATH -name "*.pdb"   grep [-r -i -n -c] TEXT FILES
   Reading           cat  less  head [-n N]  tail [-n N]  wc [-l]  sort  uniq  cut  diff
-  Scripts           bash SCRIPT   ./SCRIPT   echo   >  >>  |  &&
+  Scripts           bash SCRIPT   ./SCRIPT   echo   >  >>  2>  |  &&   NAME=value   $(command)
+                    for f in *.pdb; do echo $f; done   basename   nano FILE
   Software          module avail | list | load NAME | purge
                     conda env list | activate NAME | deactivate
   GPUs and jobs     sinfo  nvidia-smi  sbatch SCRIPT  squeue --me  scancel ID
                     sacct  seff ID  srun --gres=gpu:1 --pty bash  exit
+  Design tools      protein_mpnn_run.py  run_inference.py  colabfold_batch  relax
+  Your laptop       scp [-r] student@geiss-01:PATH LOCAL   scp LOCAL student@geiss-01:PATH
   This app          answer TEXT   hint   clear   history
 
 Tab completes names. Up and down arrows bring back earlier commands.
@@ -67,6 +71,24 @@ chmod 644 notes    owner can write, everyone can read`),
 -k N    sort by column N
 -t ,    columns are separated by commas`),
   cut: page('cut - pick out columns', 'cut -d SEP -f LIST FILE', 'cut -d "," -f 2,4 scores.csv'),
+  tar: page('tar - bundle files into one archive', 'tar -czf OUT.tar.gz PATH...   tar -tzf FILE   tar -xzf FILE [-C DIR]', `c   create an archive
+t   list what is inside
+x   extract (unpack)
+z   compress with gzip (.tar.gz)
+v   print each file name
+f   the archive file name; must come last, right before the name
+-C DIR   extract into DIR`),
+  gzip: page('gzip - compress a file', 'gzip FILE   gunzip FILE.gz', 'gzip replaces FILE with FILE.gz. gunzip turns it back.'),
+  nano: page('nano - edit a text file', 'nano FILE', `Opens FILE (or a new, empty one) in the editor.
+Ctrl+O   save ("write out")
+Ctrl+X   exit (asks to save if you changed something)`),
+  scp: page('scp - copy files between computers', 'scp [-r] SOURCE... DESTINATION', `Run it on your laptop. A path on Geiss-01 looks like student@geiss-01:~/project/file.pdb
+scp student@geiss-01:~/results.tar.gz ~/Downloads/   download
+scp target.pdb student@geiss-01:~/project/inputs/      upload
+-r   copy a whole folder`),
+  du: page('du - disk usage', 'du [-s] [-h] [--max-depth=N] [PATH...]', `-s   one total per PATH
+-h   human-readable sizes (K, M, G)
+-a   list files too, not just folders`),
   module: page('module - load software', 'module avail | list | load NAME | unload NAME | purge', 'Modules add installed software to your PATH.'),
   conda: page('conda - Python environments', 'conda env list | activate NAME | deactivate', 'Needs "module load anaconda" first.'),
   sbatch: page('sbatch - submit a batch job', 'sbatch SCRIPT', `Reads #SBATCH lines at the top of the script:

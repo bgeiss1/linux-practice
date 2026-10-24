@@ -1,0 +1,69 @@
+{
+  "id": "transfer-05-folder",
+  "track": "transfer",
+  "order": 5,
+  "tier": 2,
+  "title": "A whole folder",
+  "story": "Download the whole {{run}} folder from ~/{{project}}/runs on Geiss-01 into Downloads on your laptop, so you can open the designs in PyMOL.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/runs",
+      "files": {
+        "~/{{project}}/runs/{{run}}/design_{{i}}.pdb": {
+          "lib": "pdb:complex",
+          "count": 4
+        },
+        "~/{{project}}/runs/{{run}}/scores.sc": "SCORE: -300\n"
+      }
+    },
+    "laptop": {
+      "cwd": "~"
+    }
+  },
+  "tasks": [
+    {
+      "text": "Copy the {{run}} folder into ~/Downloads on your laptop",
+      "check": {
+        "laptop": {
+          "all": [
+            {
+              "isFile": "~/Downloads/{{run}}/design_04.pdb"
+            },
+            {
+              "isFile": "~/Downloads/{{run}}/scores.sc"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "hints": [
+    "Folders need `-r`, like `cp -r`.",
+    "`scp -r student@geiss-01:~/{{project}}/runs/{{run}} ~/Downloads/`"
+  ],
+  "solution": [
+    {
+      "laptop": "scp -r student@geiss-01:~/{{project}}/runs/{{run}} ~/Downloads/"
+    }
+  ]
+}

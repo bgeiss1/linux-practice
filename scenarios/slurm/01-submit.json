@@ -1,0 +1,62 @@
+{
+  "id": "slurm-01-submit",
+  "track": "slurm",
+  "order": 1,
+  "tier": 1,
+  "title": "Submit your first job",
+  "story": "run_mpnn.sh is a job script: the #SBATCH lines at the top ask for a GPU, and the rest runs ProteinMPNN. Hand it to Slurm, then look at the queue.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n",
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/outputs/": {}
+      },
+      "jobRules": [
+        {
+          "match": "run_mpnn.sh",
+          "needsGpu": true,
+          "log": "Job finished\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit run_mpnn.sh",
+      "check": {
+        "jobSubmitted": {
+          "name": "mpnn"
+        }
+      }
+    },
+    {
+      "text": "Look at your jobs in the queue",
+      "check": {
+        "ran": "squeue"
+      }
+    }
+  ],
+  "hints": [
+    "`sbatch SCRIPT` submits a job script.",
+    "`sbatch run_mpnn.sh`, then `squeue --me` shows your jobs.",
+    "Run `sbatch run_mpnn.sh`, then `squeue --me`. ST says PD (waiting) or R (running)."
+  ],
+  "solution": [
+    "sbatch run_mpnn.sh",
+    "squeue --me"
+  ]
+}

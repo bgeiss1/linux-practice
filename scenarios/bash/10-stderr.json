@@ -1,0 +1,63 @@
+{
+  "id": "bash-10-stderr",
+  "track": "bash",
+  "order": 10,
+  "tier": 3,
+  "title": "Separate the errors",
+  "story": "score_all.sh prints a score for each of 8 designs, but some score files are missing, and the errors get mixed in with the scores. Run it with the errors sent to errors.log, then report how many designs did get a score.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "nhave": {
+      "range": [
+        4,
+        7
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/score_all.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\nfor d in 01 02 03 04 05 06 07 08\ndo\n  cat scores/design_$d.sc\ndone\n"
+        },
+        "~/{{project}}/scores/design_{{i}}.sc": {
+          "content": "design_{{i}} total_score -2{{i}}.4\n",
+          "count": "{{nhave}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run it with errors going to errors.log",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/errors.log",
+          "text": "No such file"
+        }
+      }
+    },
+    {
+      "text": "Report how many designs got a score",
+      "check": {
+        "answer": "{{nhave}}"
+      }
+    }
+  ],
+  "hints": [
+    "`2>` redirects error messages, the same way `>` redirects normal output. `./score_all.sh 2> errors.log`"
+  ],
+  "solution": [
+    "./score_all.sh 2> errors.log",
+    "answer {{nhave}}"
+  ]
+}

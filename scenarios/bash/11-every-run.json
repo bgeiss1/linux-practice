@@ -1,0 +1,105 @@
+{
+  "id": "bash-11-every-run",
+  "track": "bash",
+  "order": 11,
+  "tier": 4,
+  "title": "Count every run",
+  "story": "count.sh prints a folder's name and how many PDBs it holds. Run it on every folder in runs/ and collect all the lines in counts.txt, using one loop.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 3,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    },
+    "c0": {
+      "range": [
+        2,
+        4
+      ]
+    },
+    "c1": {
+      "range": [
+        5,
+        7
+      ]
+    },
+    "c2": {
+      "range": [
+        8,
+        9
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/count.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\necho \"$1 $(ls $1/*.pdb | wc -l)\"\n"
+        },
+        "~/{{project}}/runs/{{runs.0}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{c0}}"
+        },
+        "~/{{project}}/runs/{{runs.1}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{c1}}"
+        },
+        "~/{{project}}/runs/{{runs.2}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{c2}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "counts.txt has a line for every run",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/counts.txt",
+              "text": "{{runs.0}} {{c0}}"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/counts.txt",
+              "text": "{{runs.1}} {{c1}}"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/counts.txt",
+              "text": "{{runs.2}} {{c2}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "Loop over `runs/*` and append with `>>`."
+  ],
+  "solution": [
+    "for r in runs/*; do ./count.sh $r >> counts.txt; done"
+  ]
+}

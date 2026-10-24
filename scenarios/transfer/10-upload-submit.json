@@ -1,0 +1,70 @@
+{
+  "id": "transfer-10-upload-submit",
+  "track": "transfer",
+  "order": 10,
+  "tier": 3,
+  "title": "Write locally, run remotely",
+  "story": "You wrote {{script}} on your laptop (it's in Documents). Upload it to ~/{{project}} on Geiss-01, then submit it to Slurm from there.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "script": [
+      "fold_designs.sh",
+      "mpnn_round2.sh",
+      "af2_check.sh"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/designs.fasta": {
+          "lib": "fasta:designs"
+        }
+      },
+      "jobRules": [
+        {
+          "match": "{{script}}",
+          "needsGpu": true
+        }
+      ]
+    },
+    "laptop": {
+      "cwd": "~/Documents",
+      "files": {
+        "~/Documents/{{script}}": "#!/bin/bash\n#SBATCH --job-name=uploaded\n#SBATCH --gres=gpu:1\n#SBATCH --time=01:00:00\n#SBATCH --mem=32G\n\nmodule load colabfold\ncolabfold_batch designs.fasta results/\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Upload {{script}} to ~/{{project}}",
+      "check": {
+        "isFile": "~/{{project}}/{{script}}"
+      }
+    },
+    {
+      "text": "Submit it on Geiss-01",
+      "check": {
+        "jobSubmitted": {
+          "name": "uploaded"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`scp` it up from the Laptop tab, then `sbatch` it from the Geiss-01 tab."
+  ],
+  "solution": [
+    {
+      "laptop": "scp {{script}} student@geiss-01:~/{{project}}/"
+    },
+    "sbatch {{script}}"
+  ]
+}

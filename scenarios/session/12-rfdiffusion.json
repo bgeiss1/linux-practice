@@ -1,0 +1,86 @@
+{
+  "id": "session-12-rfdiffusion",
+  "track": "session",
+  "order": 12,
+  "tier": 4,
+  "title": "Generate backbones",
+  "story": "Make {{ndes.0}} RFdiffusion designs with the output prefix outputs/{{target}}_binder, then leave the job so the GPU is free.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "ndes": [
+      [
+        2,
+        1
+      ],
+      [
+        3,
+        2
+      ],
+      [
+        4,
+        3
+      ],
+      [
+        5,
+        4
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/outputs/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make {{ndes.0}} designs with prefix outputs/{{target}}_binder",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/outputs/{{target}}_binder_0.pdb"
+          },
+          {
+            "isFile": "~/{{project}}/outputs/{{target}}_binder_{{ndes.1}}.pdb"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Leave the interactive job",
+      "check": {
+        "notInInteractiveJob": true
+      }
+    }
+  ],
+  "hints": [
+    "RFdiffusion is `run_inference.py` in the rfdiffusion environment. Settings look like `inference.num_designs={{ndes.0}}`."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --pty bash",
+    "module load anaconda",
+    "conda activate rfdiffusion",
+    "run_inference.py inference.input_pdb=inputs/{{target}}.pdb inference.output_prefix=outputs/{{target}}_binder inference.num_designs={{ndes.0}}",
+    "exit"
+  ]
+}

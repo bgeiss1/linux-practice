@@ -13,7 +13,7 @@ export function cat(ctx) {
       ctx.out(text);
     }
   }
-  if (rest.some((f) => f.endsWith('.sh'))) {
+  if (inputs.some(({ text }) => text.includes('#SBATCH'))) {
     ctx.coach('cat-sbatch', 'Lines starting with `#SBATCH` ask Slurm for resources: GPUs, memory, and time.');
   }
   return ctx.failed ? 1 : 0;

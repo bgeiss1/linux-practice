@@ -1,0 +1,69 @@
+{
+  "id": "manage-04-clean-logs",
+  "track": "manage",
+  "order": 4,
+  "tier": 2,
+  "title": "Clear out old logs",
+  "story": "Every Slurm job left a slurm-NNNN.out file in {{project}}, and now you can't see your real files. Delete all the slurm-*.out files, and nothing else.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "nlog": {
+      "range": [
+        5,
+        9
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/slurm-48{{i}}.out": {
+          "content": "job finished\n",
+          "count": "{{nlog}}"
+        },
+        "~/{{project}}/run_mpnn.sh": {
+          "lib": "slurm:mpnn",
+          "exec": true
+        },
+        "~/{{project}}/designs.fasta": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/notes.txt": "keep this\n",
+        "~/{{project}}/outputs/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Delete every slurm-*.out file and keep the rest",
+      "check": {
+        "dirHas": {
+          "path": "~/{{project}}",
+          "only": true,
+          "names": [
+            "run_mpnn.sh",
+            "designs.fasta",
+            "notes.txt",
+            "outputs"
+          ]
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`rm` deletes files, and a wildcard picks out many names at once. Try `ls slurm-*.out` first to see what it matches.",
+    "`rm slurm-*.out` deletes only the log files."
+  ],
+  "solution": [
+    "ls slurm-*.out",
+    "rm slurm-*.out"
+  ]
+}

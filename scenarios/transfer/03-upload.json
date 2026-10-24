@@ -1,0 +1,60 @@
+{
+  "id": "transfer-03-upload",
+  "track": "transfer",
+  "order": 3,
+  "tier": 1,
+  "title": "Send a target up",
+  "story": "You made {{target}}_clean.pdb on your laptop. It's in Documents. Upload it to ~/{{project}}/inputs on Geiss-01.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/inputs/": {}
+      }
+    },
+    "laptop": {
+      "cwd": "~/Documents",
+      "files": {
+        "~/Documents/{{target}}_clean.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Upload {{target}}_clean.pdb to ~/{{project}}/inputs on Geiss-01",
+      "check": {
+        "isFile": "~/{{project}}/inputs/{{target}}_clean.pdb"
+      }
+    }
+  ],
+  "hints": [
+    "Uploading is the same command the other way round: the local file first, the server path last.",
+    "`scp {{target}}_clean.pdb student@geiss-01:~/{{project}}/inputs/`",
+    "In the Laptop tab run `scp {{target}}_clean.pdb student@geiss-01:~/{{project}}/inputs/`, then check with `ls inputs` in the Geiss-01 tab."
+  ],
+  "solution": [
+    {
+      "laptop": "scp {{target}}_clean.pdb student@geiss-01:~/{{project}}/inputs/"
+    }
+  ]
+}

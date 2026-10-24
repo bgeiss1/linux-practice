@@ -1,0 +1,77 @@
+{
+  "id": "slurm-08-oom",
+  "track": "slurm",
+  "order": 8,
+  "tier": 3,
+  "title": "Killed for memory",
+  "story": "relax_all.sh keeps dying a few minutes in. Submit it, work out what went wrong, fix it, and get a run that completes.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "need": [
+      40,
+      48,
+      60
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/relax_all.sh": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load rosetta\nfor f in designs/*.pdb; do relax -s $f; done\n",
+        "~/{{project}}/designs/d_{{i}}.pdb": {
+          "lib": "pdb:complex",
+          "count": 6
+        }
+      },
+      "jobRules": [
+        {
+          "match": "relax_all.sh",
+          "needsMemGB": "{{need}}",
+          "memUsedGB": 31.5,
+          "logStart": "core.init: Rosetta version 3.14\nprotocols.relax.FastRelax: d_01\n",
+          "log": "core.init: Rosetta version 3.14\nRelaxed 6 designs\nJob finished\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Get relax_all.sh to complete",
+      "check": {
+        "jobState": {
+          "name": "relax",
+          "state": "CD"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`sacct` shows the job's State. `--mem` sets memory; this job needs about {{need}}G."
+  ],
+  "solution": [
+    "sbatch relax_all.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "sacct",
+    {
+      "nano": "relax_all.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem={{need}}G\n#SBATCH --output=slurm-%j.out\n\nmodule load rosetta\nfor f in designs/*.pdb; do relax -s $f; done\n"
+    },
+    "sbatch relax_all.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

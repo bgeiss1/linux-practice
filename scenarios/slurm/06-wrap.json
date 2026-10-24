@@ -1,0 +1,56 @@
+{
+  "id": "slurm-06-wrap",
+  "track": "slurm",
+  "order": 6,
+  "tier": 2,
+  "title": "A quick one-liner",
+  "story": "You just want to count the PDB files in /scratch/{{user}}/{{dataset}} as a job, without writing a script. Submit it with sbatch --wrap, naming the job {{jname}}.",
+  "vars": {
+    "dataset": [
+      "pdb_mirror",
+      "cath_domains",
+      "af2_models"
+    ],
+    "jname": [
+      "count",
+      "tally",
+      "census"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "/scratch/{{user}}/{{dataset}}/x_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 5
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit a --wrap job named {{jname}}",
+      "check": {
+        "all": [
+          {
+            "jobSubmitted": {
+              "name": "{{jname}}"
+            }
+          },
+          {
+            "ran": "sbatch",
+            "lineHas": "--wrap"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`--wrap=\"COMMAND\"` turns a command into a job, and `--job-name` (or `-J`) names it.",
+    "`sbatch -J {{jname}} --wrap=\"ls /scratch/{{user}}/{{dataset}} | wc -l\"`"
+  ],
+  "solution": [
+    "sbatch -J {{jname}} --wrap=\"ls /scratch/{{user}}/{{dataset}} | wc -l\""
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "id": "manage-06-executable",
+  "track": "manage",
+  "order": 6,
+  "tier": 2,
+  "title": "Make it runnable",
+  "story": "Your labmate sent you {{script}}, but it won't run: Linux doesn't know it's a program yet. Give it permission to run, then check the permissions with a long listing.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "script": [
+      "run_mpnn.sh",
+      "submit_af2.sh",
+      "relax_all.sh",
+      "score_designs.sh"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/scripts",
+      "files": {
+        "~/{{project}}/scripts/{{script}}": {
+          "lib": "slurm:mpnn"
+        },
+        "~/{{project}}/scripts/README.txt": "Run {{script}} from the project folder.\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make {{script}} executable",
+      "check": {
+        "executable": "~/{{project}}/scripts/{{script}}"
+      }
+    },
+    {
+      "text": "Show the permissions with ls -l",
+      "check": {
+        "ran": "ls",
+        "flags": "l"
+      }
+    }
+  ],
+  "hints": [
+    "`chmod` changes permissions. `+x` adds execute (run) permission.",
+    "`chmod +x {{script}}`, then `ls -l` shows an x in -rwxr-xr-x."
+  ],
+  "solution": [
+    "chmod +x {{script}}",
+    "ls -l"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "session-05-conda",
+  "track": "session",
+  "order": 5,
+  "tier": 2,
+  "title": "Switch on a conda environment",
+  "story": "ProteinMPNN and RFdiffusion live in conda environments, and conda itself comes from a module. Activate the {{env}} environment.",
+  "vars": {
+    "env": [
+      "proteinmpnn",
+      "rfdiffusion"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Load the anaconda module",
+      "check": {
+        "moduleLoaded": "anaconda"
+      }
+    },
+    {
+      "text": "Activate {{env}}",
+      "check": {
+        "condaEnv": "{{env}}"
+      }
+    }
+  ],
+  "hints": [
+    "`conda` only exists after `module load anaconda`. `conda env list` shows the environments.",
+    "`module load anaconda`, then `conda activate {{env}}`. Your prompt changes to show it."
+  ],
+  "solution": [
+    "module load anaconda",
+    "conda env list",
+    "conda activate {{env}}"
+  ]
+}

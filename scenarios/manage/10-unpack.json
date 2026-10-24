@@ -1,0 +1,67 @@
+{
+  "id": "manage-10-unpack",
+  "track": "manage",
+  "order": 10,
+  "tier": 3,
+  "title": "Unpack a collaborator's files",
+  "story": "A collaborator sent {{bundle}}.tar.gz with their {{target}} structures. It's in ~/downloads. Unpack it so its contents end up inside ~/{{project}}/inputs.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "bundle": [
+      "structures_v2",
+      "lab_share",
+      "for_student",
+      "binders_oct"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/downloads/{{bundle}}.tar.gz": {
+          "archive": {
+            "files": {
+              "{{bundle}}/{{target}}_apo.pdb": {
+                "lib": "pdb:small"
+              },
+              "{{bundle}}/{{target}}_complex.pdb": {
+                "lib": "pdb:complex"
+              },
+              "{{bundle}}/README.txt": "Chain A is {{target}}. Chain B is the starting binder.\n"
+            }
+          }
+        },
+        "~/{{project}}/inputs/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Unpack the archive into ~/{{project}}/inputs",
+      "check": {
+        "isFile": "~/{{project}}/inputs/{{bundle}}/{{target}}_complex.pdb"
+      }
+    }
+  ],
+  "hints": [
+    "`tar -xzf FILE` extracts (x) into the folder you're in. `-C FOLDER` extracts somewhere else."
+  ],
+  "solution": [
+    "tar -xzf ~/downloads/{{bundle}}.tar.gz -C ~/{{project}}/inputs"
+  ]
+}

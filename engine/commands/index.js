@@ -4,6 +4,8 @@ import * as files from './files.js';
 import * as text from './text.js';
 import * as slurm from './slurm.js';
 import * as misc from './misc.js';
+import * as archive from './archive.js';
+import * as transfer from './transfer.js';
 
 export const COMMANDS = {
   // files and folders
@@ -18,6 +20,10 @@ export const COMMANDS = {
   mv: files.mv,
   chmod: files.chmod,
   find: files.find,
+  tar: archive.tar,
+  gzip: archive.gzip,
+  gunzip: archive.gzip,
+  du: archive.du,
   // reading text
   cat: text.cat,
   less: text.less,
@@ -64,13 +70,15 @@ export const COMMANDS = {
   vi: misc.editor,
   emacs: misc.editor,
   ssh: misc.ssh,
-  scp: misc.scp,
+  scp: transfer.scp,
   sleep: misc.sleep,
   jobs: misc.jobs,
   export: misc.exportCmd,
   env: misc.env,
   bash: misc.bash,
   sh: misc.bash,
+  basename: misc.basenameCmd,
+  dirname: misc.dirnameCmd,
   true: misc.trueCmd,
   false: misc.falseCmd,
   __script: misc.script,

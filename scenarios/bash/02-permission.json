@@ -1,0 +1,58 @@
+{
+  "id": "bash-02-permission",
+  "track": "bash",
+  "order": 2,
+  "tier": 1,
+  "title": "Permission denied",
+  "story": "You copied prep.sh from a shared folder. It copies your inputs into a prepared folder, but when you run it, Linux refuses. Fix that and run it.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/prep.sh": "#!/bin/bash\nmkdir -p prepared\ncp inputs/*.pdb prepared/\necho \"Prepared files:\"\nls prepared\n",
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/inputs/{{target}}_complex.pdb": {
+          "lib": "pdb:complex"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run prep.sh so the prepared folder gets made",
+      "check": {
+        "isFile": "~/{{project}}/prepared/{{target}}.pdb"
+      }
+    }
+  ],
+  "hints": [
+    "Try `./prep.sh` and read the error. A script needs execute permission before `./` can run it.",
+    "`chmod +x prep.sh` gives it permission. Then `./prep.sh` works.",
+    "Run `chmod +x prep.sh`, then `./prep.sh`, then `ls prepared` to check."
+  ],
+  "solution": [
+    "./prep.sh",
+    "chmod +x prep.sh",
+    "./prep.sh"
+  ]
+}

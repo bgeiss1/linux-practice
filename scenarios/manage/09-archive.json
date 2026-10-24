@@ -1,0 +1,73 @@
+{
+  "id": "manage-09-archive",
+  "track": "manage",
+  "order": 9,
+  "tier": 3,
+  "title": "Bundle a run",
+  "story": "You want to download {{run}} to your laptop, and one compressed file is much easier to move than hundreds. Make {{run}}.tar.gz in the runs folder, containing the {{run}} folder.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/runs",
+      "files": {
+        "~/{{project}}/runs/{{run}}/designs.fasta": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/runs/{{run}}/pdbs/design_{{i}}.pdb": {
+          "lib": "pdb:complex",
+          "count": 6
+        },
+        "~/{{project}}/runs/{{run}}/scores.sc": "SCORE: total_score description\nSCORE: -312.4 design_01\n",
+        "~/{{project}}/runs/other/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make {{run}}.tar.gz holding the {{run}} folder",
+      "check": {
+        "archiveHas": {
+          "path": "~/{{project}}/runs/{{run}}.tar.gz",
+          "gz": true,
+          "names": [
+            "{{run}}/designs.fasta",
+            "{{run}}/pdbs/design_06.pdb"
+          ]
+        }
+      }
+    },
+    {
+      "text": "List what's inside the archive to check it",
+      "check": {
+        "ran": "tar",
+        "flags": "t"
+      }
+    }
+  ],
+  "hints": [
+    "`tar -czf NAME.tar.gz FOLDER` creates (c) a gzip-compressed (z) file (f). `tar -tzf NAME.tar.gz` lists it."
+  ],
+  "solution": [
+    "tar -czf {{run}}.tar.gz {{run}}",
+    "tar -tzf {{run}}.tar.gz"
+  ]
+}

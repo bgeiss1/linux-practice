@@ -1,0 +1,59 @@
+{
+  "id": "manage-01-new-project",
+  "track": "manage",
+  "order": 1,
+  "tier": 1,
+  "title": "Set up a project",
+  "story": "You're starting a new design campaign against {{target}}. Make a project folder called {{target}}_design in your home folder, with three folders inside it: inputs, outputs and scripts.",
+  "vars": {
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/README.txt": {
+          "lib": "text:readme"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make the folder ~/{{target}}_design",
+      "check": {
+        "isDir": "~/{{target}}_design"
+      }
+    },
+    {
+      "text": "Inside it, make inputs, outputs and scripts",
+      "check": {
+        "dirHas": {
+          "path": "~/{{target}}_design",
+          "names": [
+            "inputs",
+            "outputs",
+            "scripts"
+          ]
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`mkdir NAME` makes a folder. You can give it several names at once.",
+    "`mkdir {{target}}_design`, then `cd {{target}}_design` and `mkdir inputs outputs scripts`.",
+    "Run `mkdir {{target}}_design`, `cd {{target}}_design`, then `mkdir inputs outputs scripts`. Check with `ls`."
+  ],
+  "solution": [
+    "mkdir {{target}}_design",
+    "cd {{target}}_design",
+    "mkdir inputs outputs scripts"
+  ]
+}

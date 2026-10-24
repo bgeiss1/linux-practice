@@ -88,6 +88,8 @@ export class Cluster {
       reason: spec.reason ?? null,
       memUsedGB: spec.memUsedGB ?? null,
       dependency: spec.dependency ?? null,
+      afterJob: spec.dependency ?? null, // kept after the dependency is met
+      interactive: spec.interactive ?? false,
     };
   }
 

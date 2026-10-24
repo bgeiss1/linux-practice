@@ -150,4 +150,18 @@ a.scen:hover { border-color: var(--accent); }
 .inrow input { flex: 1; min-width: 0; background: transparent; border: 0; color: var(--term-fg); font: inherit; padding: 0; margin-left: .6ch; caret-color: var(--term-path); }
 .inrow input:focus { outline: none; }
 
+.screen[hidden] { display: none; }
+.tabs { display: flex; gap: 4px; }
+.tabs button { background: transparent; color: var(--term-dim); border: 1px solid #ffffff22; border-radius: 5px; font: inherit; padding: 2px 10px; cursor: pointer; }
+.tabs button[aria-selected="true"] { color: var(--term-path); border-color: var(--term-path); }
+.nano { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+.nano-bar { display: flex; justify-content: space-between; gap: 8px; padding: 2px 10px; background: var(--term-fg); color: var(--term-bg); font-size: 12.5px; }
+.nano-text { flex: 1; min-height: 340px; max-height: 64vh; resize: none; background: transparent; color: var(--term-fg); border: 0; font: inherit; padding: 10px 14px; caret-color: var(--term-path); tab-size: 4; white-space: pre; overflow: auto; }
+.nano-text:focus { outline: none; }
+.nano-status { min-height: 1.55em; text-align: center; color: var(--term-path); font-size: 12.5px; }
+.nano-keys { display: flex; gap: 6px 16px; flex-wrap: wrap; align-items: center; padding: 6px 10px 10px; font-size: 12.5px; }
+.nano-keys button { background: transparent; color: var(--term-fg); border: 0; font: inherit; padding: 2px 0; cursor: pointer; }
+.nano-keys kbd { background: var(--term-fg); color: var(--term-bg); padding: 0 4px; border-radius: 2px; font: inherit; }
+.nano-tip { color: var(--term-dim); margin-left: auto; }
+
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
