@@ -1,0 +1,76 @@
+{
+  "id": "find-10-design-number",
+  "track": "find",
+  "order": 10,
+  "tier": 4,
+  "title": "Collect one design from every task",
+  "story": "Your 6-task job array wrote designs {{ds.0}}, {{ds.1}} and {{ds.2}} from every task into outputs/, named like t01_design_{{ds.0}}.pdb. Copy design {{target}} from all six tasks into a new folder called picks inside {{project}}, and nothing else.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "ds": {
+      "pick": 3,
+      "from": [
+        "03",
+        "07",
+        "12",
+        "15",
+        "21"
+      ]
+    },
+    "target": {
+      "fromVar": "ds"
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/outputs/t{{i}}_design_{{ds.0}}.pdb": {
+          "lib": "pdb:small",
+          "count": 6
+        },
+        "~/{{project}}/outputs/t{{i}}_design_{{ds.1}}.pdb": {
+          "lib": "pdb:small",
+          "count": 6
+        },
+        "~/{{project}}/outputs/t{{i}}_design_{{ds.2}}.pdb": {
+          "lib": "pdb:small",
+          "count": 6
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "picks/ holds design {{target}} from all six tasks, and nothing else",
+      "check": {
+        "dirHas": {
+          "path": "~/{{project}}/picks",
+          "only": true,
+          "names": [
+            "t01_design_{{target}}.pdb",
+            "t02_design_{{target}}.pdb",
+            "t03_design_{{target}}.pdb",
+            "t04_design_{{target}}.pdb",
+            "t05_design_{{target}}.pdb",
+            "t06_design_{{target}}.pdb"
+          ]
+        }
+      }
+    }
+  ],
+  "hints": [
+    "One wildcard, two commands."
+  ],
+  "solution": [
+    "mkdir picks",
+    "cp outputs/*_design_{{target}}.pdb picks/"
+  ]
+}

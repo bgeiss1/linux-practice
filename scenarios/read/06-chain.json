@@ -1,0 +1,55 @@
+{
+  "id": "read-06-chain",
+  "track": "read",
+  "order": 6,
+  "tier": 2,
+  "title": "Count chain B",
+  "story": "complex.pdb holds the target (chain A) and your binder (chain B). How many ATOM lines belong to chain B?",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "nb": {
+      "range": [
+        9,
+        30
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/complex.pdb": {
+          "repeat": {
+            "n": "{{nb}}",
+            "before": "HEADER    COMPLEX\nATOM      1  CA  ALA A   1      11.001  22.001  33.001  1.00 10.00           C\nATOM      2  CA  ALA A   2      11.002  22.002  33.002  1.00 10.00           C\nATOM      3  CA  ALA A   3      11.003  22.003  33.003  1.00 10.00           C\nATOM      4  CA  ALA A   4      11.004  22.004  33.004  1.00 10.00           C\nATOM      5  CA  ALA A   5      11.005  22.005  33.005  1.00 10.00           C\nATOM      6  CA  ALA A   6      11.006  22.006  33.006  1.00 10.00           C\nATOM      7  CA  ALA A   7      11.007  22.007  33.007  1.00 10.00           C\nATOM      8  CA  ALA A   8      11.008  22.008  33.008  1.00 10.00           C\nATOM      9  CA  ALA A   9      11.009  22.009  33.009  1.00 10.00           C\nATOM     10  CA  ALA A  10      11.010  22.010  33.010  1.00 10.00           C\nATOM     11  CA  ALA A  11      11.011  22.011  33.011  1.00 10.00           C\nATOM     12  CA  ALA A  12      11.012  22.012  33.012  1.00 10.00           C\nTER\n",
+            "text": "ATOM    {{n}}  CA  LEU B {{n}}      40.000  41.000  42.000  1.00 10.00           C\n",
+            "after": "TER\nEND\n"
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the number of chain B ATOM lines",
+      "check": {
+        "answer": "{{nb}}"
+      }
+    }
+  ],
+  "hints": [
+    "`grep` can pick out lines with a chain letter, and `-c` counts them.",
+    "Chain B lines contain `\" B \"`. Try `grep -c \" B \" complex.pdb`."
+  ],
+  "solution": [
+    "grep -c \" B \" complex.pdb",
+    "answer {{nb}}"
+  ]
+}

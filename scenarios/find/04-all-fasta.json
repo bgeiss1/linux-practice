@@ -1,0 +1,58 @@
+{
+  "id": "find-04-all-fasta",
+  "track": "find",
+  "order": 4,
+  "tier": 2,
+  "title": "Count the FASTAs",
+  "story": "Every run in {{project}} wrote a FASTA file of designed sequences, each in its own folder. How many FASTA files are there in the whole project?",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "nfa": {
+      "range": [
+        4,
+        9
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/runs/run_{{i}}/seqs/designs.fasta": {
+          "lib": "fasta:designs",
+          "count": "{{nfa}}"
+        },
+        "~/{{project}}/runs/run_{{i}}/run.log": {
+          "content": "done\n",
+          "count": "{{nfa}}"
+        },
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report how many .fasta files are in the project",
+      "check": {
+        "answer": "{{nfa}}"
+      }
+    }
+  ],
+  "hints": [
+    "`find` with `-name \"*.fasta\"` searches every folder under where you start.",
+    "`find . -name \"*.fasta\"` lists them. Add `| wc -l` to count the lines."
+  ],
+  "solution": [
+    "find . -name \"*.fasta\" | wc -l",
+    "answer {{nfa}}"
+  ]
+}

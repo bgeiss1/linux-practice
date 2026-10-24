@@ -118,14 +118,14 @@ export class Shell {
       const prev = lists[i - 1];
       if (prev?.connector === '&&' && code !== 0) continue;
       if (prev?.connector === '||' && code === 0) continue;
-      code = this.runPipeline(list, result);
+      code = this.runPipeline(list, result, trimmed);
     }
     this.lastCode = code;
     this.cluster.tick(this);
     return result;
   }
 
-  runPipeline(list, result) {
+  runPipeline(list, result, line = '') {
     let stdin = null;
     let code = 0;
     for (const [i, cmd] of list.commands.entries()) {
@@ -155,7 +155,7 @@ export class Shell {
       const cwdBefore = this.cwd;
       code = this.exec(name, ctx);
       // cwd is where the command was typed, so "ran cd X inDir Y" checks work.
-      this.events.push({ cmd: name, args, flags: flagsOf(args), code, cwd: cwdBefore });
+      this.events.push({ cmd: name, args, flags: flagsOf(args), code, cwd: cwdBefore, line });
 
       if (list.background && isLast) {
         const id = this.cluster.startBackground(name, args);

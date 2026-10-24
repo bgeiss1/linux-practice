@@ -1,0 +1,54 @@
+{
+  "id": "read-08-best",
+  "track": "read",
+  "order": 8,
+  "tier": 3,
+  "title": "Best total score",
+  "story": "In Rosetta, lower total_score is better. Report the design with the best (most negative) total score in scores.txt.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "names": {
+      "pick": 5,
+      "from": [
+        "des_014",
+        "des_027",
+        "des_031",
+        "des_046",
+        "des_052",
+        "des_068",
+        "des_077",
+        "des_083"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/scores.txt": "{{names.0}} -298.1\n{{names.1}} -276.4\n{{names.2}} -341.7\n{{names.3}} -305.0\n{{names.4}} -319.9\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the design with the lowest total score",
+      "check": {
+        "answer": "{{names.2}}"
+      }
+    }
+  ],
+  "hints": [
+    "`sort` with `-n` sorts numbers and `-k 2` picks the column."
+  ],
+  "solution": [
+    "sort -n -k 2 scores.txt | head -1",
+    "answer {{names.2}}"
+  ]
+}

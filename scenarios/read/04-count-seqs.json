@@ -1,0 +1,53 @@
+{
+  "id": "read-04-count-seqs",
+  "track": "read",
+  "order": 4,
+  "tier": 2,
+  "title": "How many sequences?",
+  "story": "ProteinMPNN wrote designs.fasta. Every sequence starts with a line beginning with >. Report how many sequences the file holds.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "count": {
+      "range": [
+        24,
+        64
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/outputs",
+      "files": {
+        "~/{{project}}/outputs/designs.fasta": {
+          "repeat": {
+            "n": "{{count}}",
+            "text": ">design_{{n}} score=-1.{{n}}\nMSEELLKKAEELIKRAKELGDPELVKRAL\n"
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the number of sequences",
+      "check": {
+        "answer": "{{count}}"
+      }
+    }
+  ],
+  "hints": [
+    "Count the lines that start with `>`. `grep -c` counts matching lines.",
+    "`grep -c \">\" designs.fasta`"
+  ],
+  "solution": [
+    "grep -c \">\" designs.fasta",
+    "answer {{count}}"
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "id": "find-05-folders",
+  "track": "find",
+  "order": 5,
+  "tier": 2,
+  "title": "Only folders",
+  "story": "Some runs have an outputs folder and some only have a file called outputs.txt. Count the folders named outputs in {{project}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "nout": {
+      "range": [
+        3,
+        7
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/runs/a_{{i}}/outputs/": {
+          "count": "{{nout}}"
+        },
+        "~/{{project}}/runs/b_{{i}}/outputs.txt": {
+          "content": "no outputs\n",
+          "count": 3
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report how many folders are named outputs",
+      "check": {
+        "answer": "{{nout}}"
+      }
+    }
+  ],
+  "hints": [
+    "`find` can limit itself to folders with `-type d`.",
+    "`find . -type d -name outputs` lists only folders called outputs."
+  ],
+  "solution": [
+    "find . -type d -name outputs | wc -l",
+    "answer {{nout}}"
+  ]
+}

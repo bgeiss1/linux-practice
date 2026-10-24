@@ -1,0 +1,74 @@
+{
+  "id": "find-01-by-name",
+  "track": "find",
+  "order": 1,
+  "tier": 1,
+  "title": "Where did that file go?",
+  "story": "You saved {{target}}_target.pdb somewhere under your home folder last week, but can't remember where. Find it, then go to the folder that holds it.",
+  "vars": {
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "sub": [
+      "inputs",
+      "structures",
+      "targets",
+      "pdbs"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/{{project}}/{{sub}}/{{target}}_target.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/scripts/run.sh": {
+          "lib": "slurm:mpnn"
+        },
+        "~/{{project}}/notes.txt": "todo: relax designs\n",
+        "~/old/": {},
+        "~/data/designs.fasta": {
+          "lib": "fasta:designs"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Find where {{target}}_target.pdb is",
+      "check": {
+        "ran": "find",
+        "lineHas": "{{target}}"
+      }
+    },
+    {
+      "text": "Go to the folder that holds it",
+      "check": {
+        "cwd": "~/{{project}}/{{sub}}"
+      }
+    }
+  ],
+  "hints": [
+    "`find` searches folders for you. Tell it where to start and what name to look for.",
+    "`find ~ -name \"{{target}}_target.pdb\"` searches your whole home folder.",
+    "Run `find ~ -name \"{{target}}_target.pdb\"`, then `cd` into the folder part of the path it prints."
+  ],
+  "solution": [
+    "find ~ -name \"{{target}}_target.pdb\"",
+    "cd ~/{{project}}/{{sub}}"
+  ]
+}

@@ -1,0 +1,70 @@
+{
+  "id": "find-02-wildcard",
+  "track": "find",
+  "order": 2,
+  "tier": 1,
+  "title": "Only the PDBs",
+  "story": "The inputs folder of {{project}} is cluttered with logs, FASTAs and PDBs. List only the PDB files, then report how many there are.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "npdb": {
+      "range": [
+        3,
+        6
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/inputs",
+      "files": {
+        "~/{{project}}/inputs/target_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{npdb}}"
+        },
+        "~/{{project}}/inputs/seqs_{{i}}.fasta": {
+          "lib": "fasta:designs",
+          "count": 3
+        },
+        "~/{{project}}/inputs/prep_{{i}}.log": {
+          "content": "prep ok\n",
+          "count": 2
+        },
+        "~/{{project}}/inputs/README.txt": {
+          "lib": "text:readme"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "List only the .pdb files",
+      "check": {
+        "ran": "ls",
+        "lineHas": "*.pdb"
+      }
+    },
+    {
+      "text": "Report how many there are: type answer and the number",
+      "check": {
+        "answer": "{{npdb}}"
+      }
+    }
+  ],
+  "hints": [
+    "A `*` in a name matches anything. `*.pdb` means \"every name ending in .pdb\".",
+    "`ls *.pdb` lists only the PDB files.",
+    "Run `ls *.pdb`, count the names, then type `answer` and the count."
+  ],
+  "solution": [
+    "ls *.pdb",
+    "answer {{npdb}}"
+  ]
+}

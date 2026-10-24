@@ -1,0 +1,71 @@
+{
+  "id": "read-01-readme",
+  "track": "read",
+  "order": 1,
+  "tier": 1,
+  "title": "Read the README",
+  "story": "Every project on Geiss-01 has a README.txt. Read the one in {{project}} and report which chain is the target.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "chain": [
+      "A",
+      "B",
+      "C",
+      "H"
+    ],
+    "target": [
+      "PD-L1",
+      "IL-7R",
+      "HER2",
+      "TNF-alpha"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/README.txt": "Project: binders against {{target}}\nTarget chain: {{chain}}\nDesign tools: RFdiffusion, ProteinMPNN\n",
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:complex"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Print README.txt in the terminal",
+      "check": {
+        "ran": [
+          "cat",
+          "less",
+          "more",
+          "head",
+          "tail"
+        ],
+        "arg": "~/{{project}}/README.txt"
+      }
+    },
+    {
+      "text": "Report the target chain: answer and the letter",
+      "check": {
+        "answer": "{{chain}}"
+      }
+    }
+  ],
+  "hints": [
+    "`cat` prints a whole file to the screen.",
+    "Type `cat README.txt` and look for \"Target chain\".",
+    "Run `cat README.txt`, then `answer {{chain}}`."
+  ],
+  "solution": [
+    "cat README.txt",
+    "answer {{chain}}"
+  ]
+}

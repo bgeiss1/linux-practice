@@ -1,0 +1,73 @@
+{
+  "id": "find-07-today",
+  "track": "find",
+  "order": 7,
+  "tier": 3,
+  "title": "Which run finished today?",
+  "story": "You ran {{project}} several times this week. Only one run finished today. Go into that run's folder.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 4,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/runs/{{runs.0}}/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 3,
+          "age": "3h"
+        },
+        "~/{{project}}/runs/{{runs.1}}/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 3,
+          "age": "2d"
+        },
+        "~/{{project}}/runs/{{runs.2}}/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 3,
+          "age": "4d"
+        },
+        "~/{{project}}/runs/{{runs.3}}/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 3,
+          "age": "6d"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Go into the run that finished today",
+      "check": {
+        "cwd": "~/{{project}}/runs/{{runs.0}}"
+      }
+    }
+  ],
+  "hints": [
+    "`find` with `-mtime -1` finds files changed in the last day. `ls -lt` also sorts by time."
+  ],
+  "solution": [
+    "find . -name \"*.pdb\" -mtime -1",
+    "cd runs/{{runs.0}}"
+  ]
+}

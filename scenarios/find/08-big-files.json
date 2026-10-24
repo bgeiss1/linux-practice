@@ -1,0 +1,101 @@
+{
+  "id": "find-08-big-files",
+  "track": "find",
+  "order": 8,
+  "tier": 3,
+  "title": "Over quota",
+  "story": "Geiss-01 says your home folder is over quota. Two leftover trajectory files over 100 MB are to blame. Find them and delete them, without touching anything else.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "big": {
+      "pick": 2,
+      "from": [
+        "traj_full.dcd",
+        "md_raw.xtc",
+        "all_frames.dcd",
+        "dump_old.xtc"
+      ]
+    },
+    "spots": {
+      "pick": 2,
+      "from": [
+        "runs/run_01",
+        "runs/run_03",
+        "scratch_old",
+        "md/test"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/{{project}}/{{spots.0}}/{{big.0}}": {
+          "content": "binary\n",
+          "size": "2.4G"
+        },
+        "~/{{project}}/{{spots.1}}/{{big.1}}": {
+          "content": "binary\n",
+          "size": "870M"
+        },
+        "~/{{project}}/{{spots.0}}/summary.txt": {
+          "content": "keep me\n",
+          "size": "4K"
+        },
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small",
+          "size": "88M"
+        },
+        "~/{{project}}/outputs/designs.tar.gz": {
+          "content": "archive\n",
+          "size": "60M"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Delete the two files over 100 MB",
+      "check": {
+        "all": [
+          {
+            "notExists": "~/{{project}}/{{spots.0}}/{{big.0}}"
+          },
+          {
+            "notExists": "~/{{project}}/{{spots.1}}/{{big.1}}"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Keep everything else",
+      "check": {
+        "all": [
+          {
+            "exists": "~/{{project}}/inputs/target.pdb"
+          },
+          {
+            "exists": "~/{{project}}/outputs/designs.tar.gz"
+          },
+          {
+            "exists": "~/{{project}}/{{spots.0}}/summary.txt"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`find` can test size: `-size +100M`."
+  ],
+  "solution": [
+    "find ~ -size +100M",
+    "rm ~/{{project}}/{{spots.0}}/{{big.0}} ~/{{project}}/{{spots.1}}/{{big.1}}"
+  ]
+}

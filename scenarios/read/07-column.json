@@ -1,0 +1,80 @@
+{
+  "id": "read-07-column",
+  "track": "read",
+  "order": 7,
+  "tier": 3,
+  "title": "Which number is which?",
+  "story": "score.sc from Rosetta has a header row naming each column. Report {{name}}'s {{cols.1}} value.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "cols": {
+      "pick": 3,
+      "from": [
+        "dG_separated",
+        "sap_score",
+        "packstat",
+        "sc_value",
+        "buried_unsat"
+      ]
+    },
+    "name": [
+      "des_014",
+      "des_027",
+      "des_031",
+      "des_046",
+      "des_052",
+      "des_068",
+      "des_077",
+      "des_083"
+    ],
+    "a": {
+      "range": [
+        10,
+        99
+      ]
+    },
+    "b": {
+      "range": [
+        100,
+        999
+      ]
+    },
+    "c": {
+      "range": [
+        10,
+        99
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/score.sc": "SCORE: total_score {{cols.0}} {{cols.1}} {{cols.2}} description\nSCORE: -301.2 -41.5 222 0.61 des_900\nSCORE: -287.9 {{a}} {{b}} {{c}} {{name}}\nSCORE: -310.4 -38.1 318 0.58 des_901\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report {{name}}'s {{cols.1}}",
+      "check": {
+        "answer": "{{b}}"
+      }
+    }
+  ],
+  "hints": [
+    "`head -1` shows the header. Count across to the column you need."
+  ],
+  "solution": [
+    "head -1 score.sc",
+    "grep {{name}} score.sc",
+    "answer {{b}}"
+  ]
+}

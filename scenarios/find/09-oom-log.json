@@ -1,0 +1,56 @@
+{
+  "id": "find-09-oom-log",
+  "track": "find",
+  "order": 9,
+  "tier": 3,
+  "title": "Which job ran out of GPU memory?",
+  "story": "You submitted a job array of {{nlog}} AlphaFold runs. One crashed with \"CUDA out of memory\". Report the name of its log file.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "nlog": {
+      "range": [
+        6,
+        9
+      ]
+    },
+    "bad": [
+      "af2_03.log",
+      "af2_04.log",
+      "af2_05.log"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/logs",
+      "files": {
+        "~/{{project}}/logs/af2_{{i}}.log": {
+          "content": "Predicting model 1\nPredicting model 2\nDone. pLDDT 87.2\n",
+          "count": "{{nlog}}"
+        },
+        "~/{{project}}/logs/{{bad}}": "Predicting model 1\nRuntimeError: CUDA out of memory. Tried to allocate 3.2 GiB\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the log that has the error",
+      "check": {
+        "answer": "{{bad}}"
+      }
+    }
+  ],
+  "hints": [
+    "`grep -l` prints only the names of files that match."
+  ],
+  "solution": [
+    "grep -l \"out of memory\" *.log",
+    "answer {{bad}}"
+  ]
+}

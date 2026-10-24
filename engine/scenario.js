@@ -98,12 +98,20 @@ export function buildFiles(vfs, files, home, now) {
     for (const [key, i] of keys) {
       const path = vfs.resolve(key, home, home);
       const mtime = now - parseAge(val.age);
-      if (key.endsWith('/') || (val.content === undefined && !val.lib && rawVal !== '' && typeof rawVal !== 'string')) {
+      if (key.endsWith('/') || (val.content === undefined && !val.lib && !val.repeat && typeof rawVal !== 'string')) {
         vfs.mkdir(path, { parents: true, mtime });
         continue;
       }
       vfs.mkdir(path.slice(0, path.lastIndexOf('/')) || '/', { parents: true, mtime });
       let content = val.lib ? fromLibrary(val.lib) : val.content ?? '';
+      if (val.repeat) {
+        // { "repeat": { "n": 12, "text": ">design_{{n}}\nMSEE...\n", "before": "header\n", "after": "" } }
+        const r = val.repeat;
+        const body = Array.from({ length: Number(r.n) }, (_, k) => r.text.replace(/\{\{n\}\}/g, String(k + 1)));
+        // "insert": { "at": 40, "text": "WARNING ...\n" } drops one line in after repeat line 40.
+        if (r.insert) body.splice(Number(r.insert.at), 0, r.insert.text);
+        content = (r.before ?? '') + body.join('') + (r.after ?? '');
+      }
       if (i !== null) content = content.replace(/\{\{i\}\}/g, String(i).padStart(2, '0'));
       const node = vfs.writeFile(path, content, { mtime, mode: val.exec ? 0o755 : 0o644 });
       if (val.size) node.size = parseSize(val.size);

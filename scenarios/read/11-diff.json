@@ -1,0 +1,72 @@
+{
+  "id": "read-11-diff",
+  "track": "read",
+  "order": 11,
+  "tier": 4,
+  "title": "Spot the difference",
+  "story": "config_old.txt worked and config_new.txt doesn't. They differ in one setting. Report which setting changed.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "param": [
+      "sampling_temp",
+      "num_seqs",
+      "batch_size",
+      "seed",
+      "backbone_noise"
+    ],
+    "others": {
+      "pick": 3,
+      "from": [
+        "sampling_temp",
+        "num_seqs",
+        "batch_size",
+        "seed",
+        "backbone_noise"
+      ],
+      "excluding": "param"
+    },
+    "va": {
+      "range": [
+        1,
+        9
+      ]
+    },
+    "vb": {
+      "range": [
+        10,
+        99
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/config_old.txt": "model = v_48_020\n{{others.0}} = 4\n{{param}} = {{va}}\n{{others.1}} = 8\n{{others.2}} = 1\n",
+        "~/{{project}}/config_new.txt": "model = v_48_020\n{{others.0}} = 4\n{{param}} = {{vb}}\n{{others.1}} = 8\n{{others.2}} = 1\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the setting that changed",
+      "check": {
+        "answer": "{{param}}"
+      }
+    }
+  ],
+  "hints": [
+    "There's a command made for comparing two files."
+  ],
+  "solution": [
+    "diff config_old.txt config_new.txt",
+    "answer {{param}}"
+  ]
+}

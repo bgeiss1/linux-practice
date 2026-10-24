@@ -1,0 +1,56 @@
+{
+  "id": "find-11-moved-script",
+  "track": "find",
+  "order": 11,
+  "tier": 4,
+  "title": "The helper script moved",
+  "story": "`bash run.sh` in {{project}} used to work, but someone tidied up and now it fails. Make it work again without editing run.sh.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "hide": [
+      "old/misc",
+      "archive/2025",
+      "tmp/cleanup",
+      "backup/scripts"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/run.sh": "#!/bin/bash\n# Prepare inputs, then report\nbash helpers/prep_inputs.sh\n",
+        "~/{{project}}/{{hide}}/prep_inputs.sh": "#!/bin/bash\necho \"Inputs ready\"\n",
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "bash run.sh finishes without errors",
+      "check": {
+        "ran": "bash",
+        "arg": "~/{{project}}/run.sh",
+        "ok": true
+      }
+    }
+  ],
+  "hints": [
+    "Read run.sh. Then go looking for what it needs."
+  ],
+  "solution": [
+    "cat run.sh",
+    "find . -name prep_inputs.sh",
+    "mkdir helpers",
+    "cp {{hide}}/prep_inputs.sh helpers/",
+    "bash run.sh"
+  ]
+}

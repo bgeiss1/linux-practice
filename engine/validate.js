@@ -47,8 +47,8 @@ export function validate(def, { seeds = 20 } = {}) {
       errors.push(`seed ${seed}: could not build the scenario: ${e.message}`);
       break;
     }
-    // {{i}} is the file counter for "count" entries, filled in when files are built.
-    const leftover = JSON.stringify(session.def).match(/\{\{\s*(?!i\s*\}\})[\w.]+\s*\}\}/g);
+    // {{i}} and {{n}} are counters for "count" and "repeat", filled in when files are built.
+    const leftover = JSON.stringify(session.def).match(/\{\{\s*(?![in]\s*\}\})[\w.]+\s*\}\}/g);
     if (leftover) {
       errors.push(`undefined variable(s) ${[...new Set(leftover)].join(', ')}`);
       break;

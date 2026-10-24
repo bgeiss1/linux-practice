@@ -1,0 +1,63 @@
+{
+  "id": "read-02-header",
+  "track": "read",
+  "order": 2,
+  "tier": 1,
+  "title": "Just the top",
+  "story": "target.pdb is long, but the facts you need are in its first few lines. Show only the start of the file and report the resolution in angstroms.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "res": [
+      "1.85",
+      "2.10",
+      "2.45",
+      "3.02"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/inputs",
+      "files": {
+        "~/{{project}}/inputs/target.pdb": {
+          "repeat": {
+            "n": 60,
+            "before": "HEADER    DE NOVO PROTEIN\nTITLE     DESIGN TARGET\nREMARK   2 RESOLUTION. {{res}} ANGSTROMS.\n",
+            "text": "ATOM  {{n}}  CA  GLY A {{n}}      10.000  20.000  30.000  1.00 10.00           C\n",
+            "after": "END\n"
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Show the first lines of target.pdb",
+      "check": {
+        "ran": "head",
+        "arg": "~/{{project}}/inputs/target.pdb"
+      }
+    },
+    {
+      "text": "Report the resolution: answer and the number",
+      "check": {
+        "answer": "{{res}}"
+      }
+    }
+  ],
+  "hints": [
+    "`head` shows the first 10 lines of a file.",
+    "`head target.pdb`, then find the RESOLUTION line.",
+    "Run `head target.pdb`, then `answer {{res}}`."
+  ],
+  "solution": [
+    "head target.pdb",
+    "answer {{res}}"
+  ]
+}

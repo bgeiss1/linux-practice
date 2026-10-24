@@ -1,0 +1,54 @@
+{
+  "id": "read-09-csv",
+  "track": "read",
+  "order": 9,
+  "tier": 3,
+  "title": "Highest confidence",
+  "story": "af2_summary.csv lists every AlphaFold prediction with its pLDDT in the third column. Report the design with the highest pLDDT.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "names": {
+      "pick": 6,
+      "from": [
+        "des_014",
+        "des_027",
+        "des_031",
+        "des_046",
+        "des_052",
+        "des_068",
+        "des_077",
+        "des_083"
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/af2_summary.csv": "design,rank,plddt,pae\n{{names.0}},1,84.2,6.1\n{{names.1}},1,91.7,4.3\n{{names.2}},1,79.5,8.8\n{{names.3}},1,93.4,3.9\n{{names.4}},1,88.0,5.2\n{{names.5}},1,72.6,9.7\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the design with the highest pLDDT",
+      "check": {
+        "answer": "{{names.3}}"
+      }
+    }
+  ],
+  "hints": [
+    "Commas separate the columns: `sort -t , -k 3 -n`."
+  ],
+  "solution": [
+    "sort -t , -k 3 -n af2_summary.csv | tail -1",
+    "answer {{names.3}}"
+  ]
+}
