@@ -568,14 +568,6 @@ function startPreview(seed = (Math.random() * 2 ** 32) >>> 0) {
   );
   const opts = {
     session,
-    special: (word) => {
-      if (word === 'hint') {
-        const r = session.nextHint();
-        coach(r.text ? `<strong>Hint:</strong> ${fmt(r.text)}` : fmt(r.message));
-        return 'handled';
-      }
-      return null;
-    },
     afterRun: (r) => {
       renderPreviewTasks();
       const tip = r.coach?.at(-1);

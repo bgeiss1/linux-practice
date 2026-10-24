@@ -1,8 +1,10 @@
-// Stand-ins for the design tools. They only exist once their module or conda
-// environment is loaded, need a GPU from Slurm when the real tool would, and
-// write small placeholder outputs so later steps have something to find.
+// Stand-ins for the design tools. Module tools (colabfold_batch, run_alphafold.py,
+// Rosetta's relax.linuxgccrelease) are on PATH once their module is loaded.
+// ProteinMPNN and RFdiffusion are scripts in repos under /opt that run with the
+// python of their conda environment. GPU tools need a GPU from Slurm, and every
+// tool writes small placeholder outputs so later steps have something to find.
 
-import { MODULES, CONDA_ENVS } from '../cluster.js';
+import { MODULES, REPO_SCRIPTS } from '../cluster.js';
 import { basename, dirname, joinPath } from '../vfs.js';
 import { missingTip } from './util.js';
 import { LIBRARY } from '../library.js';
@@ -47,7 +49,7 @@ function write(ctx, path, content) {
 }
 
 const TOOLS = {
-  protein_mpnn_run: {
+  'protein_mpnn_run.py': {
     gpu: true,
     run(ctx, { opts }) {
       const pdb = needInput(ctx, opts.pdb_path, '--pdb_path');
@@ -61,12 +63,17 @@ const TOOLS = {
       return 0;
     },
   },
-  run_inference: {
+  'run_inference.py': {
     gpu: true,
     run(ctx, { opts }) {
       const prefix = opts['inference.output_prefix'];
       if (!prefix) {
         ctx.err('Error: inference.output_prefix must be set, e.g. inference.output_prefix=outputs/binder\n');
+        return 1;
+      }
+      if (!opts['contigmap.contigs']) {
+        ctx.err("Error: contigmap.contigs must be set, e.g. 'contigmap.contigs=[A1-150/0 70-100]'\n");
+        ctx.coach('rfd-contigs', 'RFdiffusion needs a contig map saying which target residues to keep and how long the binder is. Put it in single quotes because it has a space and brackets.');
         return 1;
       }
       if (opts['inference.input_pdb'] && !needInput(ctx, opts['inference.input_pdb'], 'inference.input_pdb')) return 1;
@@ -95,7 +102,7 @@ const TOOLS = {
       return 0;
     },
   },
-  relax: {
+  'relax.linuxgccrelease': {
     gpu: false,
     run(ctx, { opts, rest }) {
       const s = opts.s ?? rest[rest.indexOf('-s') + 1];
@@ -108,24 +115,43 @@ const TOOLS = {
     },
   },
 };
-TOOLS.rosetta_scripts = TOOLS.relax;
-TOOLS['run_alphafold.sh'] = TOOLS.colabfold_batch;
+TOOLS['rosetta_scripts.linuxgccrelease'] = TOOLS['relax.linuxgccrelease'];
+TOOLS['run_alphafold.py'] = {
+  gpu: true,
+  run(ctx, { opts }) {
+    const fasta = needInput(ctx, opts.fasta_paths, '--fasta_paths');
+    if (!fasta) return 1;
+    if (!opts.output_dir) { ctx.err('FATAL Flags parsing error: flag --output_dir=None: Flag --output_dir must have a value other than None.\n'); return 1; }
+    const out = ctx.sh.resolve(joinPath(opts.output_dir, stem(fasta)));
+    write(ctx, joinPath(out, 'ranked_0.pdb'), LIBRARY['pdb:small']());
+    ctx.out(`I1024 run_alphafold.py] Predicting ${stem(fasta)}\nI1024 run_alphafold.py] Final timings for ${stem(fasta)}: predict 512.3 s\n`);
+    return 0;
+  },
+};
 
-// Which module or conda environment provides a tool, and whether it's loaded.
+// A module tool by command name, and whether its module is loaded.
 export function toolFor(name, cluster) {
-  const key = name.replace(/\.py$/, '');
-  const tool = TOOLS[key] ?? TOOLS[name];
-  if (!tool) return null;
-  const fromModule = MODULES.find((m) => m.provides.includes(name));
-  const fromConda = Object.entries(CONDA_ENVS).find(([, t]) => t.includes(name));
-  const available = (fromModule && cluster.modules.some((m) => m.split('/')[0] === fromModule.name)) || (fromConda && cluster.condaEnv === fromConda[0]);
-  return { tool, available };
+  const mod = MODULES.find((m) => m.provides.includes(name));
+  if (!mod || !TOOLS[name]) return null;
+  return { tool: TOOLS[name], available: cluster.modules.includes(mod.name) };
+}
+
+// A repo script (absolute path) run with python: its conda environment must be active.
+export function runRepoScript(ctx, path, args) {
+  const env = REPO_SCRIPTS[path];
+  const { cluster } = ctx.sh;
+  if (cluster.condaEnv !== env) {
+    ctx.err(`Traceback (most recent call last):\n  File "${path}", line 1, in <module>\n    import torch\nModuleNotFoundError: No module named 'torch'\n`);
+    ctx.coach('python-env', `This script needs the \`${env}\` conda environment: \`conda activate ${env}\`.`);
+    return 1;
+  }
+  return runTool(ctx, path.split('/').pop(), args);
 }
 
 export function runTool(ctx, name, args) {
   const { cluster } = ctx.sh;
-  const found = toolFor(name, cluster);
-  if (found.tool.gpu && !(cluster.interactive?.gpus > 0)) {
+  const tool = TOOLS[name];
+  if (tool.gpu && !(cluster.interactive?.gpus > 0)) {
     ctx.err('RuntimeError: No CUDA GPUs are available\n');
     ctx.coach('tool-gpu', cluster.interactive
       ? 'Your interactive job has no GPU. `exit`, then start one with `srun --gres=gpu:1 --pty bash`.'
@@ -134,12 +160,12 @@ export function runTool(ctx, name, args) {
   }
   const rest = [];
   const opts = {};
-  if (name === 'relax' || name === 'rosetta_scripts') {
+  if (name.endsWith('.linuxgccrelease')) {
     for (let i = 0; i < args.length; i++) {
       if (args[i].startsWith('-') && !args[i].startsWith('--')) opts[args[i].slice(1)] = args[++i];
       else rest.push(args[i]);
     }
-    return found.tool.run({ ...ctx, name }, { opts, rest });
+    return tool.run({ ...ctx, name }, { opts, rest });
   }
-  return found.tool.run({ ...ctx, name }, readArgs(args));
+  return tool.run({ ...ctx, name }, readArgs(args));
 }

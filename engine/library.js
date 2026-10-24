@@ -60,7 +60,7 @@ export const LIBRARY = {
       'Welcome to Geiss-01.',
       '',
       'This is a practice copy of the MIP662 server. Nothing here is real,',
-      'so experiment freely. If you get lost, the Reset button puts every',
+      'so experiment freely. If you get lost, the Restart button puts every',
       'file back the way it started.',
     ].join('\n') + '\n',
 
@@ -77,7 +77,7 @@ export const LIBRARY = {
       'module load anaconda',
       'conda activate proteinmpnn',
       '',
-      'python protein_mpnn_run.py \\',
+      'python /opt/ProteinMPNN/protein_mpnn_run.py \\',
       '  --pdb_path inputs/target.pdb \\',
       '  --out_folder outputs/ \\',
       '  --num_seq_per_target 8',

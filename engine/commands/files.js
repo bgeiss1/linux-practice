@@ -59,10 +59,20 @@ export function ls(ctx) {
     if (long) {
       const blocks = entries.reduce((n, e) => n + Math.ceil(sizeOf(e.node) / 4096) * 4, 0);
       if (entries.showTotal) ctx.out(`total ${blocks}\n`);
-      for (const { name, node } of entries) {
-        const size = flags.has('h') ? human(sizeOf(node)) : String(sizeOf(node));
-        ctx.out(`${fmtMode(node)} 1 ${sh.user} mip662 ${size.padStart(flags.has('h') ? 5 : 8)} ${fmtDate(node.mtime)} `);
-        ctx.out(name, classOf(node));
+      // Like real ls, each column is as wide as its widest entry.
+      const group = sh.kind === 'laptop' ? 'staff' : 'mip662';
+      const rows = entries.map(({ name, node }) => ({
+        name,
+        node,
+        links: String(node.type === 'dir' ? 2 + Object.values(node.children).filter((c) => c.type === 'dir').length : 1),
+        owner: node.owner ?? sh.user,
+        group: node.owner ?? group,
+        size: flags.has('h') ? human(sizeOf(node)) : String(sizeOf(node)),
+      }));
+      const w = (k) => Math.max(0, ...rows.map((r) => r[k].length));
+      for (const r of rows) {
+        ctx.out(`${fmtMode(r.node)} ${r.links.padStart(w('links'))} ${r.owner.padEnd(w('owner'))} ${r.group.padEnd(w('group'))} ${r.size.padStart(w('size'))} ${fmtDate(r.node.mtime)} `);
+        ctx.out(r.name, classOf(r.node));
         ctx.out('\n');
       }
       return;
@@ -154,7 +164,12 @@ export function rmdir(ctx) {
       code = 1;
       continue;
     }
-    sh.vfs.remove(abs);
+    try {
+      sh.vfs.remove(abs);
+    } catch (e) {
+      ctx.err(`rmdir: failed to remove '${p}': ${e.message}\n`);
+      code = 1;
+    }
   }
   return code;
 }
@@ -205,10 +220,16 @@ export function rm(ctx) {
     }
     if (abs === sh.home || sh.home.startsWith(abs + '/')) {
       node.children = {};
-      ctx.coach('rm-home', 'You just deleted everything in your home folder. On Geiss-01 that would be permanent. Click Reset to bring it back here.');
+      ctx.coach('rm-home', 'You just deleted everything in your home folder. On Geiss-01 that would be permanent. Press Restart to bring it back here.');
       continue;
     }
-    sh.vfs.remove(abs);
+    try {
+      sh.vfs.remove(abs);
+    } catch (e) {
+      ctx.err(`rm: cannot remove '${p}': ${e.message}\n`);
+      code = 1;
+      continue;
+    }
     if (sh.cwd === abs || sh.cwd.startsWith(abs + '/')) {
       ctx.coach('rm-cwd', 'You deleted the folder you\'re standing in. `cd ~` takes you somewhere that still exists.');
     }
@@ -262,14 +283,18 @@ function copyOrMove(ctx, move) {
       code = 1;
       continue;
     }
+    const shownTarget = destIsDir ? `${dest.replace(/\/$/, '')}/${basename(srcAbs)}` : dest;
     try {
+      if (move) sh.vfs.checkWrite(dirname(srcAbs));
       const copy = move ? node : VFS.clone(node);
       if (!move) touchTree(copy, sh.cluster.clock(), flags.has('p') || flags.has('a'));
       sh.vfs.put(target, copy);
       if (move) sh.vfs.remove(srcAbs);
-      if (flags.has('v')) ctx.out(`'${src}' -> '${sh.displayPath(target)}'\n`);
+      if (flags.has('v')) ctx.out(move ? `renamed '${src}' -> '${shownTarget}'\n` : `'${src}' -> '${shownTarget}'\n`);
     } catch (e) {
-      ctx.err(`${name}: cannot create '${dest}': ${e.message}\n`);
+      ctx.err(move
+        ? `mv: cannot move '${src}' to '${shownTarget}': ${e.message}\n`
+        : `cp: cannot create ${node.type === 'dir' ? 'directory' : 'regular file'} '${shownTarget}': ${e.message}\n`);
       code = 1;
     }
   }

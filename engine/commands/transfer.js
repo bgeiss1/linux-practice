@@ -69,7 +69,7 @@ export function scp(ctx) {
     for (const abs of matches) {
       const node = src.sh.vfs.get(abs);
       if (!node) {
-        ctx.err(`scp: ${spec.path}: No such file or directory\n`);
+        ctx.err(spec.local ? `${spec.path}: No such file or directory\n` : `scp: ${abs}: No such file or directory\n`);
         if (spec.local) missingTip(ctx, spec.path);
         else ctx.coach('scp-remote-path', 'Relative paths on the server start in your Geiss-01 home folder. On Geiss-01, `pwd` shows the full path to copy.');
         code = 1;
@@ -90,10 +90,15 @@ export function scp(ctx) {
         code = 1;
         continue;
       }
+      // scp prints a progress line for every file it copies, folders included.
       if (!flags.has('q')) {
-        const size = VFS.sizeOf(node);
-        const kb = size < 1024 ? `${size}` : `${Math.round(size / 1024)}KB`;
-        ctx.out(`${basename(abs).padEnd(40)} 100% ${kb.padStart(8)}   1.2MB/s   00:00\n`);
+        const each = (name, n) => {
+          if (n.type === 'dir') return Object.entries(n.children).forEach(([k, c]) => each(k, c));
+          const size = VFS.sizeOf(n);
+          const kb = size < 1024 ? `${size}` : `${Math.round(size / 1024)}KB`;
+          ctx.out(`${name.padEnd(40)} 100% ${kb.padStart(8)}   1.2MB/s   00:00\n`);
+        };
+        each(basename(abs), node);
       }
     }
   }

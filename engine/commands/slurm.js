@@ -15,12 +15,31 @@ export function module(ctx) {
   const full = (m) => `${m.name}/${m.version}`;
   switch (sub) {
     case 'avail':
-    case 'av':
-    case 'spider': {
-      const list = MODULES.filter((m) => !names.length || names.some((n) => m.name.startsWith(n.split('/')[0])));
+    case 'av': {
+      const list = MODULES.filter((m) => !names.length || names.some((n) => m.name.startsWith(n.split('/')[0]))).sort((a, b) => a.name.localeCompare(b.name));
+      if (!list.length) {
+        ctx.err(`No module(s) or extension(s) found!\nUse "module spider" to find all possible modules and extensions.\n`);
+        return 0;
+      }
+      const loaded = list.some((m) => cluster.modules.includes(m.name));
       ctx.out('\n------------------------------ /opt/modulefiles ------------------------------\n');
       ctx.out('   ' + list.map((m) => full(m) + (cluster.modules.includes(m.name) ? ' (L)' : '')).join('    ') + '\n\n');
-      ctx.out('  Where:\n   L:  Module is loaded\n\n');
+      if (loaded) ctx.out('  Where:\n   L:  Module is loaded\n\n');
+      ctx.out('If the avail list is too long consider trying:\n\n"module --default avail" or "ml -d av" to just list the default modules.\n"module overview" or "ml ov" to display the number of modules for each name.\n\nUse "module spider" to find all possible modules and extensions.\nUse "module keyword key1 key2 ..." to search for all possible modules matching any of the "keys".\n\n');
+      return 0;
+    }
+    case 'spider': {
+      const bar = '-'.repeat(76);
+      const list = MODULES.filter((m) => !names.length || names.some((n) => m.name.startsWith(n.split('/')[0])));
+      if (!list.length) {
+        ctx.err(`Lmod has detected the following error:  Unable to find: "${names[0]}".\n`);
+        return 1;
+      }
+      if (!names.length) {
+        ctx.out(`\n${bar}\nThe following is a list of the modules and extensions currently available:\n${bar}\n` + list.map((m) => `  ${m.name}: ${full(m)}\n`).join('') + '\n');
+        return 0;
+      }
+      for (const m of list) ctx.out(`\n${bar}\n  ${m.name}: ${full(m)}\n${bar}\n\n    This module can be loaded directly: module load ${full(m)}\n\n`);
       return 0;
     }
     case 'list': {
@@ -67,7 +86,8 @@ export function module(ctx) {
     case 'whatis': {
       const m = cluster.findModule(names[0] ?? '');
       if (!m) { ctx.err(`Lmod has detected the following error:  Unable to find: "${names[0] ?? ''}"\n`); return 1; }
-      ctx.out(`${full(m)}: provides ${m.provides.join(', ') || 'libraries'}\n`);
+      const bar = '-'.repeat(76);
+      ctx.out(`${bar}\n   /opt/modulefiles/${full(m)}.lua:\n${bar}\nwhatis("${m.name} ${m.version}")\nprepend_path("PATH","/opt/modules/${m.name}/${m.version}/bin")\n`);
       return 0;
     }
     default:
@@ -114,7 +134,7 @@ export function conda(ctx) {
     return 0;
   }
   if (sub === 'create' || sub === 'install') {
-    ctx.err('CondaError: environment changes are disabled on this practice server.\n');
+    ctx.out('(practice site: the course environments are already built, so conda create and conda install are turned off.)\n', 'dim');
     ctx.coach('conda-create', 'On Geiss-01 the course environments are already built. Use `conda env list` to see them.');
     return 1;
   }
@@ -370,16 +390,53 @@ export function scancel(ctx) {
   return 0;
 }
 
+// sacct's default columns, or the ones named with --format=JobID,State,Elapsed,...
+const SACCT_FIELDS = {
+  jobid: ['JobID', 12, (j, id) => id, 'left'],
+  jobname: ['JobName', 10, (j, id, step) => step ?? j.name],
+  partition: ['Partition', 10, (j, id, step) => (step ? '' : j.partition)],
+  account: ['Account', 10, () => 'mip662'],
+  alloccpus: ['AllocCPUS', 10, () => '1'],
+  state: ['State', 10, (j, id, step) => stepState(j, step)],
+  exitcode: ['ExitCode', 8, (j, id, step) => (step === 'extern' ? '0:0' : j.state === 'OOM' ? '0:125' : j.exitCode === null ? '0:0' : `${j.exitCode}:0`)],
+  elapsed: ['Elapsed', 10, (j, id, step, cluster) => longElapsed(cluster.fmtElapsed(j))],
+  reqmem: ['ReqMem', 10, (j) => `${j.memGB}G`],
+  maxrss: ['MaxRSS', 10, (j, id, step) => (step === 'batch' ? `${Math.round((j.state === 'OOM' ? j.memGB : j.memUsedGB ?? 1) * 1024 * 1024)}K` : '')],
+  timelimit: ['Timelimit', 10, (j, id, step) => (step ? '' : fmtTime(j.timeMin))],
+};
+
+// A step's own state: the extern step ends cleanly, and a timed-out batch step was cancelled.
+function stepState(j, step) {
+  if (step === 'extern') return j.state === 'R' ? 'RUNNING' : 'COMPLETED';
+  if (step === 'batch' && j.state === 'TO') return 'CANCELLED';
+  return STATE_NAMES[j.state] ?? j.state;
+}
+
+// sacct and seff print elapsed time as HH:MM:SS.
+const longElapsed = (t) => t.split(':').map(Number).reverse().concat(0, 0).slice(0, 3).reverse().map((n) => String(n).padStart(2, '0')).join(':');
+
 export function sacct(ctx) {
   const { cluster, user } = ctx.sh;
   const jid = ctx.args.includes('-j') ? ctx.args[ctx.args.indexOf('-j') + 1] : null;
+  const formatArg = ctx.args.find((a) => a.startsWith('--format=') || a.startsWith('-o'));
+  const names = formatArg
+    ? (formatArg.startsWith('-o') && formatArg.length === 2 ? ctx.args[ctx.args.indexOf(formatArg) + 1] ?? '' : formatArg.replace(/^--format=|^-o/, '')).split(',').map((f) => f.toLowerCase().split('%')[0])
+    : ['jobid', 'jobname', 'partition', 'account', 'alloccpus', 'state', 'exitcode'];
+  const unknown = names.find((n) => !SACCT_FIELDS[n]);
+  if (unknown) {
+    ctx.err(`sacct: error: Invalid field requested: "${unknown}"\n`);
+    return 1;
+  }
+  const cols = names.map((n) => SACCT_FIELDS[n]);
   let jobs = cluster.jobs.filter((j) => j.user === user);
   if (jid) jobs = jobs.filter((j) => String(j.id) === jid || String(j.id).startsWith(jid + '_'));
-  ctx.out('JobID           JobName  Partition      State ExitCode    Elapsed\n------------ ---------- ---------- ---------- -------- ----------\n');
+  const cell = ([, w, , align], v) => (align === 'left' ? String(v).slice(0, w).padEnd(w) : String(v).slice(0, w).padStart(w));
+  ctx.out(cols.map((c) => cell(c, c[0])).join(' ') + ' \n' + cols.map(([, w]) => '-'.repeat(w)).join(' ') + ' \n');
   for (const j of jobs) {
-    const state = STATE_NAMES[j.state] ?? j.state;
-    const code = j.exitCode === null ? '0:0' : `${j.exitCode}:0`;
-    ctx.out(`${String(j.id).padEnd(12)} ${j.name.slice(0, 10).padStart(10)} ${j.partition.padStart(10)} ${state.slice(0, 10).padStart(10)} ${code.padStart(8)} ${cluster.fmtElapsed(j).padStart(10)}\n`);
+    const rows = [[String(j.id), null]];
+    // Jobs that started also list their batch and extern steps, like real sacct.
+    if (j.startStep !== null && j.state !== 'PD') rows.push([`${j.id}.batch`, 'batch'], [`${j.id}.extern`, 'extern']);
+    for (const [id, step] of rows) ctx.out(cols.map((c) => cell(c, c[2](j, id, step, cluster))).join(' ') + ' \n');
   }
   return 0;
 }
@@ -396,7 +453,9 @@ export function seff(ctx) {
       `Cluster: geiss`,
       `User/Group: ${user}/mip662`,
       `State: ${STATE_NAMES[j.state] ?? j.state} (exit code ${j.exitCode ?? 0})`,
-      `Job Wall-clock time: ${cluster.fmtElapsed(j)}`,
+      `Nodes: 1`,
+      `Cores per node: 1`,
+      `Job Wall-clock time: ${longElapsed(cluster.fmtElapsed(j))}`,
       `Memory Utilized: ${used.toFixed(2)} GB`,
       `Memory Efficiency: ${Math.min(100, (used / j.memGB) * 100).toFixed(2)}% of ${j.memGB.toFixed(2)} GB`,
     ].join('\n') + '\n',
@@ -408,13 +467,28 @@ export function sinfo(ctx) {
   const { cluster } = ctx.sh;
   const used = cluster.gpusInUse();
   const state = used === 0 ? 'idle' : used >= NODE.gpus ? 'alloc' : 'mix';
-  ctx.out('PARTITION AVAIL  TIMELIMIT  NODES  STATE NODELIST\n');
-  for (const [name, p] of Object.entries(PARTITIONS)) {
-    ctx.out(`${(name + (p.default ? '*' : '')).padEnd(9)} ${'up'.padStart(5)} ${fmtTime(p.limitMin).padStart(10)} ${'1'.padStart(6)} ${state.padStart(6)} ${NODE.name}\n`);
-  }
-  if (ctx.args.join(' ').match(/gres|-G|%G/)) {
-    ctx.out(`\nGRES: gpu:rtx_pro_6000:${NODE.gpus}  in use: ${used}  free: ${NODE.gpus - used}\n`);
-  }
+  // -o "%P %G" style formats; the default is "%9P %.5a %.10l %.6D %.6t %N".
+  const fmtArg = ctx.args.find((a) => a.startsWith('--format=') || a.startsWith('-o'));
+  const format = fmtArg
+    ? (fmtArg.length === 2 ? ctx.args[ctx.args.indexOf(fmtArg) + 1] ?? '' : fmtArg.replace(/^--format=|^-o/, ''))
+    : '%9P %.5a %.10l %.6D %.6t %N';
+  const FIELDS = {
+    P: ['PARTITION', (n, p) => n + (p.default ? '*' : '')],
+    a: ['AVAIL', () => 'up'],
+    l: ['TIMELIMIT', (n, p) => fmtTime(p.limitMin)],
+    D: ['NODES', () => '1'],
+    t: ['STATE', () => state],
+    N: ['NODELIST', () => NODE.name],
+    G: ['GRES', () => `gpu:rtx_pro_6000:${NODE.gpus}`],
+    c: ['CPUS', () => String(NODE.cpus)],
+    m: ['MEMORY', () => String(NODE.memGB * 1024)],
+  };
+  const render = (get) => format.replace(/%(\.?)(\d*)([A-Za-z])/g, (m, right, width, f) => {
+    const v = FIELDS[f] ? get(FIELDS[f]) : '';
+    return width ? (right ? v.slice(0, width).padStart(width) : v.slice(0, width).padEnd(width)) : v;
+  });
+  ctx.out(render(([title]) => title).trimEnd() + '\n');
+  for (const [name, p] of Object.entries(PARTITIONS)) ctx.out(render(([, get]) => get(name, p)).trimEnd() + '\n');
   return 0;
 }
 
@@ -439,22 +513,32 @@ export function nvidiaSmi(ctx) {
     rows.push(row(`${String(i).padStart(3)}  ${NODE.gpuModel}`, `${mem}MiB / ${NODE.gpuMemMiB}MiB`, `${util}%     Default`));
   }
   const top = '+' + '-'.repeat(89) + '+';
+  const line = (text) => '| ' + text.padEnd(88) + '|';
+  const procs = [];
+  for (let i = 0; i < count; i++) {
+    const busy = session ? null : owners[i];
+    if (busy) procs.push(line(`${String(i).padStart(4)}   N/A  N/A  ${String(2200 + i * 37).padStart(13)}      C   ${'python'.padEnd(35)}${String(41000 + i * 1373).padStart(9)}MiB`));
+  }
   ctx.out(
     [
       top,
-      '| ' + 'NVIDIA-SMI 570.86.15        Driver Version: 570.86.15        CUDA Version: 12.8'.padEnd(88) + '|',
+      line('NVIDIA-SMI 570.86.15        Driver Version: 570.86.15        CUDA Version: 12.8'),
       rule('-', '|'),
       row('GPU  Name', 'Memory-Usage', 'GPU-Util  Compute M.'),
       rule('=', '|'),
       ...rows,
       top,
+      '',
+      top,
+      line('Processes:'),
+      line(' GPU   GI   CI              PID   Type   Process name                        GPU Memory'),
+      line('       ID   ID                                                               Usage'),
+      '|' + '='.repeat(89) + '|',
+      ...(procs.length ? procs : [line(' No running processes found')]),
+      top,
     ].join('\n') + '\n',
   );
-  if (!session) {
-    const free = NODE.gpus - cluster.gpusInUse();
-    ctx.out(`${free} of ${NODE.gpus} GPUs are free right now.\n`, 'dim');
-    if (user) ctx.coach('smi-host', 'This shows every GPU on Geiss-01, including ones other students are using. Ask Slurm for your own with `srun --gres=gpu:1 --pty bash`.');
-  }
+  if (!session && user) ctx.coach('smi-host', 'This shows every GPU on Geiss-01, including ones other students are using. Ask Slurm for your own with `srun --gres=gpu:1 --pty bash`.');
   return 0;
 }
 

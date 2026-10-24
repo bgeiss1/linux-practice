@@ -256,10 +256,10 @@ function renderScenario(id) {
       </div>
     </div>`),
   );
-  const opts = { session: current.session, special: specialCommand, afterRun };
+  const opts = { session: current.session, afterRun };
   const term = new Terminal(document.getElementById('screen-cluster'), { ...opts, machine: 'cluster' });
   renderPanel();
-  term.write([{ text: 'Practice copy of Geiss-01. Type `help` to see commands, `hint` if you get stuck.\n', cls: 'dim' }]);
+  term.write([{ text: 'Practice copy of Geiss-01. Type `help` to see commands. Stuck? Press the Hint button.\n', cls: 'dim' }]);
   if (current.session.laptop) {
     const lap = new Terminal(document.getElementById('screen-laptop'), { ...opts, machine: 'laptop' });
     lap.write([{ text: 'Your own laptop. Run `scp` here to copy files to and from Geiss-01.\n', cls: 'dim' }]);
@@ -364,19 +364,6 @@ function defaultCoach(session) {
 function showHint() {
   const r = current.session.nextHint();
   renderPanel(r.text ? { html: `<strong>Hint:</strong> ${fmt(r.text)}`, hint: true } : { html: fmt(r.message) });
-}
-
-// Words the page handles itself instead of the shell.
-function specialCommand(word) {
-  if (word === 'hint' && current.session.tasks.length) {
-    showHint();
-    return 'handled';
-  }
-  if (word === 'reset') {
-    renderScenario(current.def.id);
-    return 'stop';
-  }
-  return null;
 }
 
 // Update the lesson panel after a command or an editor save.

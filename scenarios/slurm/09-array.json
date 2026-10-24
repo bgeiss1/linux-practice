@@ -25,7 +25,7 @@
     "cluster": {
       "cwd": "~/{{project}}",
       "files": {
-        "~/{{project}}/mpnn_array.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn_arr\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target_${SLURM_ARRAY_TASK_ID}.pdb \\\n  --out_folder outputs/target_${SLURM_ARRAY_TASK_ID}\n",
+        "~/{{project}}/mpnn_array.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn_arr\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython /opt/ProteinMPNN/protein_mpnn_run.py \\\n  --pdb_path inputs/target_${SLURM_ARRAY_TASK_ID}.pdb \\\n  --out_folder outputs/target_${SLURM_ARRAY_TASK_ID}\n",
         "~/{{project}}/inputs/target_{{i}}.pdb": {
           "lib": "pdb:small",
           "count": "{{ntarget}}"

@@ -24,7 +24,7 @@
     "cluster": {
       "cwd": "~/{{project}}",
       "files": {
-        "~/{{project}}/relax_all.sh": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load rosetta\nfor f in designs/*.pdb; do relax -s $f; done\n",
+        "~/{{project}}/relax_all.sh": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load rosetta\nfor f in designs/*.pdb; do relax.linuxgccrelease -s $f; done\n",
         "~/{{project}}/designs/d_{{i}}.pdb": {
           "lib": "pdb:complex",
           "count": 6
@@ -65,7 +65,7 @@
     "sacct",
     {
       "nano": "relax_all.sh",
-      "text": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem={{need}}G\n#SBATCH --output=slurm-%j.out\n\nmodule load rosetta\nfor f in designs/*.pdb; do relax -s $f; done\n"
+      "text": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem={{need}}G\n#SBATCH --output=slurm-%j.out\n\nmodule load rosetta\nfor f in designs/*.pdb; do relax.linuxgccrelease -s $f; done\n"
     },
     "sbatch relax_all.sh",
     "squeue --me",

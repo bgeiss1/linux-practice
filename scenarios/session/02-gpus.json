@@ -47,9 +47,9 @@
     }
   ],
   "hints": [
-    "`nvidia-smi` shows every GPU and how much of it is in use.",
-    "Run `nvidia-smi`. The last line says how many are free.",
-    "Run `nvidia-smi`, read the line \"N of 8 GPUs are free\", then type N in the answer box."
+    "`nvidia-smi` shows every GPU and how much of it is in use. A free GPU uses 0MiB and 0%.",
+    "Run `nvidia-smi` and count the GPUs that show 0MiB of memory in use.",
+    "Run `nvidia-smi`, count the rows with 0MiB / 97887MiB, then type that number in the answer box."
   ],
   "solution": [
     "nvidia-smi",

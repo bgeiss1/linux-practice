@@ -43,7 +43,9 @@ export function fmtDate(ms) {
 export function fmtMode(node) {
   const bits = node.mode;
   const rwx = (n) => (n & 4 ? 'r' : '-') + (n & 2 ? 'w' : '-') + (n & 1 ? 'x' : '-');
-  return (node.type === 'dir' ? 'd' : '-') + rwx(bits >> 6) + rwx((bits >> 3) & 7) + rwx(bits & 7);
+  const other = rwx(bits & 7);
+  // The sticky bit (as on /tmp) shows as t in the last place.
+  return (node.type === 'dir' ? 'd' : '-') + rwx((bits >> 6) & 7) + rwx((bits >> 3) & 7) + (bits & 0o1000 ? other.slice(0, 2) + 't' : other);
 }
 
 export function human(bytes) {

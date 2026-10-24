@@ -30,7 +30,7 @@
     "cluster": {
       "cwd": "~/{{project}}",
       "files": {
-        "~/{{project}}/{{script}}": "#!/bin/bash\n#SBATCH --job-name=batch\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:{{gpus}}\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
+        "~/{{project}}/{{script}}": "#!/bin/bash\n#SBATCH --job-name=batch\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:{{gpus}}\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython /opt/ProteinMPNN/protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
       }
     }
   },

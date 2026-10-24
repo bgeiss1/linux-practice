@@ -53,6 +53,7 @@ export const COMMANDS = {
   help: misc.help,
   man: misc.man,
   clear: misc.clear,
+  reset: misc.clear,
   history: misc.history,
   whoami: misc.whoami,
   hostname: misc.hostname,

@@ -107,11 +107,21 @@ Documents and Downloads. `scp` works only there.
 
 ### Design tools
 
-`protein_mpnn_run.py` (conda env proteinmpnn), `run_inference.py` (rfdiffusion),
-`colabfold_batch` (module colabfold), `run_alphafold.sh` (module alphafold) and
-`relax` / `rosetta_scripts` (module rosetta) exist once their module or environment is
-loaded. The GPU tools need an `srun --gres=gpu:N --pty bash` session. They print a short
+Module tools are on PATH once their module is loaded: `colabfold_batch` (module colabfold),
+`run_alphafold.py` (module alphafold) and `relax.linuxgccrelease` /
+`rosetta_scripts.linuxgccrelease` (module rosetta). ProteinMPNN and RFdiffusion are
+cloned repos, run with the python of their conda environment:
+`python /opt/ProteinMPNN/protein_mpnn_run.py` (env proteinmpnn) and
+`python /opt/RFdiffusion/scripts/run_inference.py` (env rfdiffusion, needs
+`'contigmap.contigs=[...]'`). The GPU tools need an `srun --gres=gpu:N --pty bash`
+session. They print a short
 log and write placeholder outputs where real tools would.
+
+## Only real commands
+
+Everything a scenario asks students to type, in tasks, hints and solutions, must work
+the same way on the real Geiss-01. Practice-site features live outside the terminal:
+the Hint button, Restart, and the answer box for reporting what you found.
 
 ## Checks
 

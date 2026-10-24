@@ -19,14 +19,11 @@ export function h(html) {
 }
 
 export class Terminal {
-  // special(word, line) lets the page handle words like "hint" itself: return
-  // 'handled' to skip the shell, or 'stop' when the page re-rendered.
   // afterRun(result, wasComplete) runs after each command and editor save.
-  constructor(screen, { session, machine = 'cluster', special = () => null, afterRun = () => {} }) {
+  constructor(screen, { session, machine = 'cluster', afterRun = () => {} }) {
     this.screen = screen;
     this.session = session;
     this.machine = machine;
-    this.special = special;
     this.afterRun = afterRun;
     this.log = screen.querySelector('.log');
     this.input = screen.querySelector('.cmd');
@@ -82,19 +79,14 @@ export class Terminal {
 
   run(line) {
     this.echo(line);
-    const word = line.trim().split(/\s+/)[0];
-    const handled = this.special(word, line);
-    if (handled === 'stop') return;
-    if (!handled) {
-      const wasComplete = this.session.complete;
-      const r = this.session.run(line, this.machine);
-      if (r.clear) this.log.replaceChildren();
-      this.write(r.output);
-      this.afterRun(r, wasComplete);
-      if (r.edit) {
-        new Editor(this, r.edit);
-        return;
-      }
+    const wasComplete = this.session.complete;
+    const r = this.session.run(line, this.machine);
+    if (r.clear) this.log.replaceChildren();
+    this.write(r.output);
+    this.afterRun(r, wasComplete);
+    if (r.edit) {
+      new Editor(this, r.edit);
+      return;
     }
     this.hi = this.shell.history.length;
     this.renderPrompt();
