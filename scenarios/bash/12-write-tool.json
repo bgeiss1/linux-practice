@@ -85,6 +85,8 @@
     },
     "chmod +x count_seqs.sh",
     "./count_seqs.sh seqs/{{fa}}.fasta",
-    "answer {{nseq}}"
+    {
+      "answer": "{{nseq}}"
+    }
   ]
 }

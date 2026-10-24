@@ -58,6 +58,8 @@
   ],
   "solution": [
     "./score_all.sh 2> errors.log",
-    "answer {{nhave}}"
+    {
+      "answer": "{{nhave}}"
+    }
   ]
 }

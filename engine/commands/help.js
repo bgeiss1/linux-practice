@@ -15,7 +15,7 @@ export const HELP = `Commands on this practice server (try "man NAME" for detail
                     sacct  seff ID  srun --gres=gpu:1 --pty bash  exit
   Design tools      protein_mpnn_run.py  run_inference.py  colabfold_batch  relax
   Your laptop       scp [-r] student@geiss-01:PATH LOCAL   scp LOCAL student@geiss-01:PATH
-  This app          answer TEXT   hint   clear   history
+  Also              clear   history   hint (hint is only on this practice site)
 
 Tab completes names. Up and down arrows bring back earlier commands.
 `;
@@ -102,5 +102,4 @@ Finished jobs leave the queue; use sacct to see them.`),
   srun: page('srun - run inside a Slurm allocation', 'srun [OPTIONS] COMMAND', `srun --gres=gpu:1 --pty bash   interactive shell with one GPU
 exit                            leave and give the GPU back`),
   'nvidia-smi': page('nvidia-smi - GPU status', 'nvidia-smi', 'Lists GPUs, memory in use and utilization.'),
-  answer: page('answer - submit an answer (this app only)', 'answer TEXT', 'Some tasks ask you to report something you found.'),
 };

@@ -131,7 +131,7 @@ Tasks complete in order and stay complete. Pick checks that look at the outcome.
 | `{ "isCompressed": path }`, `{ "modeIs": { "path": p, "mode": "755" } }` | gzip'd file; exact permissions |
 | `{ "laptop": { ...any check... } }` | the check passes on the laptop instead (`~` = /Users/student there) |
 | `{ "ran": "ls", "flags": "a", "arg": "~/x", "argHas": "..", "lineHas": "*.pdb", "ok": true, "inDir": "~/x" }` | the student ran that command (all keys but `ran` optional; `lineHas` checks the line as typed, before wildcards expand) |
-| `{ "answer": "value" }` | the student typed `answer value` (case doesn't matter; numbers match by value, so 017 = 17) |
+| `{ "answer": "value" }` | the student typed that value in the answer box under the task (case doesn't matter; numbers match by value, so 017 = 17). The box appears only while that task is current. There is no `answer` command in the terminal, so hints should say "type it in the answer box". Use this only when the result can't be checked another way; if running the command is the whole point, use `ran` instead |
 | `{ "all": [...] }`, `{ "any": [...] }`, `{ "not": {...} }` | combine checks |
 
 ## Solutions
@@ -143,6 +143,7 @@ random draws and fails if the scenario doesn't finish. Besides plain command lin
 | --- | --- |
 | `{ "nano": "run.sh", "text": "#!/bin/bash\n..." }` | opens the editor on run.sh and saves that text |
 | `{ "laptop": "scp student@geiss-01:~/a.pdb ~/Downloads/" }` | runs the line in the Laptop tab |
+| `{ "answer": "{{count}}" }` | types that value in the answer box |
 
 Slurm jobs need a few commands to pass before they finish, so follow `sbatch` with a few
 `squeue --me` lines when a later task waits for the job.

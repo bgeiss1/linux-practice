@@ -46,17 +46,6 @@ export function date(ctx) {
   ctx.out(d.toUTCString().replace(/^(\w+), (\d+) (\w+) (\d+) ([\d:]+) GMT$/, '$1 $3 $2 $5 UTC $4') + '\n');
 }
 
-export function answer(ctx) {
-  const text = ctx.args.join(' ').trim();
-  if (!text) {
-    ctx.err('answer: type your answer after the word answer, for example: answer design_003\n');
-    return 1;
-  }
-  ctx.sh.answers.push(text);
-  ctx.out(`Answer recorded: ${text}\n`, 'ok');
-  return 0;
-}
-
 export function exit(ctx) {
   const { sh } = ctx;
   if (sh.cluster.interactive) {

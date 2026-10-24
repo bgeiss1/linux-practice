@@ -80,7 +80,7 @@ const CHECKS = {
   // "lineHas" looks at the whole line as typed, before globs expand (e.g. "*.pdb").
   ran: (sh, v, ctx) => matchRan(sh, v, ctx),
 
-  // The student used the answer command with this value (case-insensitive).
+  // The student typed this value in the answer box on the page (case-insensitive).
   // Numbers match by value, so "017" and "17" both count.
   answer: (sh, v) =>
     sh.answers.some((a) => {

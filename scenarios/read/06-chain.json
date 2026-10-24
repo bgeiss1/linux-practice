@@ -50,6 +50,8 @@
   ],
   "solution": [
     "grep -c \" B \" complex.pdb",
-    "answer {{nb}}"
+    {
+      "answer": "{{nb}}"
+    }
   ]
 }

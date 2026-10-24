@@ -28,22 +28,15 @@
       "check": {
         "ran": "hostname"
       }
-    },
-    {
-      "text": "Report the machine's name",
-      "check": {
-        "answer": "geiss-01"
-      }
     }
   ],
   "hints": [
     "`whoami` prints your user name. `hostname` prints the machine's name.",
-    "Run `whoami`, then `hostname`.",
-    "Run `whoami`, then `hostname`, then type `answer geiss-01`."
+    "Type `whoami` and press Enter. Then type `hostname`.",
+    "Run `whoami`, then `hostname`."
   ],
   "solution": [
     "whoami",
-    "hostname",
-    "answer geiss-01"
+    "hostname"
   ]
 }

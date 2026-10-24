@@ -58,7 +58,6 @@ export const COMMANDS = {
   hostname: misc.hostname,
   id: misc.id,
   date: misc.date,
-  answer: misc.answer,
   exit: misc.exit,
   logout: misc.exit,
   which: misc.which,

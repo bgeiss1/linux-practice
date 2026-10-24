@@ -27,3 +27,15 @@ test('track ids are unique', () => {
   const ids = manifest.tracks.map((t) => t.id);
   assert.equal(new Set(ids).size, ids.length);
 });
+
+test('answers go in the answer box, not the terminal', async () => {
+  const { Session } = await import('../engine/scenario.js');
+  const def = JSON.parse(readFileSync(new URL('find/02-wildcard.json', root)));
+  const s = new Session(def, { seed: 7 });
+  assert.match(s.run('answer 3').output.map((o) => o.text).join(''), /command not found/);
+  for (const step of s.def.solution) if (typeof step === 'string') s.run(step);
+  assert.ok(s.wantsAnswer);
+  assert.equal(s.submitAnswer('999').correct, false);
+  assert.equal(s.submitAnswer(s.def.solution.at(-1).answer).correct, true);
+  assert.ok(s.complete);
+});

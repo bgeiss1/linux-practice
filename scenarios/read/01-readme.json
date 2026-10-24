@@ -53,7 +53,7 @@
       }
     },
     {
-      "text": "Report the target chain: answer and the letter",
+      "text": "Report the target chain",
       "check": {
         "answer": "{{chain}}"
       }
@@ -62,10 +62,12 @@
   "hints": [
     "`cat` prints a whole file to the screen.",
     "Type `cat README.txt` and look for \"Target chain\".",
-    "Run `cat README.txt`, then `answer {{chain}}`."
+    "Run `cat README.txt`, then type {{chain}} in the answer box."
   ],
   "solution": [
     "cat README.txt",
-    "answer {{chain}}"
+    {
+      "answer": "{{chain}}"
+    }
   ]
 }

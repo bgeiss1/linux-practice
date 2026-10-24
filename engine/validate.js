@@ -62,6 +62,11 @@ export function validate(def, { seeds = 20 } = {}) {
     for (const step of session.def.solution) {
       // { "nano": "run.sh", "text": "..." } opens the editor and saves that text.
       // { "laptop": "scp ..." } runs a line in the laptop's terminal.
+      // { "answer": "17" } types 17 in the answer box.
+      if (typeof step === 'object' && 'answer' in step) {
+        if (!session.submitAnswer(step.answer).correct) failedLines.push(`answer "${step.answer}" was not accepted`);
+        continue;
+      }
       const line = typeof step === 'string' ? step : step.laptop ?? `nano ${step.nano}`;
       const r = session.run(line, step.laptop ? 'laptop' : 'cluster');
       if (typeof step === 'object' && step.nano) {

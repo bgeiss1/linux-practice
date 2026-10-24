@@ -54,6 +54,8 @@
   ],
   "solution": [
     "tail -n 1 slurm-{{jobid}}.out",
-    "answer {{ep}}"
+    {
+      "answer": "{{ep}}"
+    }
   ]
 }

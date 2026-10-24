@@ -407,7 +407,7 @@ function renderEditorBody() {
 
       <div class="field"><label for="f-solution" class="label">Solution, one step per line</label>
         <textarea id="f-solution" class="code" rows="6" spellcheck="false">${esc(solutionText)}</textarea>
-        <p class="help">Lines starting with { are JSON steps, like {"nano": "run.sh", "text": "…"} or {"laptop": "scp …"}.</p>
+        <p class="help">Lines starting with { are JSON steps, like {"nano": "run.sh", "text": "…"}, {"laptop": "scp …"}, or {"answer": "17"}.</p>
         <p class="field-err" id="e-solution"></p></div>
 
       <div class="field"><label for="f-vars" class="label">Variables (JSON)</label>
@@ -611,7 +611,22 @@ function renderPreviewTasks() {
   const el = app.querySelector('#pv-tasks');
   if (!el) return;
   const s = preview.session;
-  el.innerHTML = s.tasks.map((t, i) => `<li class="${t.done ? 'done' : i === s.current ? 'current' : ''}"><span class="box">${t.done ? '✓' : ''}</span><span>${fmt(t.text)}</span></li>`).join('');
+  el.innerHTML = s.tasks
+    .map((t, i) => `<li class="${t.done ? 'done' : i === s.current ? 'current' : ''}"><span class="box">${t.done ? '✓' : ''}</span><span>${fmt(t.text)}${
+      i === s.current && s.wantsAnswer ? '<form class="answer-form" id="pv-answer" autocomplete="off"><input placeholder="Type your answer" aria-label="Preview answer" spellcheck="false"><button type="submit">Check</button></form>' : ''
+    }</span></li>`)
+    .join('');
+  el.querySelector('#pv-answer')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const value = e.target.querySelector('input').value;
+    previewAnswer(value);
+  });
+}
+
+function previewAnswer(value) {
+  const r = preview.session.submitAnswer(value);
+  renderPreviewTasks();
+  coach(r.correct ? (r.complete ? '<strong>Complete.</strong>' : `Answer <strong>${esc(value)}</strong> accepted.`) : `<strong>${esc(value)}</strong> isn't the expected answer.`);
 }
 
 async function runSolution() {
@@ -622,7 +637,9 @@ async function runSolution() {
   for (const step of session.def.solution ?? []) {
     await new Promise((r) => setTimeout(r, 350));
     if (!app.querySelector('#pv')) return; // left the page
-    if (typeof step === 'string' || step.laptop) {
+    if (typeof step === 'object' && 'answer' in step) {
+      previewAnswer(String(step.answer));
+    } else if (typeof step === 'string' || step.laptop) {
       const m = typeof step === 'string' ? 'cluster' : 'laptop';
       if (terms[m]) showMachine(m);
       (terms[m] ?? terms.cluster).run(typeof step === 'string' ? step : step.laptop);

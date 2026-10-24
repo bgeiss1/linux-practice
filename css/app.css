@@ -128,6 +128,9 @@ a.scen:hover { border-color: var(--accent); }
 .tasks li.done .box { background: var(--good); border-color: var(--good); }
 .tasks li.current { background: var(--accent-soft); }
 .tasks li.current .box { border-color: var(--accent); }
+.answer-form { display: flex; gap: 6px; margin-top: 8px; }
+.answer-form input { flex: 1; min-width: 0; font: 14px/1.2 'JetBrains Mono', monospace; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--fg); }
+.answer-form input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .coach { font-size: 13.5px; line-height: 1.5; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-height: 3em; overflow-wrap: anywhere; }
 .coach.hint { border-color: var(--amber); }
 .coach strong { color: var(--amber); }

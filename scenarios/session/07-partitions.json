@@ -40,6 +40,8 @@
   ],
   "solution": [
     "sinfo",
-    "answer short"
+    {
+      "answer": "short"
+    }
   ]
 }

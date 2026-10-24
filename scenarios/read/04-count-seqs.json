@@ -48,6 +48,8 @@
   ],
   "solution": [
     "grep -c \">\" designs.fasta",
-    "answer {{count}}"
+    {
+      "answer": "{{count}}"
+    }
   ]
 }

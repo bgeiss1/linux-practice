@@ -72,7 +72,7 @@
   "hints": [
     "Run `squeue --me` every few seconds. When your job is gone from the list, it's done.",
     "When it's done, `ls` shows a new slurm-NNNNN.out file. `cat` it.",
-    "`cat slurm-*.out` prints the log. Find \"Designing N sequences\", then `answer N`."
+    "`cat slurm-*.out` prints the log. Find \"Designing N sequences\", then type N in the answer box."
   ],
   "solution": [
     "sbatch run_mpnn.sh",
@@ -82,6 +82,8 @@
     "squeue --me",
     "squeue --me",
     "cat slurm-*.out",
-    "answer {{nseq}}"
+    {
+      "answer": "{{nseq}}"
+    }
   ]
 }

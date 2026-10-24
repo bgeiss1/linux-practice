@@ -45,7 +45,7 @@
       }
     },
     {
-      "text": "Report the resolution: answer and the number",
+      "text": "Report the resolution",
       "check": {
         "answer": "{{res}}"
       }
@@ -54,10 +54,12 @@
   "hints": [
     "`head` shows the first 10 lines of a file.",
     "`head target.pdb`, then find the RESOLUTION line.",
-    "Run `head target.pdb`, then `answer {{res}}`."
+    "Run `head target.pdb`, then type {{res}} in the answer box."
   ],
   "solution": [
     "head target.pdb",
-    "answer {{res}}"
+    {
+      "answer": "{{res}}"
+    }
   ]
 }

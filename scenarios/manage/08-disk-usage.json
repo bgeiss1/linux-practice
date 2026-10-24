@@ -76,6 +76,8 @@
   ],
   "solution": [
     "du -sh runs/*",
-    "answer {{big}}"
+    {
+      "answer": "{{big}}"
+    }
   ]
 }

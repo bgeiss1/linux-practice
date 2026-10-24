@@ -52,7 +52,7 @@
       }
     },
     {
-      "text": "Report how many there are: type answer and the number",
+      "text": "Report how many there are",
       "check": {
         "answer": "{{npdb}}"
       }
@@ -61,10 +61,12 @@
   "hints": [
     "A `*` in a name matches anything. `*.pdb` means \"every name ending in .pdb\".",
     "`ls *.pdb` lists only the PDB files.",
-    "Run `ls *.pdb`, count the names, then type `answer` and the count."
+    "Run `ls *.pdb`, count the names, then type the count in the answer box."
   ],
   "solution": [
     "ls *.pdb",
-    "answer {{npdb}}"
+    {
+      "answer": "{{npdb}}"
+    }
   ]
 }

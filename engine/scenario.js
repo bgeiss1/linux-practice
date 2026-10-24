@@ -206,6 +206,23 @@ export class Session {
     return { newlyDone: this.updateTasks(), complete: this.complete };
   }
 
+  // Answers go in the answer box on the page, not the terminal, because there is
+  // no Linux command for "tell the teacher what you found".
+  submitAnswer(text) {
+    const given = String(text).trim();
+    if (!given) return { newlyDone: [], complete: this.complete, correct: false };
+    this.shell.answers.push(given);
+    const newlyDone = this.updateTasks();
+    if (!newlyDone.length) this.mistakes++;
+    return { newlyDone, complete: this.complete, correct: newlyDone.length > 0 };
+  }
+
+  // The current task is checked with an answer, so the page shows the answer box.
+  get wantsAnswer() {
+    const task = this.tasks[this.current];
+    return !!task && JSON.stringify(task.check).includes('"answer"');
+  }
+
   coachAllowed(key) {
     const mode = TIERS[this.tier].coach;
     if (mode === 'all') return true;

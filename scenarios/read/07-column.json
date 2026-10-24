@@ -75,6 +75,8 @@
   "solution": [
     "head -1 score.sc",
     "grep {{name}} score.sc",
-    "answer {{b}}"
+    {
+      "answer": "{{b}}"
+    }
   ]
 }

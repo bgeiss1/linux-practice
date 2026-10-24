@@ -52,7 +52,7 @@
       }
     },
     {
-      "text": "Report the design settings file's name: type answer and the name",
+      "text": "Report the design settings file's name",
       "check": {
         "any": [
           {
@@ -68,10 +68,12 @@
   "hints": [
     "`ls` has an option that shows all files, including the hidden ones.",
     "`ls -a` shows everything. Look for a name that isn't `.bashrc`, `.` or `..`.",
-    "Type `ls -a`, then `answer .{{hidden}}`."
+    "Type `ls -a`, then type .{{hidden}} in the answer box."
   ],
   "solution": [
     "ls -a",
-    "answer .{{hidden}}"
+    {
+      "answer": ".{{hidden}}"
+    }
   ]
 }

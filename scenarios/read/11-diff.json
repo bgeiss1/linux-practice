@@ -67,6 +67,8 @@
   ],
   "solution": [
     "diff config_old.txt config_new.txt",
-    "answer {{param}}"
+    {
+      "answer": "{{param}}"
+    }
   ]
 }

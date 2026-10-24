@@ -78,6 +78,8 @@
   ],
   "solution": [
     "grep -i error slurm-{{jobid}}.out",
-    "answer {{missing}}.pdb"
+    {
+      "answer": "{{missing}}.pdb"
+    }
   ]
 }
