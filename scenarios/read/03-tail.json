@@ -60,10 +60,12 @@
   "hints": [
     "`tail` is the opposite of `head`: it shows the end of a file.",
     "`tail slurm-{{jobid}}.out` shows the last 10 lines.",
-    "Run `tail slurm-{{jobid}}.out`, then `answer {{ndes}}`."
+    "Run `tail slurm-{{jobid}}.out`, then type {{ndes}} in the answer box."
   ],
   "solution": [
     "tail slurm-{{jobid}}.out",
-    "answer {{ndes}}"
+    {
+      "answer": "{{ndes}}"
+    }
   ]
 }

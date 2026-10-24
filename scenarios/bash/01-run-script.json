@@ -69,10 +69,12 @@
   "hints": [
     "To run a script in the folder you're in, put `./` in front of its name.",
     "`./count_designs.sh` runs it. `./` means \"this folder\".",
-    "Run `./count_designs.sh`, then type `answer` and the number it printed."
+    "Run `./count_designs.sh`, then type the number it printed in the answer box."
   ],
   "solution": [
     "./count_designs.sh",
-    "answer {{ndes}}"
+    {
+      "answer": "{{ndes}}"
+    }
   ]
 }

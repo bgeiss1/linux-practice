@@ -143,15 +143,39 @@ test('nano opens an editor and saving writes the file', () => {
 test('design tools need their environment and a GPU', () => {
   const sh = shell();
   sh.run('cd proj');
+  const mpnn = 'python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out';
   assert.match(errors(sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /command not found/);
+  assert.match(errors(sh.run(mpnn)), /python: command not found/);
   sh.run('module load anaconda');
+  assert.match(errors(sh.run(mpnn)), /No module named 'torch'/);
   sh.run('conda activate proteinmpnn');
-  assert.match(errors(sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /No CUDA GPUs/);
+  assert.match(errors(sh.run(mpnn)), /No CUDA GPUs/);
+  assert.match(errors(sh.run('python protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /can't open file/);
   sh.run('srun --gres=gpu:1 --pty bash');
-  sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out');
+  sh.run(mpnn);
   assert.ok(sh.vfs.get('/home/student/proj/out/seqs/a.fa'));
   sh.run('exit');
   assert.equal(sh.cluster.condaEnv, 'proteinmpnn'); // activated before srun, so it stays
+});
+
+test('RFdiffusion runs by path and needs a contig map', () => {
+  const sh = shell();
+  sh.run('cd proj');
+  sh.run('module load anaconda');
+  sh.run('conda activate rfdiffusion');
+  sh.run('srun --gres=gpu:1 --pty bash');
+  assert.match(errors(sh.run('/opt/RFdiffusion/scripts/run_inference.py inference.output_prefix=out/b')), /contigmap.contigs/);
+  sh.run("/opt/RFdiffusion/scripts/run_inference.py inference.input_pdb=inputs/a.pdb inference.output_prefix=out/b 'contigmap.contigs=[A1-150/0 70-100]' inference.num_designs=2");
+  assert.ok(sh.vfs.get('/home/student/proj/out/b_1.pdb'));
+});
+
+test('Rosetta and AlphaFold come from modules', () => {
+  const sh = shell();
+  sh.run('cd proj');
+  assert.match(errors(sh.run('relax.linuxgccrelease -s inputs/a.pdb')), /command not found/);
+  sh.run('module load rosetta');
+  sh.run('relax.linuxgccrelease -s inputs/a.pdb');
+  assert.ok(sh.vfs.get('/home/student/proj/a_0001.pdb'));
 });
 
 test('scp copies between the laptop and Geiss-01', () => {

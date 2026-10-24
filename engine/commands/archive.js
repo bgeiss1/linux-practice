@@ -186,8 +186,9 @@ export function gzip(ctx) {
   return code;
 }
 
+// du counts disk blocks, not bytes: every file takes whole 4 KiB blocks.
 function treeSize(node) {
-  if (node.type === 'file') return VFS.sizeOf(node);
+  if (node.type === 'file') return Math.ceil(VFS.sizeOf(node) / 4096) * 4096;
   return Object.values(node.children).reduce((n, c) => n + treeSize(c), 4096);
 }
 

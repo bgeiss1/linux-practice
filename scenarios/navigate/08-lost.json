@@ -44,7 +44,7 @@
   },
   "tasks": [
     {
-      "text": "Report your full starting path: answer and the path",
+      "text": "Report your full starting path",
       "check": {
         "answer": "/home/student/{{project}}/runs/{{run}}/{{deep}}"
       }
@@ -61,7 +61,9 @@
   ],
   "solution": [
     "pwd",
-    "answer /home/student/{{project}}/runs/{{run}}/{{deep}}",
+    {
+      "answer": "/home/student/{{project}}/runs/{{run}}/{{deep}}"
+    },
     "cd ~/{{project}}"
   ]
 }

@@ -256,10 +256,10 @@ function renderScenario(id) {
       </div>
     </div>`),
   );
-  const opts = { session: current.session, special: specialCommand, afterRun };
+  const opts = { session: current.session, afterRun };
   const term = new Terminal(document.getElementById('screen-cluster'), { ...opts, machine: 'cluster' });
   renderPanel();
-  term.write([{ text: 'Practice copy of Geiss-01. Type `help` to see commands, `hint` if you get stuck.\n', cls: 'dim' }]);
+  term.write([{ text: 'Practice copy of Geiss-01. Type `help` to see commands. Stuck? Press the Hint button.\n', cls: 'dim' }]);
   if (current.session.laptop) {
     const lap = new Terminal(document.getElementById('screen-laptop'), { ...opts, machine: 'laptop' });
     lap.write([{ text: 'Your own laptop. Run `scp` here to copy files to and from Geiss-01.\n', cls: 'dim' }]);
@@ -309,7 +309,7 @@ function renderPanel(coach = null) {
     ${
       session.tasks.length
         ? `<div style="display:grid;gap:6px"><span class="label">Tasks</span><ol class="tasks">${session.tasks
-            .map((tk, i) => `<li class="${tk.done ? 'done' : i === cur ? 'current' : ''}"><span class="box">${tk.done ? '✓' : ''}</span><span>${fmt(tk.text)}</span></li>`)
+            .map((tk, i) => `<li class="${tk.done ? 'done' : i === cur ? 'current' : ''}"><span class="box">${tk.done ? '✓' : ''}</span><span>${fmt(tk.text)}${i === cur && session.wantsAnswer ? answerFormHTML() : ''}</span></li>`)
             .join('')}</ol></div>`
         : ''
     }
@@ -323,8 +323,35 @@ function renderPanel(coach = null) {
       <button type="button" id="restart-btn" title="Start over with new names and files">Restart</button>
     </div>`),
   );
+  document.getElementById('answer-form')?.addEventListener('submit', onAnswer);
   document.getElementById('hint-btn')?.addEventListener('click', () => showHint());
   document.getElementById('restart-btn').addEventListener('click', () => renderScenario(def.id));
+}
+
+// Tasks that ask what the student found take the answer here, not in the
+// terminal: Linux has no command for reporting an answer.
+function answerFormHTML() {
+  return `<form class="answer-form" id="answer-form" autocomplete="off">
+    <input id="answer-in" name="answer" placeholder="Type your answer" aria-label="Your answer" autocapitalize="off" spellcheck="false">
+    <button type="submit">Check</button>
+  </form>`;
+}
+
+function onAnswer(e) {
+  e.preventDefault();
+  const input = document.getElementById('answer-in');
+  if (!input.value.trim()) return input.focus();
+  const wasComplete = current.session.complete;
+  const r = current.session.submitAnswer(input.value);
+  if (r.correct) {
+    afterRun({ ...r, coach: [] }, wasComplete);
+    document.querySelector('.screen:not([hidden]) .cmd')?.focus({ preventScroll: true });
+    return;
+  }
+  renderPanel({ html: `<strong>${esc(input.value.trim())}</strong> isn't it. Look again at what the terminal printed.` });
+  const again = document.getElementById('answer-in');
+  again.value = input.value;
+  again.select();
 }
 
 function defaultCoach(session) {
@@ -339,25 +366,12 @@ function showHint() {
   renderPanel(r.text ? { html: `<strong>Hint:</strong> ${fmt(r.text)}`, hint: true } : { html: fmt(r.message) });
 }
 
-// Words the page handles itself instead of the shell.
-function specialCommand(word) {
-  if (word === 'hint' && current.session.tasks.length) {
-    showHint();
-    return 'handled';
-  }
-  if (word === 'reset') {
-    renderScenario(current.def.id);
-    return 'stop';
-  }
-  return null;
-}
-
 // Update the lesson panel after a command or an editor save.
 function afterRun(r, wasComplete) {
   if (r.complete && !wasComplete) recordCompletion();
   const tip = r.coach?.at(-1);
   if (tip || r.newlyDone.length || (r.complete && !wasComplete)) {
-    renderPanel(tip ? { html: fmt(tip.text) } : r.complete ? null : { html: `Done. Next: ${fmt(current.session.tasks[current.session.current]?.text ?? '')}` });
+    renderPanel(tip ? { html: fmt(tip.text) } : r.complete ? null : { html: `Done. Next: ${fmt(current.session.tasks[current.session.current]?.text ?? '')}${current.session.wantsAnswer ? ' (type it in the answer box)' : ''}` });
   }
 }
 

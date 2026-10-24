@@ -26,7 +26,7 @@
     "cluster": {
       "cwd": "~/{{project}}",
       "files": {
-        "~/{{project}}/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n",
+        "~/{{project}}/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython /opt/ProteinMPNN/protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n",
         "~/{{project}}/inputs/target.pdb": {
           "lib": "pdb:small"
         },
@@ -72,7 +72,7 @@
   "hints": [
     "Run `squeue --me` every few seconds. When your job is gone from the list, it's done.",
     "When it's done, `ls` shows a new slurm-NNNNN.out file. `cat` it.",
-    "`cat slurm-*.out` prints the log. Find \"Designing N sequences\", then `answer N`."
+    "`cat slurm-*.out` prints the log. Find \"Designing N sequences\", then type N in the answer box."
   ],
   "solution": [
     "sbatch run_mpnn.sh",
@@ -82,6 +82,8 @@
     "squeue --me",
     "squeue --me",
     "cat slurm-*.out",
-    "answer {{nseq}}"
+    {
+      "answer": "{{nseq}}"
+    }
   ]
 }

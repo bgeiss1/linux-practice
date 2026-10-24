@@ -4,7 +4,7 @@
   "order": 12,
   "tier": 4,
   "title": "Generate backbones",
-  "story": "Make {{ndes.0}} RFdiffusion designs with the output prefix outputs/{{target}}_binder, then leave the job so the GPU is free.",
+  "story": "Make {{ndes.0}} RFdiffusion binder designs against inputs/{{target}}.pdb with the output prefix outputs/{{target}}_binder, keeping target residues A1-150 and making a 70-100 residue binder. Then leave the job so the GPU is free.",
   "vars": {
     "project": [
       "binder_design",
@@ -74,13 +74,13 @@
     }
   ],
   "hints": [
-    "RFdiffusion is `run_inference.py` in the rfdiffusion environment. Settings look like `inference.num_designs={{ndes.0}}`."
+    "RFdiffusion is /opt/RFdiffusion/scripts/run_inference.py in the rfdiffusion environment. Settings look like `inference.num_designs={{ndes.0}}` and `'contigmap.contigs=[A1-150/0 70-100]'`."
   ],
   "solution": [
     "srun --gres=gpu:1 --pty bash",
     "module load anaconda",
     "conda activate rfdiffusion",
-    "run_inference.py inference.input_pdb=inputs/{{target}}.pdb inference.output_prefix=outputs/{{target}}_binder inference.num_designs={{ndes.0}}",
+    "python /opt/RFdiffusion/scripts/run_inference.py inference.input_pdb=inputs/{{target}}.pdb inference.output_prefix=outputs/{{target}}_binder 'contigmap.contigs=[A1-150/0 70-100]' inference.num_designs={{ndes.0}}",
     "exit"
   ]
 }

@@ -80,7 +80,7 @@
       }
     },
     {
-      "text": "Report the run with more designs: answer and its name",
+      "text": "Report the run with more designs",
       "check": {
         "answer": "{{runs.1}}"
       }
@@ -95,6 +95,8 @@
     "cd ../../{{runs.1}}/pdbs",
     "ls",
     "cd -",
-    "answer {{runs.1}}"
+    {
+      "answer": "{{runs.1}}"
+    }
   ]
 }

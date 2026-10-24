@@ -19,7 +19,7 @@
     "cluster": {
       "cwd": "~/{{project}}",
       "files": {
-        "~/{{project}}/design.sh": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n",
+        "~/{{project}}/design.sh": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython /opt/ProteinMPNN/protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n",
         "~/{{project}}/inputs/target.pdb": {
           "lib": "pdb:small"
         }
@@ -69,7 +69,7 @@
     "cat slurm-*.out",
     {
       "nano": "design.sh",
-      "text": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
+      "text": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython /opt/ProteinMPNN/protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
     },
     "sbatch design.sh",
     "squeue --me",

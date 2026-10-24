@@ -4,7 +4,7 @@
   "order": 10,
   "tier": 3,
   "title": "Design sequences interactively",
-  "story": "Run ProteinMPNN on inputs/{{target}}_complex.pdb, writing to the outputs folder. You'll need a GPU, the anaconda module, and the proteinmpnn environment.",
+  "story": "Run ProteinMPNN on inputs/{{target}}_complex.pdb, writing to the outputs folder. ProteinMPNN is a Python script, /opt/ProteinMPNN/protein_mpnn_run.py. You'll need a GPU, the anaconda module, and the proteinmpnn environment.",
   "vars": {
     "project": [
       "binder_design",
@@ -36,19 +36,19 @@
   },
   "tasks": [
     {
-      "text": "Run protein_mpnn_run.py so outputs/seqs/{{target}}_complex.fa exists",
+      "text": "Run ProteinMPNN so outputs/seqs/{{target}}_complex.fa exists",
       "check": {
         "isFile": "~/{{project}}/outputs/seqs/{{target}}_complex.fa"
       }
     }
   ],
   "hints": [
-    "`srun --gres=gpu:1 --pty bash`, `module load anaconda`, `conda activate proteinmpnn`, then `protein_mpnn_run.py --pdb_path inputs/{{target}}_complex.pdb --out_folder outputs`."
+    "`srun --gres=gpu:1 --pty bash`, `module load anaconda`, `conda activate proteinmpnn`, then `python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}_complex.pdb --out_folder outputs`."
   ],
   "solution": [
     "srun --gres=gpu:1 --pty bash",
     "module load anaconda",
     "conda activate proteinmpnn",
-    "protein_mpnn_run.py --pdb_path inputs/{{target}}_complex.pdb --out_folder outputs"
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}_complex.pdb --out_folder outputs"
   ]
 }

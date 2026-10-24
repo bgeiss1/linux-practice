@@ -7,7 +7,7 @@
       "title": "Start a session",
       "blurb": "Log in, check the GPUs, ask Slurm for one, and load your software.",
       "commands": [
-        "ssh",
+        "whoami",
         "hostname",
         "sinfo",
         "nvidia-smi",
@@ -146,8 +146,9 @@
         "./",
         "chmod +x",
         ">",
+        ">>",
         "2>",
-        "&"
+        "for"
       ],
       "scenarios": [
         "bash/01-run-script",

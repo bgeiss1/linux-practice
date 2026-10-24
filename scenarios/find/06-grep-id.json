@@ -67,6 +67,8 @@
   ],
   "solution": [
     "grep -r \"{{seqid}}\" seqs/",
-    "answer {{files.0}}.fasta"
+    {
+      "answer": "{{files.0}}.fasta"
+    }
   ]
 }

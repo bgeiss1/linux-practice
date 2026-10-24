@@ -49,6 +49,8 @@
   ],
   "solution": [
     "sort -n -k 2 scores.txt | head -1",
-    "answer {{names.2}}"
+    {
+      "answer": "{{names.2}}"
+    }
   ]
 }

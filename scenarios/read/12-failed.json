@@ -46,7 +46,7 @@
               "at": "{{pos}}",
               "text": "FileNotFoundError: [Errno 2] No such file or directory: 'inputs/{{missing}}.pdb'\n"
             },
-            "after": "Traceback (most recent call last):\n  File \"run_inference.py\", line 88, in <module>\nRuntimeError: aborting\n"
+            "after": "Traceback (most recent call last):\n  File \"/opt/RFdiffusion/scripts/run_inference.py\", line 88, in <module>\nRuntimeError: aborting\n"
           }
         },
         "~/{{project}}/inputs/target.pdb": {
@@ -78,6 +78,8 @@
   ],
   "solution": [
     "grep -i error slurm-{{jobid}}.out",
-    "answer {{missing}}.pdb"
+    {
+      "answer": "{{missing}}.pdb"
+    }
   ]
 }

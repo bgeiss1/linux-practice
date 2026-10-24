@@ -49,6 +49,8 @@
   ],
   "solution": [
     "find . -type d -name outputs | wc -l",
-    "answer {{nout}}"
+    {
+      "answer": "{{nout}}"
+    }
   ]
 }

@@ -18,17 +18,24 @@ export const PARTITIONS = {
 export const MODULES = [
   { name: 'anaconda', version: '2025.06', provides: ['conda'] },
   { name: 'cuda', version: '12.8', provides: ['nvcc'] },
-  { name: 'rosetta', version: '3.14', provides: ['rosetta_scripts', 'relax'] },
+  { name: 'rosetta', version: '3.14', provides: ['relax.linuxgccrelease', 'rosetta_scripts.linuxgccrelease'] },
   { name: 'pyrosetta', version: '2025.03', provides: [] },
-  { name: 'alphafold', version: '2.3.2', provides: ['run_alphafold.sh'] },
+  { name: 'alphafold', version: '2.3.2', provides: ['run_alphafold.py'] },
   { name: 'colabfold', version: '1.5.5', provides: ['colabfold_batch'] },
 ];
 
 export const CONDA_ENVS = {
   base: [],
-  proteinmpnn: ['protein_mpnn_run.py'],
-  rfdiffusion: ['run_inference.py'],
+  proteinmpnn: ['/opt/ProteinMPNN/protein_mpnn_run.py'],
+  rfdiffusion: ['/opt/RFdiffusion/scripts/run_inference.py'],
 };
+
+// ProteinMPNN and RFdiffusion are GitHub repos cloned into /opt, not commands on
+// PATH. You run their scripts with the python from their conda environment.
+export const REPO_SCRIPTS = Object.fromEntries(
+  Object.entries(CONDA_ENVS).flatMap(([env, paths]) => paths.map((p) => [p, env])),
+);
+export const repoScriptNamed = (name) => Object.keys(REPO_SCRIPTS).find((p) => p.endsWith('/' + name.split('/').pop()));
 
 const MINUTE = 60_000;
 
@@ -103,7 +110,7 @@ export class Cluster {
 
   path() {
     const bins = ['/usr/local/bin', '/usr/bin', '/bin'];
-    for (const m of this.modules) bins.unshift(`/opt/modules/${m}/bin`);
+    for (const m of this.modules) bins.unshift(`/opt/modules/${m}/${this.findModule(m)?.version}/bin`);
     if (this.condaEnv) bins.unshift(`/opt/conda/envs/${this.condaEnv}/bin`);
     return bins.join(':');
   }
@@ -117,8 +124,8 @@ export class Cluster {
     if (cmd === 'conda') return 'The `conda` command appears only after its module is loaded. Try `module load anaconda`.';
     const mod = MODULES.find((m) => m.provides.includes(cmd));
     if (mod) return `\`${cmd}\` comes from a module. Try \`module avail\`, then \`module load ${mod.name}\`.`;
-    const env = Object.entries(CONDA_ENVS).find(([, tools]) => tools.includes(cmd));
-    if (env) return `\`${cmd}\` lives in the \`${env[0]}\` conda environment.`;
+    const script = repoScriptNamed(cmd);
+    if (script) return `\`${cmd.split('/').pop()}\` is a Python script in ${script.slice(0, script.lastIndexOf('/'))}. Activate the \`${REPO_SCRIPTS[script]}\` environment, then run \`python ${script}\`.`;
     return null;
   }
 

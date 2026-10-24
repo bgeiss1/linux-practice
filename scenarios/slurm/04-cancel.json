@@ -32,7 +32,7 @@
       "cwd": "~/{{project}}",
       "gpusBusy": 5,
       "files": {
-        "~/{{project}}/run.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
+        "~/{{project}}/run.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython /opt/ProteinMPNN/protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
       },
       "jobs": [
         {

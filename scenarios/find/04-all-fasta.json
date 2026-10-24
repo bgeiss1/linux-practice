@@ -53,6 +53,8 @@
   ],
   "solution": [
     "find . -name \"*.fasta\" | wc -l",
-    "answer {{nfa}}"
+    {
+      "answer": "{{nfa}}"
+    }
   ]
 }

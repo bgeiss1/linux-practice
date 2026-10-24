@@ -86,6 +86,8 @@
     "squeue --me",
     "squeue --me",
     "cat slurm-*.out",
-    "answer {{plddt}}"
+    {
+      "answer": "{{plddt}}"
+    }
   ]
 }

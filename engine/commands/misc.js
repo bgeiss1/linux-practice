@@ -3,9 +3,9 @@
 
 import { splitStatements } from '../parser.js';
 import { dirname, basename } from '../vfs.js';
-import { toolFor, runTool } from './tools.js';
+import { runRepoScript } from './tools.js';
 import { endInteractive } from './slurm.js';
-import { MODULES, CONDA_ENVS, NODE } from '../cluster.js';
+import { MODULES, REPO_SCRIPTS, repoScriptNamed, NODE } from '../cluster.js';
 import { HELP, MANUAL } from './help.js';
 
 export function help(ctx) {
@@ -46,17 +46,6 @@ export function date(ctx) {
   ctx.out(d.toUTCString().replace(/^(\w+), (\d+) (\w+) (\d+) ([\d:]+) GMT$/, '$1 $3 $2 $5 UTC $4') + '\n');
 }
 
-export function answer(ctx) {
-  const text = ctx.args.join(' ').trim();
-  if (!text) {
-    ctx.err('answer: type your answer after the word answer, for example: answer design_003\n');
-    return 1;
-  }
-  ctx.sh.answers.push(text);
-  ctx.out(`Answer recorded: ${text}\n`, 'ok');
-  return 0;
-}
-
 export function exit(ctx) {
   const { sh } = ctx;
   if (sh.cluster.interactive) {
@@ -87,14 +76,11 @@ export function which(ctx) {
 function locate(name, cluster) {
   if (name === 'conda') return cluster.modules.includes('anaconda') ? '/opt/conda/bin/conda' : null;
   if (name === 'python' || name === 'python3') {
-    if (cluster.condaEnv) return `/opt/conda/envs/${cluster.condaEnv === 'base' ? '' : cluster.condaEnv + '/'}bin/${name}`.replace('/envs/bin', '/bin');
+    if (cluster.condaEnv || cluster.modules.includes('anaconda')) return (cluster.condaEnv ?? 'base') === 'base' ? `/opt/conda/bin/${name}` : `/opt/conda/envs/${cluster.condaEnv}/bin/${name}`;
     return name === 'python3' ? '/usr/bin/python3' : null;
   }
   for (const m of MODULES) {
     if (m.provides.includes(name)) return cluster.modules.includes(m.name) ? `/opt/modules/${m.name}/${m.version}/bin/${name}` : null;
-  }
-  for (const [env, tools] of Object.entries(CONDA_ENVS)) {
-    if (tools.includes(name)) return cluster.condaEnv === env ? `/opt/conda/envs/${env}/bin/${name}` : null;
   }
   return COMMANDS_ON_PATH.has(name) ? `/usr/bin/${name}` : null;
 }
@@ -107,22 +93,26 @@ export function python(ctx) {
     ctx.out(cluster.condaEnv ? 'Python 3.11.9\n' : 'Python 3.9.18\n');
     return 0;
   }
-  if (ctx.name === 'python' && !cluster.condaEnv) {
+  if (ctx.name === 'python' && !cluster.condaEnv && !cluster.modules.includes('anaconda')) {
     ctx.err('bash: python: command not found\n');
     ctx.coach('python', 'There is no `python` until a conda environment is active. Try `module load anaconda` and then `conda activate`.');
     return 127;
   }
-  const script = ctx.args[0] && basename(ctx.args[0]);
-  const found = script && toolFor(script, cluster);
-  if (found?.available) return runTool(ctx, script, ctx.args.slice(1));
-  if (found) {
-    ctx.err(`${ctx.name}: can't open file '${ctx.args[0]}': [Errno 2] No such file or directory\n`);
-    ctx.coach('python-env', cluster.missingCommandTip(script) ?? 'Activate the conda environment that has this tool first.');
+  const arg = ctx.args[0];
+  if (!arg) {
+    ctx.out('(practice site: there is no interactive Python here. Run a script: python SCRIPT.py)\n', 'dim');
+    return 0;
+  }
+  const path = ctx.sh.resolve(arg);
+  if (REPO_SCRIPTS[path]) return runRepoScript(ctx, path, ctx.args.slice(1));
+  if (!ctx.sh.vfs.get(path)) {
+    ctx.err(`${ctx.name}: can't open file '${path}': [Errno 2] No such file or directory\n`);
+    const known = repoScriptNamed(arg);
+    if (known) ctx.coach('python-path', `${basename(arg)} isn't in this folder. It lives in ${known.slice(0, known.lastIndexOf('/'))}: \`python ${known}\`.`);
     return 2;
   }
-  ctx.err(`${ctx.name}: design tools don't run directly on this practice server\n`);
-  ctx.coach('python-slurm', 'Heavy work on Geiss-01 goes through Slurm so the 8 GPUs are shared fairly. Put the command in a job script and submit it with `sbatch`.');
-  return 1;
+  ctx.out('(practice site: only the design tools run here; other Python scripts do nothing)\n', 'dim');
+  return 0;
 }
 
 export function sudo(ctx) {
@@ -171,12 +161,12 @@ export function ssh(ctx) {
   const target = ctx.args.find((a) => !a.startsWith('-')) ?? '';
   const host = target.split('@').pop();
   if (ctx.sh.kind === 'laptop' && host && ctx.sh.remoteFor(host)) {
-    ctx.out(`(This app keeps Geiss-01 in its own tab. Switch to the Geiss-01 tab to work there.)\n`, 'dim');
+    ctx.out(`(practice site: Geiss-01 is in its own tab. Switch to the Geiss-01 tab to work there.)\n`, 'dim');
     ctx.coach('ssh-tab', 'On a real laptop, `ssh` would log you in right here. In this app, use the Geiss-01 tab instead.');
     return 0;
   }
   if (ctx.sh.kind === 'cluster' && (target.includes(NODE.name) || target.includes('geiss'))) {
-    ctx.out(`You're already logged in to ${NODE.name}.\n`, 'dim');
+    ctx.out(`(practice site: you're already logged in to ${NODE.name} in this tab.)\n`, 'dim');
     return 0;
   }
   ctx.err(`ssh: Could not resolve hostname ${host || '(none)'}: Name or service not known\n`);
@@ -222,6 +212,16 @@ export function bash(ctx) {
 }
 
 export function script(ctx, name) {
+  // The repo scripts start with #!/usr/bin/env python, so they run directly too.
+  const path = ctx.sh.resolve(name);
+  if (REPO_SCRIPTS[path]) {
+    if (!ctx.sh.cluster.condaEnv) {
+      ctx.err("/usr/bin/env: 'python': No such file or directory\n");
+      ctx.coach('python-env', `Activate the \`${REPO_SCRIPTS[path]}\` conda environment first.`);
+      return 127;
+    }
+    return runRepoScript(ctx, path, ctx.args);
+  }
   return runScript(ctx, name, ctx.args, true);
 }
 

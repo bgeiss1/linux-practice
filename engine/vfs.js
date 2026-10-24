@@ -65,19 +65,32 @@ export class VFS {
   }
 
   // Parent directory node of a path, or an error a real shell would print.
-  parentDir(path) {
+  // With forWrite, the parent must also be a folder the user may change.
+  parentDir(path, forWrite = false) {
     const parent = this.get(dirname(path));
     if (!parent) throw new ShellError('ENOENT', 'No such file or directory');
     if (parent.type !== 'dir') throw new ShellError('ENOTDIR', 'Not a directory');
+    if (forWrite) this.checkWrite(dirname(path));
     return parent;
+  }
+
+  // The Shell sets canWrite(dir) once the machine is built, so students can't
+  // change /opt, other people's homes, or the top-level folders.
+  checkWrite(dir) {
+    if (this.canWrite && !this.canWrite(dir)) throw new ShellError('EACCES', 'Permission denied');
   }
 
   mkdir(path, { parents = false, mtime = this.now } = {}) {
     if (parents) {
       let node = this.root;
+      let at = '';
       for (const part of splitPath(path)) {
-        if (!(part in node.children)) node.children[part] = makeDir(mtime);
+        if (!(part in node.children)) {
+          this.checkWrite(at || '/');
+          node.children[part] = makeDir(mtime);
+        }
         node = node.children[part];
+        at += '/' + part;
         if (node.type !== 'dir') throw new ShellError('ENOTDIR', 'Not a directory');
       }
       return node;
@@ -85,12 +98,13 @@ export class VFS {
     const parent = this.parentDir(path);
     const name = basename(path);
     if (name in parent.children) throw new ShellError('EEXIST', 'File exists');
+    this.checkWrite(dirname(path));
     parent.children[name] = makeDir(mtime);
     return parent.children[name];
   }
 
   writeFile(path, content, { append = false, mtime = this.now, mode } = {}) {
-    const parent = this.parentDir(path);
+    const parent = this.parentDir(path, true);
     const name = basename(path);
     const existing = parent.children[name];
     if (existing && existing.type === 'dir') throw new ShellError('EISDIR', 'Is a directory');
@@ -113,7 +127,7 @@ export class VFS {
   }
 
   remove(path) {
-    const parent = this.parentDir(path);
+    const parent = this.parentDir(path, true);
     const name = basename(path);
     if (!(name in parent.children)) throw new ShellError('ENOENT', 'No such file or directory');
     delete parent.children[name];
@@ -121,7 +135,7 @@ export class VFS {
 
   // Attach an existing node (used by cp and mv).
   put(path, node) {
-    const parent = this.parentDir(path);
+    const parent = this.parentDir(path, true);
     parent.children[basename(path)] = node;
   }
 

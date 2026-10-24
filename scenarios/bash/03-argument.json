@@ -103,10 +103,12 @@
   "hints": [
     "Words after a script's name are passed to it. Inside the script, the first one is `$1`.",
     "`./count.sh {{run}}`",
-    "Run `./count.sh {{run}}`, then `answer` with the number."
+    "Run `./count.sh {{run}}`, then type the number in the answer box."
   ],
   "solution": [
     "./count.sh {{run}}",
-    "answer {{nrun}}"
+    {
+      "answer": "{{nrun}}"
+    }
   ]
 }

@@ -13,11 +13,14 @@ export const HELP = `Commands on this practice server (try "man NAME" for detail
                     conda env list | activate NAME | deactivate
   GPUs and jobs     sinfo  nvidia-smi  sbatch SCRIPT  squeue --me  scancel ID
                     sacct  seff ID  srun --gres=gpu:1 --pty bash  exit
-  Design tools      protein_mpnn_run.py  run_inference.py  colabfold_batch  relax
+  Design tools      python /opt/ProteinMPNN/protein_mpnn_run.py   colabfold_batch
+                    python /opt/RFdiffusion/scripts/run_inference.py
+                    run_alphafold.py   relax.linuxgccrelease   rosetta_scripts.linuxgccrelease
   Your laptop       scp [-r] student@geiss-01:PATH LOCAL   scp LOCAL student@geiss-01:PATH
-  This app          answer TEXT   hint   clear   history
+  Also              clear   history
 
 Tab completes names. Up and down arrows bring back earlier commands.
+Stuck on a task? Press the Hint button next to the tasks.
 `;
 
 const page = (name, synopsis, body) => `NAME\n    ${name}\n\nSYNOPSIS\n    ${synopsis}\n\n${body
@@ -97,10 +100,9 @@ scp target.pdb student@geiss-01:~/project/inputs/      upload
   squeue: page('squeue - show the job queue', 'squeue [--me | -u USER] [-j ID]', `ST column: PD pending, R running.
 Finished jobs leave the queue; use sacct to see them.`),
   scancel: page('scancel - cancel jobs', 'scancel ID | -n NAME | -u USER', 'You can only cancel your own jobs.'),
-  sacct: page('sacct - finished and running jobs', 'sacct [-j ID]', 'Shows State and ExitCode for your jobs.'),
-  sinfo: page('sinfo - partitions and nodes', 'sinfo', 'Geiss-01 has two partitions: gpu (2 days) and short (1 hour).'),
+  sacct: page('sacct - finished and running jobs', 'sacct [-j ID] [--format=JobID,State,Elapsed,MaxRSS,ReqMem]', 'Shows State and ExitCode for your jobs. --format picks the columns.'),
+  sinfo: page('sinfo - partitions and nodes', 'sinfo [-o "%P %G"]', 'Geiss-01 has two partitions: gpu (2 days) and short (1 hour). -o "%P %G" also shows the GPUs (GRES).'),
   srun: page('srun - run inside a Slurm allocation', 'srun [OPTIONS] COMMAND', `srun --gres=gpu:1 --pty bash   interactive shell with one GPU
 exit                            leave and give the GPU back`),
   'nvidia-smi': page('nvidia-smi - GPU status', 'nvidia-smi', 'Lists GPUs, memory in use and utilization.'),
-  answer: page('answer - submit an answer (this app only)', 'answer TEXT', 'Some tasks ask you to report something you found.'),
 };

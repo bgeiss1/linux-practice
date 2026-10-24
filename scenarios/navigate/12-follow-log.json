@@ -83,6 +83,8 @@
     "cat slurm-{{job}}.out",
     "cd /scratch/student/{{dataset}}/{{run}}",
     "ls",
-    "answer {{best}}.pdb"
+    {
+      "answer": "{{best}}.pdb"
+    }
   ]
 }

@@ -40,7 +40,7 @@
       }
     },
     {
-      "text": "Report how many .pdb files are there: answer and the number",
+      "text": "Report how many .pdb files are there",
       "check": {
         "answer": "{{n}}"
       }
@@ -53,6 +53,8 @@
   "solution": [
     "cd /scratch/student/{{dataset}}",
     "ls",
-    "answer {{n}}"
+    {
+      "answer": "{{n}}"
+    }
   ]
 }

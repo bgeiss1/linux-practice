@@ -49,6 +49,8 @@
   ],
   "solution": [
     "sort -t , -k 3 -n af2_summary.csv | tail -1",
-    "answer {{names.3}}"
+    {
+      "answer": "{{names.3}}"
+    }
   ]
 }

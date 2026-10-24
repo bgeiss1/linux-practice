@@ -51,6 +51,8 @@
   ],
   "solution": [
     "grep -l \"out of memory\" *.log",
-    "answer {{bad}}"
+    {
+      "answer": "{{bad}}"
+    }
   ]
 }

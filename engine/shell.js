@@ -3,7 +3,7 @@
 
 import { VFS, ShellError, basename, dirname } from './vfs.js';
 import { parse, tokenize, globToRegExp, splitStatements } from './parser.js';
-import { Cluster } from './cluster.js';
+import { Cluster, REPO_SCRIPTS, repoScriptNamed } from './cluster.js';
 import { COMMANDS } from './commands/index.js';
 import { toolFor, runTool } from './commands/tools.js';
 
@@ -29,6 +29,28 @@ export class Shell {
     this.answers = [];
     this.cluster = cluster ?? new Cluster({ user, now: vfs.now });
     this.vars = {};
+    if (kind === 'cluster') {
+      for (const path of Object.keys(REPO_SCRIPTS)) {
+        if (vfs.get(path)) continue;
+        vfs.mkdir(dirname(path), { parents: true, mtime: vfs.now - 864e5 * 200 });
+        vfs.writeFile(path, '#!/usr/bin/env python\n# (practice copy: the real script is long)\nimport torch\n', { mtime: vfs.now - 864e5 * 200, mode: 0o755 });
+      }
+    }
+    // Like a real account: you can change your home, your scratch folder and /tmp.
+    const mine = [this.home, '/tmp', ...(kind === 'cluster' ? [`/scratch/${user}`] : [])];
+    for (const dir of mine) if (!vfs.get(dir)) vfs.mkdir(dir, { parents: true });
+    // System folders belong to root; /tmp is open to everyone but sticky.
+    const own = (node) => {
+      node.owner = 'root';
+      if (node.type === 'dir') Object.values(node.children).forEach(own);
+    };
+    if (vfs.get('/opt')) own(vfs.get('/opt'));
+    for (const dir of ['/', '/home', '/scratch', '/Users', '/tmp']) {
+      const node = vfs.get(dir);
+      if (node && node !== vfs.get(this.home)) node.owner = 'root';
+    }
+    if (vfs.get('/tmp')) vfs.get('/tmp').mode = 0o1777;
+    vfs.canWrite = (dir) => mine.some((m) => dir === m || dir.startsWith(m + '/'));
   }
 
   get env() {
@@ -290,7 +312,7 @@ export class Shell {
     }
     // Running a script by path: ./run.sh or scripts/run.sh
     if (name.includes('/')) return COMMANDS.__script(ctx, name);
-    if (this.kind === 'laptop' && (CLUSTER_ONLY.has(name) || toolFor(name, this.cluster))) {
+    if (this.kind === 'laptop' && (CLUSTER_ONLY.has(name) || toolFor(name, this.cluster) || repoScriptNamed(name))) {
       ctx.err(`zsh: command not found: ${name}\n`);
       ctx.coach('laptop-only', `\`${name}\` runs on Geiss-01, not on your laptop. Switch to the Geiss-01 tab.`);
       return 127;

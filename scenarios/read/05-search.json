@@ -59,6 +59,8 @@
   ],
   "solution": [
     "grep WARNING relax.log",
-    "answer {{residue}}"
+    {
+      "answer": "{{residue}}"
+    }
   ]
 }
