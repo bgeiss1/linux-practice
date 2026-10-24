@@ -1,7 +1,7 @@
 // Student site: track list, scenario list, and the practice terminal.
 
 import { Session, TIERS } from '../engine/scenario.js';
-import { COMMANDS } from '../engine/commands/index.js';
+import { Terminal, esc, fmt, h } from './terminal.js';
 import { wordsFor, passphrase } from '../engine/passphrase.js';
 
 const app = document.getElementById('app');
@@ -57,23 +57,8 @@ const finishedTracks = () => manifest.tracks.filter(trackDone).map((t) => t.id);
 
 // ---------- helpers ----------
 
-function esc(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-}
-
-// Escape, then show `backticks` as code.
-function fmt(s) {
-  return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
-}
-
 function starsHTML(n) {
   return `<span class="stars" aria-label="${n} of 3 stars">${'★'.repeat(n)}<span class="off">${'★'.repeat(3 - n)}</span></span>`;
-}
-
-function h(html) {
-  const t = document.createElement('template');
-  t.innerHTML = html.trim();
-  return t.content;
 }
 
 async function copyText(text, fallbackEl) {
@@ -271,11 +256,12 @@ function renderScenario(id) {
       </div>
     </div>`),
   );
-  const term = new Terminal(document.getElementById('screen-cluster'), current, 'cluster');
+  const opts = { session: current.session, special: specialCommand, afterRun };
+  const term = new Terminal(document.getElementById('screen-cluster'), { ...opts, machine: 'cluster' });
   renderPanel();
   term.write([{ text: 'Practice copy of Geiss-01. Type `help` to see commands, `hint` if you get stuck.\n', cls: 'dim' }]);
   if (current.session.laptop) {
-    const lap = new Terminal(document.getElementById('screen-laptop'), current, 'laptop');
+    const lap = new Terminal(document.getElementById('screen-laptop'), { ...opts, machine: 'laptop' });
     lap.write([{ text: 'Your own laptop. Run `scp` here to copy files to and from Geiss-01.\n', cls: 'dim' }]);
     const terms = { cluster: term, laptop: lap };
     for (const tab of app.querySelectorAll('[role=tab]')) {
@@ -353,6 +339,28 @@ function showHint() {
   renderPanel(r.text ? { html: `<strong>Hint:</strong> ${fmt(r.text)}`, hint: true } : { html: fmt(r.message) });
 }
 
+// Words the page handles itself instead of the shell.
+function specialCommand(word) {
+  if (word === 'hint' && current.session.tasks.length) {
+    showHint();
+    return 'handled';
+  }
+  if (word === 'reset') {
+    renderScenario(current.def.id);
+    return 'stop';
+  }
+  return null;
+}
+
+// Update the lesson panel after a command or an editor save.
+function afterRun(r, wasComplete) {
+  if (r.complete && !wasComplete) recordCompletion();
+  const tip = r.coach?.at(-1);
+  if (tip || r.newlyDone.length || (r.complete && !wasComplete)) {
+    renderPanel(tip ? { html: fmt(tip.text) } : r.complete ? null : { html: `Done. Next: ${fmt(current.session.tasks[current.session.current]?.text ?? '')}` });
+  }
+}
+
 function recordCompletion() {
   const { def, session } = current;
   if (!def.track) return;
@@ -360,262 +368,6 @@ function recordCompletion() {
   if (!prev || session.stars > prev.stars) {
     progress.done[def.id] = { stars: session.stars, at: new Date().toISOString() };
     saveProgress();
-  }
-}
-
-// ---------- terminal ----------
-
-class Terminal {
-  constructor(screen, ctx, machine = 'cluster') {
-    this.screen = screen;
-    this.ctx = ctx;
-    this.machine = machine;
-    this.log = screen.querySelector('.log');
-    this.input = screen.querySelector('.cmd');
-    this.promptEl = screen.querySelector('.prompt');
-    this.hi = 0;
-    this.renderPrompt();
-    this.input.addEventListener('keydown', (e) => this.onKey(e));
-    screen.addEventListener('click', () => {
-      if (!getSelection().toString()) this.focus();
-    });
-  }
-
-  get shell() {
-    return this.ctx.session.machines[this.machine];
-  }
-
-  focus() {
-    this.input.focus({ preventScroll: true });
-  }
-
-  promptHTML() {
-    const p = this.shell.prompt();
-    return `${p.env ? esc(p.env) : ''}<span class="p-user">${esc(p.user)}</span>:<span class="p-path">${esc(p.path)}</span>$`;
-  }
-
-  renderPrompt() {
-    this.promptEl.innerHTML = this.promptHTML();
-  }
-
-  echo(line) {
-    const div = document.createElement('div');
-    div.className = 'ln';
-    div.innerHTML = `${this.promptHTML()} ${esc(line)}`;
-    this.log.appendChild(div);
-  }
-
-  write(segments) {
-    if (!segments.length) return;
-    const div = document.createElement('div');
-    div.className = 'ln out';
-    for (const seg of segments) {
-      const span = document.createElement('span');
-      if (seg.cls) span.className = `t-${seg.cls}`;
-      span.textContent = seg.cls === 'dim' ? seg.text.replace(/`/g, '') : seg.text;
-      div.appendChild(span);
-    }
-    this.log.appendChild(div);
-  }
-
-  scroll() {
-    this.screen.scrollTop = this.screen.scrollHeight;
-  }
-
-  run(line) {
-    this.echo(line);
-    const word = line.trim().split(/\s+/)[0];
-    if (word === 'hint' && current.session.tasks.length) {
-      showHint();
-    } else if (word === 'reset') {
-      renderScenario(current.def.id);
-      return;
-    } else {
-      const wasComplete = current.session.complete;
-      const r = current.session.run(line, this.machine);
-      if (r.clear) this.log.replaceChildren();
-      this.write(r.output);
-      this.afterRun(r, wasComplete);
-      if (r.edit) {
-        new Editor(this, r.edit);
-        return;
-      }
-    }
-    this.hi = this.shell.history.length;
-    this.renderPrompt();
-    this.scroll();
-  }
-
-  // Update the lesson panel after a command or an editor save.
-  afterRun(r, wasComplete) {
-    if (r.complete && !wasComplete) recordCompletion();
-    const tip = r.coach?.at(-1);
-    if (tip || r.newlyDone.length || (r.complete && !wasComplete)) {
-      renderPanel(tip ? { html: fmt(tip.text) } : r.complete ? null : { html: `Done. Next: ${fmt(current.session.tasks[current.session.current]?.text ?? '')}` });
-    }
-  }
-
-  onKey(e) {
-    const { input } = this;
-    if (e.key === 'Enter') {
-      e.preventDefault(); // or the Enter can land in the editor if this line opens nano
-      const v = input.value;
-      input.value = '';
-      this.run(v);
-    } else if (e.key === 'Tab') {
-      e.preventDefault();
-      this.complete();
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      if (this.hi > 0) input.value = this.shell.history[--this.hi];
-    } else if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      if (this.hi < this.shell.history.length) input.value = this.shell.history[++this.hi] ?? '';
-    } else if (e.key === 'l' && e.ctrlKey) {
-      e.preventDefault();
-      this.log.replaceChildren();
-    } else if (e.key === 'c' && e.ctrlKey && !getSelection().toString()) {
-      e.preventDefault();
-      this.echo(input.value + '^C');
-      input.value = '';
-      this.scroll();
-    }
-  }
-
-  complete() {
-    const { input } = this;
-    const v = input.value;
-    const m = v.match(/(\S*)$/);
-    const w = m[1];
-    const before = v.slice(0, v.length - w.length);
-    if (!before.trim()) {
-      const opts = Object.keys(COMMANDS).filter((c) => !c.startsWith('__') && c.startsWith(w)).sort();
-      if (opts.length === 1) input.value = opts[0] + ' ';
-      else if (opts.length > 1 && w) this.showOptions(v, opts, before, '', w);
-      return;
-    }
-    const unescaped = w.replace(/\\ /g, ' ');
-    const slash = unescaped.lastIndexOf('/');
-    const dirPart = slash >= 0 ? unescaped.slice(0, slash + 1) : '';
-    const base = slash >= 0 ? unescaped.slice(slash + 1) : unescaped;
-    const dir = this.shell.vfs.get(this.shell.resolve(dirPart || '.'));
-    if (!dir || dir.type !== 'dir') return;
-    const opts = Object.keys(dir.children)
-      .filter((k) => k.startsWith(base) && (base.startsWith('.') || !k.startsWith('.')))
-      .sort();
-    const escName = (s) => s.replace(/ /g, '\\ ');
-    if (opts.length === 1) {
-      const k = opts[0];
-      input.value = before + escName(dirPart + k) + (dir.children[k].type === 'dir' ? '/' : ' ');
-    } else if (opts.length > 1) {
-      this.showOptions(v, opts, before, dirPart, base, escName);
-    }
-  }
-
-  showOptions(v, opts, before, dirPart, base, escName = (s) => s) {
-    this.echo(v);
-    this.write([{ text: opts.join('  ') + '\n' }]);
-    let common = opts[0];
-    for (const o of opts) while (!o.startsWith(common)) common = common.slice(0, -1);
-    if (common.length > (base ?? '').length) this.input.value = before + escName(dirPart + common);
-    this.scroll();
-  }
-}
-
-// ---------- editor ----------
-
-// A small nano look-alike. It covers the terminal until the student exits.
-class Editor {
-  constructor(term, edit) {
-    this.term = term;
-    this.edit = edit;
-    this.saved = edit.content;
-    this.asking = false;
-    const box = term.screen.parentElement;
-    this.el = h(`
-      <div class="nano" role="dialog" aria-label="nano editor">
-        <div class="nano-bar"><span>GNU nano 7.2</span><span>${esc(edit.file)}${edit.isNew ? ' (new file)' : ''}</span><span class="nano-mod"></span></div>
-        <textarea class="nano-text" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="File contents"></textarea>
-        <div class="nano-status" aria-live="polite"></div>
-        <div class="nano-keys">
-          <button type="button" data-k="save"><kbd>^O</kbd> Write Out</button>
-          <button type="button" data-k="exit"><kbd>^X</kbd> Exit</button>
-          <span class="nano-tip">Ctrl+S also saves</span>
-        </div>
-      </div>`).firstElementChild;
-    this.text = this.el.querySelector('textarea');
-    this.status = this.el.querySelector('.nano-status');
-    this.mod = this.el.querySelector('.nano-mod');
-    this.text.value = edit.content;
-    term.screen.hidden = true;
-    box.appendChild(this.el);
-    this.text.addEventListener('keydown', (e) => this.onKey(e));
-    this.text.addEventListener('input', () => this.markModified());
-    this.el.querySelector('[data-k=save]').addEventListener('click', () => this.save());
-    this.el.querySelector('[data-k=exit]').addEventListener('click', () => this.exit());
-    setTimeout(() => {
-      this.text.focus();
-      this.text.setSelectionRange(0, 0);
-    });
-  }
-
-  get modified() {
-    return this.text.value !== this.saved;
-  }
-
-  markModified() {
-    this.mod.textContent = this.modified ? 'Modified' : '';
-  }
-
-  say(msg) {
-    this.status.textContent = msg;
-  }
-
-  save() {
-    const wasComplete = current.session.complete;
-    let text = this.text.value;
-    if (text && !text.endsWith('\n')) text += '\n';
-    const r = current.session.save(this.edit.path, text, this.term.machine);
-    this.saved = this.text.value;
-    this.markModified();
-    const n = text ? text.split('\n').length - 1 : 0;
-    this.say(`[ Wrote ${n} line${n === 1 ? '' : 's'} ]`);
-    this.term.afterRun(r, wasComplete);
-  }
-
-  exit() {
-    if (this.modified) {
-      this.asking = true;
-      this.say('Save modified buffer?  Y Yes   N No   ^C Cancel');
-      return;
-    }
-    this.close();
-  }
-
-  close() {
-    this.el.remove();
-    this.term.screen.hidden = false;
-    this.term.renderPrompt();
-    this.term.scroll();
-    this.term.focus();
-  }
-
-  onKey(e) {
-    const key = e.key.toLowerCase();
-    if (this.asking) {
-      e.preventDefault();
-      if (key === 'y') { this.save(); this.close(); }
-      else if (key === 'n') this.close();
-      else if (key === 'escape' || (e.ctrlKey && key === 'c')) { this.asking = false; this.say('Cancelled'); }
-      return;
-    }
-    if (e.ctrlKey && (key === 'o' || key === 's')) { e.preventDefault(); this.save(); }
-    else if (e.ctrlKey && key === 'x') { e.preventDefault(); this.exit(); }
-    else if (key === 'tab') {
-      e.preventDefault();
-      this.text.setRangeText('    ', this.text.selectionStart, this.text.selectionEnd, 'end');
-      this.markModified();
-    }
   }
 }
 

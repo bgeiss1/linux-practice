@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux Practice Instructor</title>
+  <meta name="description" content="Edit, test, and publish Linux Practice scenarios, and check students' passphrases.">
+  <meta name="robots" content="noindex">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#/">
+        <span class="brand-mark" aria-hidden="true">$_</span>
+        <span>Linux Practice <span class="muted">Instructor</span></span>
+      </a>
+      <nav class="admin-nav" id="nav" aria-label="Dashboard"></nav>
+    </div>
+  </header>
+  <main id="app" class="wrap" aria-live="polite">
+    <p class="loading">Loading scenarios…</p>
+  </main>
+  <footer class="wrap footer">
+    Drafts and files you load here stay in this browser. Only Publish changes what students see.
+    <a href="./">Open the student site</a>
+  </footer>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
