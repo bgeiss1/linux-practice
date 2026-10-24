@@ -1,7 +1,9 @@
 // Everything else: help, history, who/where am I, scripts, and friendly
 // stand-ins for things the practice server doesn't do.
 
-import { parse } from '../parser.js';
+import { splitStatements } from '../parser.js';
+import { dirname, basename } from '../vfs.js';
+import { toolFor, runTool } from './tools.js';
 import { endInteractive } from './slurm.js';
 import { MODULES, CONDA_ENVS, NODE } from '../cluster.js';
 import { HELP, MANUAL } from './help.js';
@@ -32,7 +34,7 @@ export function whoami(ctx) {
 }
 
 export function hostname(ctx) {
-  ctx.out(NODE.name + '\n');
+  ctx.out(ctx.sh.host + '\n');
 }
 
 export function id(ctx) {
@@ -110,6 +112,14 @@ export function python(ctx) {
     ctx.coach('python', 'There is no `python` until a conda environment is active. Try `module load anaconda` and then `conda activate`.');
     return 127;
   }
+  const script = ctx.args[0] && basename(ctx.args[0]);
+  const found = script && toolFor(script, cluster);
+  if (found?.available) return runTool(ctx, script, ctx.args.slice(1));
+  if (found) {
+    ctx.err(`${ctx.name}: can't open file '${ctx.args[0]}': [Errno 2] No such file or directory\n`);
+    ctx.coach('python-env', cluster.missingCommandTip(script) ?? 'Activate the conda environment that has this tool first.');
+    return 2;
+  }
   ctx.err(`${ctx.name}: design tools don't run directly on this practice server\n`);
   ctx.coach('python-slurm', 'Heavy work on Geiss-01 goes through Slurm so the 8 GPUs are shared fairly. Put the command in a job script and submit it with `sbatch`.');
   return 1;
@@ -121,27 +131,58 @@ export function sudo(ctx) {
   return 1;
 }
 
+// Opens the in-page editor. The page shows it and calls Shell.saveEdit on save.
 export function editor(ctx) {
-  ctx.err(`${ctx.name}: the text editor isn't available in this lesson yet.\n`);
-  ctx.coach('editor', 'To write a short file without an editor, use `echo "some text" > notes.txt`. Use `>>` to add a line to the end.');
-  return 1;
+  const { sh } = ctx;
+  const file = ctx.args.find((a) => !a.startsWith('-') && !a.startsWith('+'));
+  if (ctx.piped) {
+    ctx.err(`${ctx.name}: an editor needs the whole screen, so it can't be piped\n`);
+    return 1;
+  }
+  if (!file) {
+    ctx.err(`${ctx.name}: give it a file name, like ${ctx.name} notes.txt\n`);
+    ctx.coach('editor-name', `Name the file to open: \`nano run.sh\`. If it doesn't exist yet, nano creates it when you save.`);
+    return 1;
+  }
+  const abs = sh.resolve(file);
+  const node = sh.vfs.get(abs);
+  if (node?.type === 'dir') {
+    ctx.err(`${ctx.name}: ${file} is a directory\n`);
+    return 1;
+  }
+  const parent = sh.vfs.get(dirname(abs));
+  if (!parent || parent.type !== 'dir') {
+    ctx.err(`${ctx.name}: ${file}: No such file or directory (the folder doesn't exist)\n`);
+    ctx.coach('editor-dir', `Make the folder first with \`mkdir -p ${dirname(file) || '.'}\`.`);
+    return 1;
+  }
+  if (node?.archive || node?.gz) {
+    ctx.err(`${ctx.name}: ${file} is binary, not text\n`);
+    return 1;
+  }
+  if (ctx.name !== 'nano') {
+    ctx.coach('editor-nano', `This practice server opens every editor as nano. Real ${ctx.name} works very differently.`);
+  }
+  ctx.edit({ path: abs, file, content: node?.content ?? '', isNew: !node });
+  return 0;
 }
 
 export function ssh(ctx) {
   const target = ctx.args.find((a) => !a.startsWith('-')) ?? '';
-  if (target.includes(NODE.name) || target.includes('geiss')) {
+  const host = target.split('@').pop();
+  if (ctx.sh.kind === 'laptop' && host && ctx.sh.remoteFor(host)) {
+    ctx.out(`(This app keeps Geiss-01 in its own tab. Switch to the Geiss-01 tab to work there.)\n`, 'dim');
+    ctx.coach('ssh-tab', 'On a real laptop, `ssh` would log you in right here. In this app, use the Geiss-01 tab instead.');
+    return 0;
+  }
+  if (ctx.sh.kind === 'cluster' && (target.includes(NODE.name) || target.includes('geiss'))) {
     ctx.out(`You're already logged in to ${NODE.name}.\n`, 'dim');
     return 0;
   }
-  ctx.err(`ssh: Could not resolve hostname ${target.split('@').pop() || '(none)'}: Name or service not known\n`);
+  ctx.err(`ssh: Could not resolve hostname ${host || '(none)'}: Name or service not known\n`);
   return 255;
 }
 
-export function scp(ctx) {
-  ctx.err('ssh: connect to host my-laptop port 22: Connection refused\nscp: Connection closed\n');
-  ctx.coach('scp-side', 'Your laptop can reach Geiss-01, but Geiss-01 can\'t reach your laptop. Run `scp` in a terminal on your own computer.');
-  return 1;
-}
 
 export function sleep() {
   return 0;
@@ -209,35 +250,18 @@ function runScript(ctx, path, args, needExec) {
   // conda activate inside it don't change the student's shell afterwards.
   const saved = { cwd: sh.cwd, modules: [...sh.cluster.modules], conda: sh.cluster.condaEnv, vars: { ...sh.vars } };
   sh.scriptDepth = (sh.scriptDepth ?? 0) + 1;
-  const positional = { 0: path, '#': String(args.length), '@': args.join(' ') };
+  const positional = { 0: path, '#': String(args.length), '@': args.join(' '), argv: args };
   args.forEach((a, i) => { positional[i + 1] = a; });
   let code = 0;
   try {
-    for (const line of node.content.split('\n')) {
-      const t = line.trim();
-      if (!t || t.startsWith('#')) continue;
-      if (t === 'set -e' || t.startsWith('set ')) continue;
-      let lists;
-      try {
-        lists = parse(t, { ...sh.env, ...positional });
-      } catch (e) {
-        ctx.err(`${path}: line: ${e.message}\n`);
-        code = 2;
-        break;
-      }
-      const result = { output: [], coach: [], clear: false };
-      for (const [i, list] of lists.entries()) {
-        const prev = lists[i - 1];
-        if (prev?.connector === '&&' && code !== 0) continue;
-        if (prev?.connector === '||' && code === 0) continue;
-        code = sh.runPipeline(list, result);
-      }
-      for (const seg of result.output) {
-        if (seg.cls === 'err') ctx.err(seg.text);
-        else ctx.out(seg.text, seg.cls);
-      }
-      if (code !== 0 && node.content.includes('set -e')) break;
+    const stmts = splitStatements(node.content).filter((t) => !/^set\s/.test(t));
+    const result = { output: [], coach: [], clear: false };
+    code = sh.execStatements(stmts, result, { extraEnv: positional, stopOnError: /^set -e/m.test(node.content) });
+    for (const seg of result.output) {
+      if (seg.cls === 'err') ctx.err(seg.text);
+      else ctx.out(seg.text, seg.cls);
     }
+    for (const c of result.coach) ctx.coach(c.key, c.text);
   } finally {
     sh.scriptDepth--;
     sh.cwd = saved.cwd;
@@ -246,4 +270,17 @@ function runScript(ctx, path, args, needExec) {
     sh.vars = saved.vars;
   }
   return code;
+}
+
+export function basenameCmd(ctx) {
+  const [path, suffix] = ctx.args;
+  if (path === undefined) { ctx.err('basename: missing operand\n'); return 1; }
+  let b = path.replace(/\/+$/, '').split('/').pop() || '/';
+  if (suffix && b.endsWith(suffix) && b !== suffix) b = b.slice(0, -suffix.length);
+  ctx.out(b + '\n');
+}
+
+export function dirnameCmd(ctx) {
+  if (!ctx.args.length) { ctx.err('dirname: missing operand\n'); return 1; }
+  ctx.out(dirname(ctx.args[0].replace(/\/+$/, '')).replace(/^$/, '.') + '\n');
 }

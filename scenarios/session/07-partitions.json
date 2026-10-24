@@ -1,0 +1,45 @@
+{
+  "id": "session-07-partitions",
+  "track": "session",
+  "order": 7,
+  "tier": 2,
+  "title": "Pick a partition",
+  "story": "Slurm splits Geiss-01 into partitions with different time limits. You have a quick {{mins}}-minute test to run. Find the partition with the shorter limit and report its name.",
+  "vars": {
+    "mins": [
+      10,
+      15,
+      20,
+      30,
+      45
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Show the partitions",
+      "check": {
+        "ran": "sinfo"
+      }
+    },
+    {
+      "text": "Report the partition for short tests",
+      "check": {
+        "answer": "short"
+      }
+    }
+  ],
+  "hints": [
+    "`sinfo` lists partitions and their TIMELIMIT.",
+    "Run `sinfo` and compare the TIMELIMIT column."
+  ],
+  "solution": [
+    "sinfo",
+    "answer short"
+  ]
+}

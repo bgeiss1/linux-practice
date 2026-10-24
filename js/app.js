@@ -261,18 +261,39 @@ function renderScenario(id) {
     <div class="bench">
       <aside class="panel" id="panel"></aside>
       <div class="term">
-        <div class="term-bar"><span>student@geiss-01</span><span>practice copy · safe to break</span></div>
-        <div class="screen" id="screen">
-          <div id="log"></div>
-          <div class="inrow"><span id="prompt"></span><input id="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="Terminal command"></div>
-        </div>
+        <div class="term-bar">${
+          current.session.laptop
+            ? `<div class="tabs" role="tablist"><button type="button" role="tab" data-m="cluster" aria-selected="true">Geiss-01</button><button type="button" role="tab" data-m="laptop" aria-selected="false">Laptop</button></div>`
+            : '<span>student@geiss-01</span>'
+        }<span>practice copy · safe to break</span></div>
+        ${screenHTML('cluster')}
+        ${current.session.laptop ? screenHTML('laptop', true) : ''}
       </div>
     </div>`),
   );
-  const term = new Terminal(document.getElementById('screen'), current);
+  const term = new Terminal(document.getElementById('screen-cluster'), current, 'cluster');
   renderPanel();
   term.write([{ text: 'Practice copy of Geiss-01. Type `help` to see commands, `hint` if you get stuck.\n', cls: 'dim' }]);
+  if (current.session.laptop) {
+    const lap = new Terminal(document.getElementById('screen-laptop'), current, 'laptop');
+    lap.write([{ text: 'Your own laptop. Run `scp` here to copy files to and from Geiss-01.\n', cls: 'dim' }]);
+    const terms = { cluster: term, laptop: lap };
+    for (const tab of app.querySelectorAll('[role=tab]')) {
+      tab.addEventListener('click', () => {
+        for (const t of app.querySelectorAll('[role=tab]')) t.setAttribute('aria-selected', String(t === tab));
+        for (const [m, t] of Object.entries(terms)) t.screen.hidden = m !== tab.dataset.m;
+        terms[tab.dataset.m].focus();
+      });
+    }
+  }
   term.focus();
+}
+
+function screenHTML(machine, hidden = false) {
+  return `<div class="screen" id="screen-${machine}" data-machine="${machine}"${hidden ? ' hidden' : ''}>
+    <div class="log"></div>
+    <div class="inrow"><span class="prompt"></span><input class="cmd" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" aria-label="${machine === 'laptop' ? 'Laptop' : 'Geiss-01'} terminal command"></div>
+  </div>`;
 }
 
 function renderPanel(coach = null) {
@@ -322,7 +343,7 @@ function renderPanel(coach = null) {
 
 function defaultCoach(session) {
   if (!session.tasks.length) return 'Anything goes here. Type `help` to see what this server understands.';
-  if (session.tier === 1) return 'Type commands in the terminal on the right and press Enter. Use the Hint button whenever you want.';
+  if (session.tier === 1) return 'Type commands in the terminal and press Enter. Use the Hint button whenever you want.';
   if (session.tier === 4) return 'You\'re on your own for this one.';
   return 'Work through the tasks in order.';
 }
@@ -345,12 +366,13 @@ function recordCompletion() {
 // ---------- terminal ----------
 
 class Terminal {
-  constructor(screen, ctx) {
+  constructor(screen, ctx, machine = 'cluster') {
     this.screen = screen;
     this.ctx = ctx;
-    this.log = screen.querySelector('#log');
-    this.input = screen.querySelector('#cmd');
-    this.promptEl = screen.querySelector('#prompt');
+    this.machine = machine;
+    this.log = screen.querySelector('.log');
+    this.input = screen.querySelector('.cmd');
+    this.promptEl = screen.querySelector('.prompt');
     this.hi = 0;
     this.renderPrompt();
     this.input.addEventListener('keydown', (e) => this.onKey(e));
@@ -360,7 +382,7 @@ class Terminal {
   }
 
   get shell() {
-    return this.ctx.session.shell;
+    return this.ctx.session.machines[this.machine];
   }
 
   focus() {
@@ -410,13 +432,13 @@ class Terminal {
       return;
     } else {
       const wasComplete = current.session.complete;
-      const r = current.session.run(line);
+      const r = current.session.run(line, this.machine);
       if (r.clear) this.log.replaceChildren();
       this.write(r.output);
-      if (r.complete && !wasComplete) recordCompletion();
-      const tip = r.coach.at(-1);
-      if (tip || r.newlyDone.length || (r.complete && !wasComplete)) {
-        renderPanel(tip ? { html: fmt(tip.text) } : r.complete ? null : { html: `Done. Next: ${fmt(current.session.tasks[current.session.current]?.text ?? '')}` });
+      this.afterRun(r, wasComplete);
+      if (r.edit) {
+        new Editor(this, r.edit);
+        return;
       }
     }
     this.hi = this.shell.history.length;
@@ -424,9 +446,19 @@ class Terminal {
     this.scroll();
   }
 
+  // Update the lesson panel after a command or an editor save.
+  afterRun(r, wasComplete) {
+    if (r.complete && !wasComplete) recordCompletion();
+    const tip = r.coach?.at(-1);
+    if (tip || r.newlyDone.length || (r.complete && !wasComplete)) {
+      renderPanel(tip ? { html: fmt(tip.text) } : r.complete ? null : { html: `Done. Next: ${fmt(current.session.tasks[current.session.current]?.text ?? '')}` });
+    }
+  }
+
   onKey(e) {
     const { input } = this;
     if (e.key === 'Enter') {
+      e.preventDefault(); // or the Enter can land in the editor if this line opens nano
       const v = input.value;
       input.value = '';
       this.run(v);
@@ -487,6 +519,103 @@ class Terminal {
     for (const o of opts) while (!o.startsWith(common)) common = common.slice(0, -1);
     if (common.length > (base ?? '').length) this.input.value = before + escName(dirPart + common);
     this.scroll();
+  }
+}
+
+// ---------- editor ----------
+
+// A small nano look-alike. It covers the terminal until the student exits.
+class Editor {
+  constructor(term, edit) {
+    this.term = term;
+    this.edit = edit;
+    this.saved = edit.content;
+    this.asking = false;
+    const box = term.screen.parentElement;
+    this.el = h(`
+      <div class="nano" role="dialog" aria-label="nano editor">
+        <div class="nano-bar"><span>GNU nano 7.2</span><span>${esc(edit.file)}${edit.isNew ? ' (new file)' : ''}</span><span class="nano-mod"></span></div>
+        <textarea class="nano-text" spellcheck="false" autocapitalize="off" autocorrect="off" aria-label="File contents"></textarea>
+        <div class="nano-status" aria-live="polite"></div>
+        <div class="nano-keys">
+          <button type="button" data-k="save"><kbd>^O</kbd> Write Out</button>
+          <button type="button" data-k="exit"><kbd>^X</kbd> Exit</button>
+          <span class="nano-tip">Ctrl+S also saves</span>
+        </div>
+      </div>`).firstElementChild;
+    this.text = this.el.querySelector('textarea');
+    this.status = this.el.querySelector('.nano-status');
+    this.mod = this.el.querySelector('.nano-mod');
+    this.text.value = edit.content;
+    term.screen.hidden = true;
+    box.appendChild(this.el);
+    this.text.addEventListener('keydown', (e) => this.onKey(e));
+    this.text.addEventListener('input', () => this.markModified());
+    this.el.querySelector('[data-k=save]').addEventListener('click', () => this.save());
+    this.el.querySelector('[data-k=exit]').addEventListener('click', () => this.exit());
+    setTimeout(() => {
+      this.text.focus();
+      this.text.setSelectionRange(0, 0);
+    });
+  }
+
+  get modified() {
+    return this.text.value !== this.saved;
+  }
+
+  markModified() {
+    this.mod.textContent = this.modified ? 'Modified' : '';
+  }
+
+  say(msg) {
+    this.status.textContent = msg;
+  }
+
+  save() {
+    const wasComplete = current.session.complete;
+    let text = this.text.value;
+    if (text && !text.endsWith('\n')) text += '\n';
+    const r = current.session.save(this.edit.path, text, this.term.machine);
+    this.saved = this.text.value;
+    this.markModified();
+    const n = text ? text.split('\n').length - 1 : 0;
+    this.say(`[ Wrote ${n} line${n === 1 ? '' : 's'} ]`);
+    this.term.afterRun(r, wasComplete);
+  }
+
+  exit() {
+    if (this.modified) {
+      this.asking = true;
+      this.say('Save modified buffer?  Y Yes   N No   ^C Cancel');
+      return;
+    }
+    this.close();
+  }
+
+  close() {
+    this.el.remove();
+    this.term.screen.hidden = false;
+    this.term.renderPrompt();
+    this.term.scroll();
+    this.term.focus();
+  }
+
+  onKey(e) {
+    const key = e.key.toLowerCase();
+    if (this.asking) {
+      e.preventDefault();
+      if (key === 'y') { this.save(); this.close(); }
+      else if (key === 'n') this.close();
+      else if (key === 'escape' || (e.ctrlKey && key === 'c')) { this.asking = false; this.say('Cancelled'); }
+      return;
+    }
+    if (e.ctrlKey && (key === 'o' || key === 's')) { e.preventDefault(); this.save(); }
+    else if (e.ctrlKey && key === 'x') { e.preventDefault(); this.exit(); }
+    else if (key === 'tab') {
+      e.preventDefault();
+      this.text.setRangeText('    ', this.text.selectionStart, this.text.selectionEnd, 'end');
+      this.markModified();
+    }
   }
 }
 

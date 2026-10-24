@@ -1,0 +1,70 @@
+{
+  "id": "manage-03-rename",
+  "track": "manage",
+  "order": 3,
+  "tier": 1,
+  "title": "Give it a real name",
+  "story": "ProteinMPNN wrote its sequences to a file called seqs.fa, which will be confusing next week. Rename it to {{target}}_{{run}}.fasta. Linux renames with the same command it uses to move.",
+  "vars": {
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/outputs/{{run}}",
+      "files": {
+        "~/{{project}}/outputs/{{run}}/seqs.fa": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/outputs/{{run}}/run.log": "done\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Rename seqs.fa to {{target}}_{{run}}.fasta",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/outputs/{{run}}/{{target}}_{{run}}.fasta"
+          },
+          {
+            "notExists": "~/{{project}}/outputs/{{run}}/seqs.fa"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`mv OLD NEW` renames a file when NEW is a name rather than a folder.",
+    "`mv seqs.fa {{target}}_{{run}}.fasta`",
+    "Run `mv seqs.fa {{target}}_{{run}}.fasta`, then `ls` to check."
+  ],
+  "solution": [
+    "mv seqs.fa {{target}}_{{run}}.fasta"
+  ]
+}

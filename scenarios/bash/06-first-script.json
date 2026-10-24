@@ -1,0 +1,87 @@
+{
+  "id": "bash-06-first-script",
+  "track": "bash",
+  "order": 6,
+  "tier": 2,
+  "title": "Write your first script",
+  "story": "Write a script called list_inputs.sh in {{project}} that lists the inputs folder in long format. Use the nano editor: `nano list_inputs.sh` opens it, Ctrl+O saves, Ctrl+X exits.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/inputs/{{target}}.fasta": {
+          "lib": "fasta:designs"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Write list_inputs.sh with the line ls -l inputs",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/list_inputs.sh",
+          "text": "ls -l inputs"
+        }
+      }
+    },
+    {
+      "text": "Make it executable",
+      "check": {
+        "executable": "~/{{project}}/list_inputs.sh"
+      }
+    },
+    {
+      "text": "Run it",
+      "check": {
+        "any": [
+          {
+            "ran": "./list_inputs.sh",
+            "ok": true
+          },
+          {
+            "ran": [
+              "bash",
+              "sh"
+            ],
+            "argHas": "list_inputs.sh",
+            "ok": true
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "Scripts start with the line `#!/bin/bash`. Put the command on the next line, save, and exit nano. Then `chmod +x` and `./`.",
+    "In nano type `#!/bin/bash` and `ls -l inputs` on two lines, Ctrl+O to save, Ctrl+X to exit. Then `chmod +x list_inputs.sh` and `./list_inputs.sh`."
+  ],
+  "solution": [
+    {
+      "nano": "list_inputs.sh",
+      "text": "#!/bin/bash\nls -l inputs\n"
+    },
+    "chmod +x list_inputs.sh",
+    "./list_inputs.sh"
+  ]
+}

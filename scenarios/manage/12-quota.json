@@ -1,0 +1,106 @@
+{
+  "id": "manage-12-quota",
+  "track": "manage",
+  "order": 12,
+  "tier": 4,
+  "title": "Over quota",
+  "story": "Your home folder is over its quota and jobs are failing. Big data belongs in /scratch/{{user}}. Move the largest folder in ~/{{project}} there, and delete the core dump files (core.*) that crashed jobs left in ~/{{project}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "folders": {
+      "pick": 3,
+      "from": [
+        "af2_models",
+        "rfd_trajectories",
+        "mpnn_outputs",
+        "relax_runs",
+        "colabfold_msas"
+      ]
+    },
+    "big": {
+      "fromVar": "folders"
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/{{folders.0}}/part_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "200M",
+          "count": 2
+        },
+        "~/{{project}}/{{folders.1}}/part_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "150M",
+          "count": 2
+        },
+        "~/{{project}}/{{folders.2}}/part_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "120M",
+          "count": 2
+        },
+        "~/{{project}}/{{big}}/bulk/chunk_{{i}}.npz": {
+          "content": "data\n",
+          "size": "3G",
+          "count": 3
+        },
+        "~/{{project}}/core.1{{i}}": {
+          "content": "core\n",
+          "size": "800M",
+          "count": 3
+        },
+        "~/{{project}}/notes.txt": "move big stuff to scratch\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Move the largest folder into /scratch/{{user}}",
+      "check": {
+        "all": [
+          {
+            "isDir": "/scratch/{{user}}/{{big}}/bulk"
+          },
+          {
+            "notExists": "~/{{project}}/{{big}}"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Delete the core.* files",
+      "check": {
+        "all": [
+          {
+            "notExists": "~/{{project}}/core.101"
+          },
+          {
+            "notExists": "~/{{project}}/core.102"
+          },
+          {
+            "notExists": "~/{{project}}/core.103"
+          },
+          {
+            "isFile": "~/{{project}}/notes.txt"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`du -sh *` shows sizes. `mv` moves a whole folder. Wildcards work with `rm` too."
+  ],
+  "solution": [
+    "du -sh *",
+    "mv {{big}} /scratch/{{user}}/",
+    "rm core.*"
+  ]
+}

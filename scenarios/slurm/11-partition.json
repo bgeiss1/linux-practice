@@ -1,0 +1,100 @@
+{
+  "id": "slurm-11-partition",
+  "track": "slurm",
+  "order": 11,
+  "tier": 4,
+  "title": "Stuck in the queue",
+  "story": "Your job {{jname}} has been pending for an hour while GPUs sit free. Find out why, and get it running.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "jname": [
+      "af2_big",
+      "fold_set",
+      "rfd_long"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/{{jname}}.sh": "#!/bin/bash\n#SBATCH --job-name={{jname}}\n#SBATCH --partition=short\n#SBATCH --gres=gpu:1\n#SBATCH --time=03:00:00\n#SBATCH --mem=32G\n#SBATCH --output=slurm-%j.out\n\nmodule load colabfold\ncolabfold_batch designs.fasta results/\n",
+        "~/{{project}}/designs.fasta": {
+          "lib": "fasta:designs"
+        }
+      },
+      "jobs": [
+        {
+          "id": 47911,
+          "name": "{{jname}}",
+          "gpus": 1,
+          "partition": "short",
+          "timeMin": 180,
+          "memGB": 32,
+          "state": "PD",
+          "submitStep": -60,
+          "reason": "PartitionTimeLimit"
+        }
+      ],
+      "jobRules": [
+        {
+          "match": "{{jname}}.sh",
+          "needsGpu": true
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Cancel the stuck job",
+      "check": {
+        "jobState": {
+          "name": "{{jname}}",
+          "state": "CA"
+        }
+      }
+    },
+    {
+      "text": "Resubmit it so it runs",
+      "check": {
+        "any": [
+          {
+            "jobState": {
+              "name": "{{jname}}",
+              "state": "R",
+              "partition": "gpu"
+            }
+          },
+          {
+            "jobState": {
+              "name": "{{jname}}",
+              "state": "CD",
+              "partition": "gpu"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`squeue --me` gives the REASON. `sinfo` shows each partition's TIMELIMIT."
+  ],
+  "solution": [
+    "squeue --me",
+    "sinfo",
+    "scancel 47911",
+    {
+      "nano": "{{jname}}.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name={{jname}}\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=03:00:00\n#SBATCH --mem=32G\n#SBATCH --output=slurm-%j.out\n\nmodule load colabfold\ncolabfold_batch designs.fasta results/\n"
+    },
+    "sbatch {{jname}}.sh",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

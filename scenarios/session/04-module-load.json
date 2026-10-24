@@ -1,0 +1,39 @@
+{
+  "id": "session-04-module-load",
+  "track": "session",
+  "order": 4,
+  "tier": 1,
+  "title": "Load a module",
+  "story": "You want to predict structures with ColabFold. Load its module, then check that it's loaded.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Load the colabfold module",
+      "check": {
+        "moduleLoaded": "colabfold"
+      }
+    },
+    {
+      "text": "List your loaded modules",
+      "check": {
+        "ran": "module",
+        "argHas": "list"
+      }
+    }
+  ],
+  "hints": [
+    "`module load NAME` loads a module.",
+    "`module load colabfold`, then `module list`.",
+    "Run `module load colabfold`, then `module list` to see it."
+  ],
+  "solution": [
+    "module load colabfold",
+    "module list"
+  ]
+}

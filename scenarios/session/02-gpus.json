@@ -1,0 +1,58 @@
+{
+  "id": "session-02-gpus",
+  "track": "session",
+  "order": 2,
+  "tier": 1,
+  "title": "How busy are the GPUs?",
+  "story": "Geiss-01 has 8 GPUs that everyone in the course shares. Check how many are free right now.",
+  "vars": {
+    "busy": [
+      [
+        1,
+        7
+      ],
+      [
+        2,
+        6
+      ],
+      [
+        4,
+        4
+      ],
+      [
+        5,
+        3
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "gpusBusy": "{{busy.0}}",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Show the GPU status",
+      "check": {
+        "ran": "nvidia-smi"
+      }
+    },
+    {
+      "text": "Report how many GPUs are free",
+      "check": {
+        "answer": "{{busy.1}}"
+      }
+    }
+  ],
+  "hints": [
+    "`nvidia-smi` shows every GPU and how much of it is in use.",
+    "Run `nvidia-smi`. The last line says how many are free.",
+    "Run `nvidia-smi`, read the line \"N of 8 GPUs are free\", then `answer N`."
+  ],
+  "solution": [
+    "nvidia-smi",
+    "answer {{busy.1}}"
+  ]
+}

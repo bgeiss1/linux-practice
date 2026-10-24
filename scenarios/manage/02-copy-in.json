@@ -1,0 +1,65 @@
+{
+  "id": "manage-02-copy-in",
+  "track": "manage",
+  "order": 2,
+  "tier": 1,
+  "title": "Copy the target in",
+  "story": "You downloaded {{target}}.pdb into ~/downloads. Put a copy in the inputs folder of {{project}}, and keep the original where it is.",
+  "vars": {
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/downloads/{{target}}.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/downloads/paper.pdf": {
+          "content": "%PDF\n",
+          "size": "2M"
+        },
+        "~/{{project}}/inputs/": {},
+        "~/{{project}}/outputs/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Copy {{target}}.pdb into ~/{{project}}/inputs",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/inputs/{{target}}.pdb"
+          },
+          {
+            "isFile": "~/downloads/{{target}}.pdb"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`cp FROM TO` copies a file. TO can be a folder.",
+    "`cp ~/downloads/{{target}}.pdb ~/{{project}}/inputs/` copies it into the folder.",
+    "Run `cp ~/downloads/{{target}}.pdb ~/{{project}}/inputs/`, then `ls ~/{{project}}/inputs` to check."
+  ],
+  "solution": [
+    "cp ~/downloads/{{target}}.pdb ~/{{project}}/inputs/"
+  ]
+}

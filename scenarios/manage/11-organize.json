@@ -1,0 +1,95 @@
+{
+  "id": "manage-11-organize",
+  "track": "manage",
+  "order": 11,
+  "tier": 4,
+  "title": "Sort the mess",
+  "story": "Everything from {{run}} got dumped in one folder. Put the PDB files in pdbs/ and the FASTA files in seqs/ (both inside {{run}}), and delete the .tmp files. Leave run.log where it is.",
+  "vars": {
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "npdb": {
+      "range": [
+        3,
+        6
+      ]
+    },
+    "nfa": {
+      "range": [
+        2,
+        4
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/{{run}}",
+      "files": {
+        "~/{{project}}/{{run}}/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{npdb}}"
+        },
+        "~/{{project}}/{{run}}/batch_{{i}}.fasta": {
+          "lib": "fasta:designs",
+          "count": "{{nfa}}"
+        },
+        "~/{{project}}/{{run}}/scratch_{{i}}.tmp": {
+          "content": "tmp\n",
+          "count": 4
+        },
+        "~/{{project}}/{{run}}/run.log": "finished\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "PDBs in pdbs/, FASTAs in seqs/, no .tmp files, run.log stays",
+      "check": {
+        "all": [
+          {
+            "dirHas": {
+              "path": "~/{{project}}/{{run}}",
+              "only": true,
+              "names": [
+                "pdbs",
+                "seqs",
+                "run.log"
+              ]
+            }
+          },
+          {
+            "isFile": "~/{{project}}/{{run}}/pdbs/design_01.pdb"
+          },
+          {
+            "isFile": "~/{{project}}/{{run}}/seqs/batch_01.fasta"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`mkdir`, then `mv` with wildcards, then `rm` with a wildcard."
+  ],
+  "solution": [
+    "mkdir pdbs seqs",
+    "mv *.pdb pdbs/",
+    "mv *.fasta seqs/",
+    "rm *.tmp"
+  ]
+}

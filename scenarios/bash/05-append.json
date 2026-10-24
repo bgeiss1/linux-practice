@@ -1,0 +1,91 @@
+{
+  "id": "bash-05-append",
+  "track": "bash",
+  "order": 5,
+  "tier": 2,
+  "title": "Add to the list",
+  "story": "You're collecting PDB counts in counts.txt. count.sh prints a folder's name and its count. Run it on {{runs.0}} and then {{runs.1}}, and make sure both lines end up in counts.txt.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 2,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    },
+    "c0": {
+      "range": [
+        2,
+        5
+      ]
+    },
+    "c1": {
+      "range": [
+        6,
+        9
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/count.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\necho \"$1 $(ls $1/*.pdb | wc -l)\"\n"
+        },
+        "~/{{project}}/{{runs.0}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{c0}}"
+        },
+        "~/{{project}}/{{runs.1}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{c1}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "counts.txt has the lines for both runs",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/counts.txt",
+              "text": "{{runs.0}} {{c0}}"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/counts.txt",
+              "text": "{{runs.1}} {{c1}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`>` replaces the file each time. `>>` adds to the end instead.",
+    "`./count.sh {{runs.0}} >> counts.txt`, then the same for {{runs.1}}."
+  ],
+  "solution": [
+    "./count.sh {{runs.0}} >> counts.txt",
+    "./count.sh {{runs.1}} >> counts.txt"
+  ]
+}

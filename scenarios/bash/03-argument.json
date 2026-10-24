@@ -1,0 +1,112 @@
+{
+  "id": "bash-03-argument",
+  "track": "bash",
+  "order": 3,
+  "tier": 1,
+  "title": "Tell it which run",
+  "story": "count.sh counts the PDB files in whichever folder you give it, like `./count.sh run_01`. How many PDBs are in {{run}}?",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "runs": {
+      "pick": 3,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ],
+      "excluding": "run"
+    },
+    "nrun": {
+      "range": [
+        4,
+        8
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/count.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\n# Usage: ./count.sh FOLDER\necho \"PDB files in $1:\"\nls $1/*.pdb | wc -l\n"
+        },
+        "~/{{project}}/{{runs.0}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 2
+        },
+        "~/{{project}}/{{runs.1}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 3
+        },
+        "~/{{project}}/{{runs.2}}/d_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 9
+        },
+        "~/{{project}}/{{run}}/e_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{nrun}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run count.sh on {{run}}",
+      "check": {
+        "any": [
+          {
+            "ran": "./count.sh",
+            "arg": "~/{{project}}/{{run}}",
+            "ok": true
+          },
+          {
+            "ran": [
+              "bash",
+              "sh"
+            ],
+            "lineHas": "{{run}}",
+            "ok": true
+          }
+        ]
+      }
+    },
+    {
+      "text": "Report how many PDBs it has",
+      "check": {
+        "answer": "{{nrun}}"
+      }
+    }
+  ],
+  "hints": [
+    "Words after a script's name are passed to it. Inside the script, the first one is `$1`.",
+    "`./count.sh {{run}}`",
+    "Run `./count.sh {{run}}`, then `answer` with the number."
+  ],
+  "solution": [
+    "./count.sh {{run}}",
+    "answer {{nrun}}"
+  ]
+}

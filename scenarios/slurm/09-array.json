@@ -1,0 +1,74 @@
+{
+  "id": "slurm-09-array",
+  "track": "slurm",
+  "order": 9,
+  "tier": 3,
+  "title": "One script, many targets",
+  "story": "You have {{ntarget}} targets in inputs/, target_1.pdb to target_{{ntarget}}.pdb. mpnn_array.sh uses $SLURM_ARRAY_TASK_ID to pick one. Submit it as a job array with one task per target.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "ntarget": [
+      3,
+      4,
+      5,
+      6
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/mpnn_array.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn_arr\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target_${SLURM_ARRAY_TASK_ID}.pdb \\\n  --out_folder outputs/target_${SLURM_ARRAY_TASK_ID}\n",
+        "~/{{project}}/inputs/target_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{ntarget}}"
+        }
+      },
+      "jobRules": [
+        {
+          "match": "mpnn_array.sh",
+          "needsGpu": true,
+          "creates": [
+            "outputs/target_{{task}}/seqs/target_{{task}}.fa"
+          ],
+          "log": "Designing 8 sequences for inputs/target_{{task}}.pdb\nJob finished\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit mpnn_array.sh as an array of {{ntarget}} tasks",
+      "check": {
+        "jobSubmitted": {
+          "name": "mpnn_arr",
+          "array": "{{ntarget}}"
+        }
+      }
+    },
+    {
+      "text": "Wait until every task has written its outputs",
+      "check": {
+        "isFile": "~/{{project}}/outputs/target_{{ntarget}}/seqs/target_{{ntarget}}.fa"
+      }
+    }
+  ],
+  "hints": [
+    "`--array=1-N` makes N copies of the job, numbered 1 to N. Add it on the command line or as an #SBATCH line."
+  ],
+  "solution": [
+    "sbatch --array=1-{{ntarget}} mpnn_array.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

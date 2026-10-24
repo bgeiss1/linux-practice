@@ -1,0 +1,79 @@
+{
+  "id": "transfer-12-job-results",
+  "track": "transfer",
+  "order": 12,
+  "tier": 4,
+  "title": "From job to laptop",
+  "story": "Submit fold.sh on Geiss-01. When the job finishes, it writes a results folder. Bring the whole results folder to your laptop's Desktop.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      "binder_07",
+      "des_2210",
+      "il7r_b2"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/fold.sh": "#!/bin/bash\n#SBATCH --job-name=fold\n#SBATCH --gres=gpu:1\n#SBATCH --time=01:00:00\n#SBATCH --mem=32G\n\nmodule load colabfold\ncolabfold_batch {{seq}}.fasta results/\n",
+        "~/{{project}}/{{seq}}.fasta": ">{{seq}}\nMSEELLKKAEELIKRAKELGDPELVKRAL\n"
+      },
+      "jobRules": [
+        {
+          "match": "fold.sh",
+          "needsGpu": true,
+          "creates": [
+            "results/{{seq}}_rank_001.pdb",
+            "results/log.txt"
+          ],
+          "log": "Running colabfold 1.5.5\nDone\n"
+        }
+      ]
+    },
+    "laptop": {
+      "cwd": "~"
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit fold.sh and wait for it to finish",
+      "check": {
+        "jobState": {
+          "name": "fold",
+          "state": "CD"
+        }
+      }
+    },
+    {
+      "text": "Copy the results folder to ~/Desktop on your laptop",
+      "check": {
+        "laptop": {
+          "isFile": "~/Desktop/results/{{seq}}_rank_001.pdb"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`squeue --me` until it's gone, then `scp -r` from the Laptop tab."
+  ],
+  "solution": [
+    "sbatch fold.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    {
+      "laptop": "scp -r student@geiss-01:~/{{project}}/results ~/Desktop/"
+    }
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "id": "slurm-10-dependency",
+  "track": "slurm",
+  "order": 10,
+  "tier": 3,
+  "title": "One after the other",
+  "story": "ProteinMPNN (mpnn.sh) needs the backbones that RFdiffusion (rfd.sh) makes. Submit rfd.sh, then submit mpnn.sh so that it only starts after rfd.sh finishes successfully.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/rfd.sh": "#!/bin/bash\n#SBATCH --job-name=rfd\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate rfdiffusion\nrun_inference.py inference.output_prefix=outputs/bb inference.num_designs=10\n",
+        "~/{{project}}/mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
+      },
+      "jobRules": [
+        {
+          "match": "rfd.sh",
+          "needsGpu": true,
+          "runSteps": 4
+        },
+        {
+          "match": "mpnn.sh",
+          "needsGpu": true
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit rfd.sh",
+      "check": {
+        "jobSubmitted": {
+          "name": "rfd"
+        }
+      }
+    },
+    {
+      "text": "Submit mpnn.sh to start after rfd.sh succeeds",
+      "check": {
+        "jobSubmitted": {
+          "name": "mpnn",
+          "after": "rfd"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`sbatch --dependency=afterok:JOBID mpnn.sh` waits for job JOBID to finish without errors. sbatch printed the ID."
+  ],
+  "solution": [
+    "sbatch rfd.sh",
+    "sbatch --dependency=afterok:48215 mpnn.sh"
+  ]
+}

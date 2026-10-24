@@ -1,0 +1,66 @@
+{
+  "id": "session-03-module-avail",
+  "track": "session",
+  "order": 3,
+  "tier": 1,
+  "title": "What software is installed?",
+  "story": "Shared software on Geiss-01 comes as modules. Your project needs {{mod.0}}. Find out which version is installed.",
+  "vars": {
+    "mod": [
+      [
+        "rosetta",
+        "3.14"
+      ],
+      [
+        "colabfold",
+        "1.5.5"
+      ],
+      [
+        "alphafold",
+        "2.3.2"
+      ],
+      [
+        "pyrosetta",
+        "2025.03"
+      ],
+      [
+        "cuda",
+        "12.8"
+      ],
+      [
+        "anaconda",
+        "2025.06"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "List the available modules",
+      "check": {
+        "ran": "module",
+        "argHas": "avail"
+      }
+    },
+    {
+      "text": "Report the version of {{mod.0}}",
+      "check": {
+        "answer": "{{mod.1}}"
+      }
+    }
+  ],
+  "hints": [
+    "`module avail` lists every module, as name/version.",
+    "Run `module avail` and find the line starting with {{mod.0}}/.",
+    "Run `module avail`, find {{mod.0}}/VERSION, then `answer VERSION`."
+  ],
+  "solution": [
+    "module avail",
+    "answer {{mod.1}}"
+  ]
+}

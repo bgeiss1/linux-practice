@@ -1,0 +1,85 @@
+{
+  "id": "slurm-07-timeout",
+  "track": "slurm",
+  "order": 7,
+  "tier": 2,
+  "title": "Out of time",
+  "story": "Last night's AlphaFold job, af2_screen, died before it finished. Its log is slurm-{{jid}}.out. Find out why, fix fold.sh, and resubmit it so it completes.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "jid": [
+      50311,
+      50480,
+      50977
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/fold.sh": "#!/bin/bash\n#SBATCH --job-name=af2_screen\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=00:30:00\n#SBATCH --mem=64G\n#SBATCH --output=slurm-%j.out\n\nmodule load alphafold\nrun_alphafold.sh --fasta_paths=designs.fasta --output_dir=af2_out\n",
+        "~/{{project}}/designs.fasta": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/slurm-{{jid}}.out": "Running AlphaFold 2.3.2\nPredicting design_001\nPredicting design_002\nslurmstepd: error: *** JOB {{jid}} ON geiss-01 CANCELLED DUE TO TIME LIMIT ***\n"
+      },
+      "jobs": [
+        {
+          "id": "{{jid}}",
+          "name": "af2_screen",
+          "gpus": 1,
+          "state": "TO",
+          "result": "TIMEOUT",
+          "submitStep": -400,
+          "startStep": -390,
+          "timeMin": 30,
+          "memGB": 64
+        }
+      ],
+      "jobRules": [
+        {
+          "match": "fold.sh",
+          "needsGpu": true,
+          "needsTimeMin": 120,
+          "logStart": "Running AlphaFold 2.3.2\nPredicting design_001\n",
+          "log": "Running AlphaFold 2.3.2\nPredicted 3 designs\nJob finished\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Fix fold.sh and get af2_screen to complete",
+      "check": {
+        "jobState": {
+          "name": "af2_screen",
+          "state": "CD"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "The log's last line says why it stopped. `--time` in fold.sh is HH:MM:SS.",
+    "Give it more time, for example `#SBATCH --time=04:00:00`, then `sbatch fold.sh`."
+  ],
+  "solution": [
+    "cat slurm-{{jid}}.out",
+    {
+      "nano": "fold.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=af2_screen\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=04:00:00\n#SBATCH --mem=64G\n#SBATCH --output=slurm-%j.out\n\nmodule load alphafold\nrun_alphafold.sh --fasta_paths=designs.fasta --output_dir=af2_out\n"
+    },
+    "sbatch fold.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "id": "slurm-12-from-scratch",
+  "track": "slurm",
+  "order": 12,
+  "tier": 4,
+  "title": "Write the whole job",
+  "story": "Write fold.sh from scratch: it should fold {{seq}}.fasta with ColabFold (module colabfold, command colabfold_batch {{seq}}.fasta results/). ColabFold needs 1 GPU, at least 32 GB of memory, and about an hour. Submit it, and when it's done report the pLDDT from the log.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      "binder_07",
+      "des_2210",
+      "il7r_b2"
+    ],
+    "plddt": [
+      "84.2",
+      "88.9",
+      "91.3",
+      "79.6"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/{{seq}}.fasta": ">{{seq}}\nMSEELLKKAEELIKRAKELGDPELVKRAL\n"
+      },
+      "jobRules": [
+        {
+          "match": "colabfold_batch",
+          "needsGpu": true,
+          "needsMemGB": 32,
+          "needsTimeMin": 60,
+          "logStart": "Running colabfold 1.5.5\n",
+          "log": "Running colabfold 1.5.5\nQuery 1/1: {{seq}} (length 29)\nrank_001 pLDDT={{plddt}} pTM=0.74\nDone\n",
+          "creates": [
+            "results/log.txt"
+          ]
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit a job script that runs ColabFold",
+      "check": {
+        "jobSubmitted": {
+          "gpus": 1,
+          "memGB": 32,
+          "timeMin": 60
+        }
+      }
+    },
+    {
+      "text": "Get it to complete",
+      "check": {
+        "isFile": "~/{{project}}/results/log.txt"
+      }
+    },
+    {
+      "text": "Report the pLDDT",
+      "check": {
+        "answer": "{{plddt}}"
+      }
+    }
+  ],
+  "hints": [
+    "Start from `#!/bin/bash`, then #SBATCH lines for --gres, --mem and --time, then `module load colabfold` and the command."
+  ],
+  "solution": [
+    {
+      "nano": "fold.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=fold\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=01:00:00\n\nmodule load colabfold\ncolabfold_batch {{seq}}.fasta results/\n"
+    },
+    "sbatch fold.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "cat slurm-*.out",
+    "answer {{plddt}}"
+  ]
+}

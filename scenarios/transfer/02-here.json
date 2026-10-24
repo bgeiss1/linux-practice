@@ -1,0 +1,52 @@
+{
+  "id": "transfer-02-here",
+  "track": "transfer",
+  "order": 2,
+  "tier": 1,
+  "title": "Copy it right here",
+  "story": "On your laptop you're already in the folder where you keep this project's figures. Copy scores.csv from ~/{{project}} on Geiss-01 into the folder you're in. A single dot means \"here\".",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/scores.csv": "design,plddt\nd1,88.1\nd2,79.4\n"
+      }
+    },
+    "laptop": {
+      "cwd": "~/Documents/{{project}}_figures",
+      "files": {
+        "~/Documents/{{project}}_figures/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Copy scores.csv into the laptop folder you're in",
+      "check": {
+        "laptop": {
+          "isFile": "~/Documents/{{project}}_figures/scores.csv"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "Use the Laptop tab. `.` as the destination means the folder you're in.",
+    "`scp student@geiss-01:~/{{project}}/scores.csv .`",
+    "In the Laptop tab run `scp student@geiss-01:~/{{project}}/scores.csv .` and then `ls`."
+  ],
+  "solution": [
+    {
+      "laptop": "scp student@geiss-01:~/{{project}}/scores.csv ."
+    }
+  ]
+}

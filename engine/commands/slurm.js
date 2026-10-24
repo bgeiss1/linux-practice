@@ -481,10 +481,11 @@ export function srun(ctx) {
     ctx.coach('srun-wait', 'Every GPU is busy. On the real server srun would wait here until one frees up.');
     return 1;
   }
-  const job = cluster.makeJob({ id, name: command[0], gpus, memGB: parseMem(opts.mem) ?? 4, timeMin: parseTime(opts.time) ?? 60, state: 'R', startStep: cluster.step, runSteps: Infinity });
+  const job = cluster.makeJob({ id, name: command[0], gpus, memGB: parseMem(opts.mem) ?? 4, timeMin: parseTime(opts.time) ?? 60, state: 'R', startStep: cluster.step, runSteps: Infinity, interactive: true });
   cluster.jobs.push(job);
   if (opts.pty !== undefined && /^(bash|sh)$/.test(command[0])) {
-    cluster.interactive = { jobId: id, gpus };
+    // What you load inside the job is gone after exit, like a real new shell.
+    cluster.interactive = { jobId: id, gpus, saved: { modules: [...cluster.modules], conda: cluster.condaEnv, cwd: sh.cwd } };
     ctx.out(`srun: job ${id} queued and waiting for resources\nsrun: job ${id} has been allocated resources\n`);
     ctx.coach('srun-in', `You're in an interactive job with ${gpus} GPU${gpus === 1 ? '' : 's'}. Type \`exit\` when you're done so others can use ${gpus === 1 ? 'it' : 'them'}.`);
     return 0;
@@ -502,6 +503,12 @@ export function endInteractive(sh) {
   const { cluster } = sh;
   const job = cluster.jobs.find((j) => j.id === cluster.interactive.jobId);
   if (job) { job.state = 'CD'; job.endStep = cluster.step; job.exitCode = 0; }
+  const { saved } = cluster.interactive;
+  if (saved) {
+    cluster.modules = saved.modules;
+    cluster.condaEnv = saved.conda;
+    sh.cwd = saved.cwd;
+  }
   cluster.interactive = null;
 }
 

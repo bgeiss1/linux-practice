@@ -1,0 +1,68 @@
+{
+  "id": "slurm-04-cancel",
+  "track": "slurm",
+  "order": 4,
+  "tier": 2,
+  "title": "Oops, wrong target",
+  "story": "You submitted a job called {{bad}} with the wrong target file. It's still waiting in the queue. Cancel it before it wastes a GPU.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "bad": [
+      "af2_old",
+      "mpnn_v1",
+      "rfd_test",
+      "fold_wrong"
+    ],
+    "jid": [
+      51207,
+      51388,
+      52044,
+      52519
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "gpusBusy": 5,
+      "files": {
+        "~/{{project}}/run.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
+      },
+      "jobs": [
+        {
+          "id": "{{jid}}",
+          "name": "{{bad}}",
+          "gpus": 4,
+          "state": "PD",
+          "submitStep": -1,
+          "reason": "Resources"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Cancel {{bad}}",
+      "check": {
+        "jobState": {
+          "name": "{{bad}}",
+          "state": "CA"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`squeue --me` shows the JOBID. `scancel JOBID` cancels it.",
+    "`squeue --me`, then `scancel` with the number in the JOBID column."
+  ],
+  "solution": [
+    "squeue --me",
+    "scancel {{jid}}"
+  ]
+}

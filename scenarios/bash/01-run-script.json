@@ -1,0 +1,78 @@
+{
+  "id": "bash-01-run-script",
+  "track": "bash",
+  "order": 1,
+  "tier": 1,
+  "title": "Run a script",
+  "story": "Your labmate wrote count_designs.sh to count the finished designs in {{project}}. Run it, then report the number it prints.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "ndes": {
+      "range": [
+        3,
+        9
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/count_designs.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\n# Count finished designs in outputs/\necho \"Finished designs in outputs/:\"\nls outputs/*.pdb | wc -l\n"
+        },
+        "~/{{project}}/outputs/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": "{{ndes}}"
+        },
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run count_designs.sh",
+      "check": {
+        "any": [
+          {
+            "ran": "./count_designs.sh",
+            "ok": true
+          },
+          {
+            "ran": [
+              "bash",
+              "sh"
+            ],
+            "argHas": "count_designs.sh",
+            "ok": true
+          }
+        ]
+      }
+    },
+    {
+      "text": "Report the number it printed",
+      "check": {
+        "answer": "{{ndes}}"
+      }
+    }
+  ],
+  "hints": [
+    "To run a script in the folder you're in, put `./` in front of its name.",
+    "`./count_designs.sh` runs it. `./` means \"this folder\".",
+    "Run `./count_designs.sh`, then type `answer` and the number it printed."
+  ],
+  "solution": [
+    "./count_designs.sh",
+    "answer {{ndes}}"
+  ]
+}

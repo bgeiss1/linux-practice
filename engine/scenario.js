@@ -6,6 +6,7 @@ import { Shell } from './shell.js';
 import { Cluster } from './cluster.js';
 import { fromLibrary } from './library.js';
 import { evaluate } from './checks.js';
+import { BINARY } from './commands/archive.js';
 
 export const TIERS = {
   1: { name: 'Guided', maxHints: 3, gated: false, coach: 'all' },
@@ -15,7 +16,7 @@ export const TIERS = {
 };
 
 // Coach messages that explain something rather than react to a mistake.
-const INFO_COACH = new Set(['sbatch-ok', 'cat-sbatch', 'less', 'tail-f', 'srun-in', 'exit-job', 'exit', 'smi-host', 'cut-d']);
+const INFO_COACH = new Set(['sbatch-ok', 'cat-sbatch', 'less', 'tail-f', 'srun-in', 'exit-job', 'exit', 'smi-host', 'cut-d', 'editor-nano']);
 
 export function rng(seed) {
   let a = seed >>> 0;
@@ -98,7 +99,7 @@ export function buildFiles(vfs, files, home, now) {
     for (const [key, i] of keys) {
       const path = vfs.resolve(key, home, home);
       const mtime = now - parseAge(val.age);
-      if (key.endsWith('/') || (val.content === undefined && !val.lib && !val.repeat && typeof rawVal !== 'string')) {
+      if (key.endsWith('/') || (val.content === undefined && !val.lib && !val.repeat && !val.archive && typeof rawVal !== 'string')) {
         vfs.mkdir(path, { parents: true, mtime });
         continue;
       }
@@ -115,8 +116,25 @@ export function buildFiles(vfs, files, home, now) {
       if (i !== null) content = content.replace(/\{\{i\}\}/g, String(i).padStart(2, '0'));
       const node = vfs.writeFile(path, content, { mtime, mode: val.exec ? 0o755 : 0o644 });
       if (val.size) node.size = parseSize(val.size);
+      // { "archive": { "gz": true, "files": { "run/a.pdb": { "lib": "pdb:small" } } } }
+      if (val.archive) packArchive(node, val.archive, now);
     }
   }
+}
+
+function packArchive(node, spec, now) {
+  const tmp = new VFS(now);
+  buildFiles(tmp, spec.files, '/', now);
+  const entries = [];
+  for (const { path, node: n } of tmp.walk('/')) {
+    if (path === '/') continue;
+    const name = path.slice(1);
+    entries.push({ path: n.type === 'dir' ? name + '/' : name, node: n.type === 'dir' ? { type: 'dir', children: {}, mode: n.mode, mtime: n.mtime } : n });
+  }
+  node.content = BINARY;
+  node.archive = { entries, gz: spec.gz !== false };
+  node.size = entries.reduce((s, e) => s + 512 + (e.node.type === 'file' ? VFS.sizeOf(e.node) : 0), 1024);
+  if (node.archive.gz) node.size = Math.max(200, Math.round(node.size * 0.3));
 }
 
 export class Session {
@@ -141,10 +159,23 @@ export class Session {
       modules: machine.modules ?? [],
       conda: machine.conda ?? null,
       jobs: machine.jobs ?? [],
-      gpusBusy: machine.gpusBusy ?? 2,
+      gpusBusy: Number(machine.gpusBusy ?? 2),
       jobRules: machine.jobRules ?? [],
     });
     this.shell = new Shell({ vfs, user, cwd: vfs.resolve(machine.cwd ?? '~', home, home), cluster });
+    this.machines = { cluster: this.shell };
+
+    // Optional second machine: the student's own laptop, for scp practice.
+    const lap = this.def.machines?.laptop;
+    if (lap) {
+      const lapHome = `/Users/${user}`;
+      const lvfs = new VFS(now);
+      for (const d of ['Desktop', 'Documents', 'Downloads']) lvfs.mkdir(`${lapHome}/${d}`, { parents: true });
+      buildFiles(lvfs, lap.files, lapHome, now);
+      this.laptop = new Shell({ vfs: lvfs, user, kind: 'laptop', host: 'laptop', home: lapHome, cwd: lvfs.resolve(lap.cwd ?? '~', lapHome, lapHome), cluster: new Cluster({ user, now, gpusBusy: 0 }) });
+      this.laptop.remotes['geiss-01'] = this.shell;
+      this.machines.laptop = this.laptop;
+    }
 
     this.tasks = (this.def.tasks ?? []).map((t) => ({ text: t.text, check: t.check, done: false }));
     this.hints = this.def.hints ?? [];
@@ -158,14 +189,21 @@ export class Session {
     return this.tasks.findIndex((t) => !t.done);
   }
 
-  // Run one command line and report what changed.
-  run(line) {
-    const result = this.shell.run(line);
-    if (result.output.some((s) => s.cls === 'err') || this.shell.lastCode) this.mistakes++;
+  // Run one command line on a machine ('cluster' or 'laptop') and report what changed.
+  run(line, machine = 'cluster') {
+    const sh = this.machines[machine] ?? this.shell;
+    const result = sh.run(line);
+    if (result.output.some((s) => s.cls === 'err') || sh.lastCode) this.mistakes++;
     result.coach = result.coach.filter((c) => this.coachAllowed(c.key));
     result.newlyDone = this.updateTasks();
     result.complete = this.complete;
     return result;
+  }
+
+  // Save the editor's buffer (from nano) and report what changed.
+  save(path, text, machine = 'cluster') {
+    (this.machines[machine] ?? this.shell).saveEdit(path, text);
+    return { newlyDone: this.updateTasks(), complete: this.complete };
   }
 
   coachAllowed(key) {
@@ -180,7 +218,7 @@ export class Session {
     const done = [];
     for (const [i, task] of this.tasks.entries()) {
       if (task.done) continue;
-      if (!evaluate(task.check, this.shell)) break;
+      if (!evaluate(task.check, this.shell, { machines: this.machines })) break;
       task.done = true;
       done.push(i);
     }

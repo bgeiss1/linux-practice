@@ -1,0 +1,68 @@
+{
+  "id": "manage-07-backup",
+  "track": "manage",
+  "order": 7,
+  "tier": 2,
+  "title": "Back up before you change it",
+  "story": "You're about to rerun {{run}} with new settings, which will overwrite its results. First copy the whole {{run}} folder to {{run}}_backup.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}/runs",
+      "files": {
+        "~/{{project}}/runs/{{run}}/designs.fasta": {
+          "lib": "fasta:designs"
+        },
+        "~/{{project}}/runs/{{run}}/pdbs/design_{{i}}.pdb": {
+          "lib": "pdb:small",
+          "count": 4
+        },
+        "~/{{project}}/runs/{{run}}/config.yaml": "num_designs: 4\ntemperature: 0.1\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Copy {{run}} and everything in it to {{run}}_backup",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/runs/{{run}}_backup/pdbs/design_04.pdb"
+          },
+          {
+            "isFile": "~/{{project}}/runs/{{run}}_backup/config.yaml"
+          },
+          {
+            "isDir": "~/{{project}}/runs/{{run}}"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`cp` skips folders unless you tell it to copy everything inside them.",
+    "`cp -r {{run}} {{run}}_backup` copies the folder and all its contents."
+  ],
+  "solution": [
+    "cp -r {{run}} {{run}}_backup"
+  ]
+}

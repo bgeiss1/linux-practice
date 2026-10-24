@@ -1,0 +1,51 @@
+{
+  "id": "session-06-interactive",
+  "track": "session",
+  "order": 6,
+  "tier": 2,
+  "title": "Borrow a GPU",
+  "story": "To test something on a GPU, ask Slurm for an interactive session with one GPU. Check that you can see it, then give it back.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Start an interactive job with 1 GPU",
+      "check": {
+        "inInteractiveJob": 1
+      }
+    },
+    {
+      "text": "Check your GPU with nvidia-smi",
+      "check": {
+        "all": [
+          {
+            "ran": "nvidia-smi"
+          },
+          {
+            "inInteractiveJob": 1
+          }
+        ]
+      }
+    },
+    {
+      "text": "Leave the job so the GPU is free again",
+      "check": {
+        "notInInteractiveJob": true
+      }
+    }
+  ],
+  "hints": [
+    "`srun --gres=gpu:1 --pty bash` starts an interactive shell with one GPU.",
+    "Inside it, `nvidia-smi` shows only your GPU. `exit` ends the job."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --pty bash",
+    "nvidia-smi",
+    "exit"
+  ]
+}

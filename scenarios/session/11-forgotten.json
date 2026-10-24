@@ -1,0 +1,53 @@
+{
+  "id": "session-11-forgotten",
+  "track": "session",
+  "order": 11,
+  "tier": 4,
+  "title": "The job you forgot",
+  "story": "Yesterday you started an interactive job with 4 GPUs and closed your laptop without typing exit. It's still holding the GPUs, and the server is full. Find that job, cancel it, then start a fresh 1-GPU session.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "gpusBusy": 4,
+      "files": {},
+      "jobs": [
+        {
+          "id": 47790,
+          "name": "bash",
+          "gpus": 4,
+          "state": "R",
+          "startStep": -900,
+          "runSteps": 100000,
+          "timeMin": 2880,
+          "memGB": 64
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Cancel your old job",
+      "check": {
+        "jobState": {
+          "name": "bash",
+          "state": "CA"
+        }
+      }
+    },
+    {
+      "text": "Start an interactive job with 1 GPU",
+      "check": {
+        "inInteractiveJob": 1
+      }
+    }
+  ],
+  "hints": [
+    "`squeue --me` shows your jobs and their IDs. `scancel ID` ends one."
+  ],
+  "solution": [
+    "squeue --me",
+    "scancel 47790",
+    "srun --gres=gpu:1 --pty bash"
+  ]
+}

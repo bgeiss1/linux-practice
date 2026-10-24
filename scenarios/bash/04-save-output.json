@@ -1,0 +1,64 @@
+{
+  "id": "bash-04-save-output",
+  "track": "bash",
+  "order": 4,
+  "tier": 2,
+  "title": "Keep the report",
+  "story": "summarize.sh prints a summary of {{run}}, but it scrolls away. Save what it prints to a file called summary.txt instead.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ],
+    "best": {
+      "range": [
+        10,
+        99
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/summarize.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\necho \"Run: {{run}}\"\necho \"Designs: 96\"\necho \"Best design: design_0{{best}} (score -1.83)\"\necho \"Mean pLDDT: 87.2\"\n"
+        },
+        "~/{{project}}/{{run}}/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Save the output of summarize.sh in summary.txt",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/summary.txt",
+          "text": "Best design: design_0{{best}}"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`>` sends what a command prints into a file instead of the screen.",
+    "`./summarize.sh > summary.txt`, then `cat summary.txt` to check."
+  ],
+  "solution": [
+    "./summarize.sh > summary.txt"
+  ]
+}

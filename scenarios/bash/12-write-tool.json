@@ -1,0 +1,90 @@
+{
+  "id": "bash-12-write-tool",
+  "track": "bash",
+  "order": 12,
+  "tier": 4,
+  "title": "Write a tool",
+  "story": "You keep counting sequences in FASTA files by hand. Write count_seqs.sh: it should take a FASTA file as its first argument and print how many sequences it has. Make it runnable, then use it to find how many sequences are in {{fa}}.fasta.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "fa": [
+      "round1",
+      "round2",
+      "final_pool",
+      "mpnn_out"
+    ],
+    "nseq": {
+      "range": [
+        12,
+        40
+      ]
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/seqs/{{fa}}.fasta": {
+          "repeat": {
+            "n": "{{nseq}}",
+            "text": ">design_{{n}}\nMSEELLKKAEELIKRAKELGDPELVKRAL\n"
+          }
+        },
+        "~/{{project}}/seqs/other.fasta": {
+          "lib": "fasta:designs"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Write count_seqs.sh using $1 for the file",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/count_seqs.sh",
+              "text": "$1"
+            }
+          },
+          {
+            "executable": "~/{{project}}/count_seqs.sh"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Run it on {{fa}}.fasta",
+      "check": {
+        "ran": "./count_seqs.sh",
+        "argHas": "{{fa}}.fasta",
+        "ok": true
+      }
+    },
+    {
+      "text": "Report the number of sequences",
+      "check": {
+        "answer": "{{nseq}}"
+      }
+    }
+  ],
+  "hints": [
+    "Each sequence starts with a `>` line, and `grep -c` counts matching lines. Quote the `>`."
+  ],
+  "solution": [
+    {
+      "nano": "count_seqs.sh",
+      "text": "#!/bin/bash\ngrep -c \">\" $1\n"
+    },
+    "chmod +x count_seqs.sh",
+    "./count_seqs.sh seqs/{{fa}}.fasta",
+    "answer {{nseq}}"
+  ]
+}

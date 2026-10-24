@@ -1,0 +1,91 @@
+{
+  "id": "transfer-09-unpack-home",
+  "track": "transfer",
+  "order": 9,
+  "tier": 3,
+  "title": "Open it on your laptop",
+  "story": "You downloaded {{bundle}}.tar.gz to your laptop's Downloads last week but never opened it. Unpack it there, then upload just its {{target}}_relaxed.pdb to ~/{{project}}/inputs on Geiss-01.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "bundle": [
+      "week6_results",
+      "relax_batch",
+      "final_models"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/inputs/": {}
+      }
+    },
+    "laptop": {
+      "cwd": "~/Downloads",
+      "files": {
+        "~/Downloads/{{bundle}}.tar.gz": {
+          "archive": {
+            "files": {
+              "{{bundle}}/{{target}}_relaxed.pdb": {
+                "lib": "pdb:small"
+              },
+              "{{bundle}}/{{target}}_raw.pdb": {
+                "lib": "pdb:small"
+              },
+              "{{bundle}}/notes.txt": "relaxed with FastRelax\n"
+            }
+          }
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Unpack the archive on your laptop",
+      "check": {
+        "laptop": {
+          "isFile": "~/Downloads/{{bundle}}/{{target}}_relaxed.pdb"
+        }
+      }
+    },
+    {
+      "text": "Upload {{target}}_relaxed.pdb to ~/{{project}}/inputs",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/inputs/{{target}}_relaxed.pdb"
+          },
+          {
+            "notExists": "~/{{project}}/inputs/{{target}}_raw.pdb"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`tar -xzf` works on a laptop too. Then upload the one file with `scp`."
+  ],
+  "solution": [
+    {
+      "laptop": "tar -xzf {{bundle}}.tar.gz"
+    },
+    {
+      "laptop": "scp {{bundle}}/{{target}}_relaxed.pdb student@geiss-01:~/{{project}}/inputs/"
+    }
+  ]
+}

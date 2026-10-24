@@ -1,0 +1,82 @@
+{
+  "id": "bash-07-variable",
+  "track": "bash",
+  "order": 7,
+  "tier": 2,
+  "title": "Change one setting",
+  "story": "prep_target.sh prepares one target, set by the TARGET= line near the top. It's set to {{old}}, but you need {{target}}. Edit that line, then run the script.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "old": {
+      "from": [
+        "pdl1",
+        "il7r",
+        "her2",
+        "tnfa",
+        "egfr",
+        "vegfa"
+      ],
+      "excluding": "target"
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/prep_target.sh": {
+          "exec": true,
+          "content": "#!/bin/bash\n# Which target to prepare\nTARGET={{old}}\n\nmkdir -p prepared\ncp inputs/$TARGET.pdb prepared/\necho \"Prepared $TARGET\"\n"
+        },
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:small"
+        },
+        "~/{{project}}/inputs/{{old}}.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Set TARGET={{target}} in prep_target.sh",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/prep_target.sh",
+          "text": "TARGET={{target}}"
+        }
+      }
+    },
+    {
+      "text": "Run it so prepared/{{target}}.pdb exists",
+      "check": {
+        "isFile": "~/{{project}}/prepared/{{target}}.pdb"
+      }
+    }
+  ],
+  "hints": [
+    "`nano prep_target.sh` opens it. `$TARGET` later in the script uses whatever the TARGET= line says.",
+    "Change the line to `TARGET={{target}}` (no spaces around `=`), save with Ctrl+O, exit with Ctrl+X, then `./prep_target.sh`."
+  ],
+  "solution": [
+    {
+      "nano": "prep_target.sh",
+      "text": "#!/bin/bash\n# Which target to prepare\nTARGET={{target}}\n\nmkdir -p prepared\ncp inputs/$TARGET.pdb prepared/\necho \"Prepared $TARGET\"\n"
+    },
+    "./prep_target.sh"
+  ]
+}

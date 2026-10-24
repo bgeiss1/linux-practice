@@ -1,0 +1,53 @@
+{
+  "id": "manage-05-deep-folders",
+  "track": "manage",
+  "order": 5,
+  "tier": 2,
+  "title": "Many folders in one go",
+  "story": "Your RFdiffusion script expects its outputs in {{project}}/runs/{{run}}/outputs/pdbs, and it won't create the folders itself. Make the whole path with one command.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "run": [
+      "run_01",
+      "run_02",
+      "run_03",
+      "run_04",
+      "run_05",
+      "run_06",
+      "run_07",
+      "run_08"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make runs/{{run}}/outputs/pdbs inside {{project}}",
+      "check": {
+        "isDir": "~/{{project}}/runs/{{run}}/outputs/pdbs"
+      }
+    }
+  ],
+  "hints": [
+    "Plain `mkdir` fails when the folders above don't exist yet. It has an option to make the parents too.",
+    "`mkdir -p runs/{{run}}/outputs/pdbs` makes every missing folder on the way."
+  ],
+  "solution": [
+    "mkdir -p runs/{{run}}/outputs/pdbs"
+  ]
+}

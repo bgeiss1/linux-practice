@@ -1,0 +1,49 @@
+{
+  "id": "session-01-who-where",
+  "track": "session",
+  "order": 1,
+  "tier": 1,
+  "title": "Who and where am I?",
+  "story": "You just logged in to Geiss-01 for the first time. Before doing anything, check which account you're using and which machine you're on.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {
+        "~/README.txt": {
+          "lib": "text:readme"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Print your user name",
+      "check": {
+        "ran": "whoami"
+      }
+    },
+    {
+      "text": "Print the machine's name",
+      "check": {
+        "ran": "hostname"
+      }
+    },
+    {
+      "text": "Report the machine's name",
+      "check": {
+        "answer": "geiss-01"
+      }
+    }
+  ],
+  "hints": [
+    "`whoami` prints your user name. `hostname` prints the machine's name.",
+    "Run `whoami`, then `hostname`.",
+    "Run `whoami`, then `hostname`, then type `answer geiss-01`."
+  ],
+  "solution": [
+    "whoami",
+    "hostname",
+    "answer geiss-01"
+  ]
+}

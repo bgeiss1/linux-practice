@@ -1,0 +1,81 @@
+{
+  "id": "manage-08-disk-usage",
+  "track": "manage",
+  "order": 8,
+  "tier": 3,
+  "title": "What's eating your space?",
+  "story": "Geiss-01 says your home folder is almost full. One of the run folders in {{project}}/runs is far bigger than the others. Report its name.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "runs": {
+      "pick": 4,
+      "from": [
+        "run_01",
+        "run_02",
+        "run_03",
+        "run_04",
+        "run_05",
+        "run_06",
+        "run_07",
+        "run_08"
+      ]
+    },
+    "big": {
+      "fromVar": "runs"
+    }
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/runs/{{runs.0}}/traj_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "40M",
+          "count": 3
+        },
+        "~/{{project}}/runs/{{runs.1}}/traj_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "35M",
+          "count": 3
+        },
+        "~/{{project}}/runs/{{runs.2}}/traj_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "30M",
+          "count": 3
+        },
+        "~/{{project}}/runs/{{runs.3}}/traj_{{i}}.pdb": {
+          "content": "MODEL\n",
+          "size": "45M",
+          "count": 3
+        },
+        "~/{{project}}/runs/{{big}}/checkpoints/ckpt_{{i}}.pt": {
+          "content": "weights\n",
+          "size": "2G",
+          "count": 4
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Report the name of the biggest run folder",
+      "check": {
+        "answer": "{{big}}"
+      }
+    }
+  ],
+  "hints": [
+    "`du -sh` prints the total size of each folder you name. A wildcard names them all."
+  ],
+  "solution": [
+    "du -sh runs/*",
+    "answer {{big}}"
+  ]
+}

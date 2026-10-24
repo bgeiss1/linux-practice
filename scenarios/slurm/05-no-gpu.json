@@ -1,0 +1,81 @@
+{
+  "id": "slurm-05-no-gpu",
+  "track": "slurm",
+  "order": 5,
+  "tier": 2,
+  "title": "It failed in seconds",
+  "story": "design.sh runs ProteinMPNN, but someone deleted a line from its #SBATCH header. Submit it, see why it fails, fix the script, and get a run that completes.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/design.sh": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n",
+        "~/{{project}}/inputs/target.pdb": {
+          "lib": "pdb:small"
+        }
+      },
+      "jobRules": [
+        {
+          "match": "design.sh",
+          "needsGpu": true,
+          "logStart": "Loading anaconda\nLoading ProteinMPNN weights\n",
+          "log": "Loading anaconda\nDesigning 8 sequences\nJob finished\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit design.sh and let it fail",
+      "check": {
+        "jobState": {
+          "name": "design",
+          "state": "F"
+        }
+      }
+    },
+    {
+      "text": "Fix the script and get a run that completes",
+      "check": {
+        "jobState": {
+          "name": "design",
+          "state": "CD",
+          "gpus": 1
+        }
+      }
+    }
+  ],
+  "hints": [
+    "Read the slurm-NNNNN.out log. ProteinMPNN needs a GPU, and the header never asks for one.",
+    "`nano design.sh` and add the line `#SBATCH --gres=gpu:1` with the other #SBATCH lines, then `sbatch design.sh` again."
+  ],
+  "solution": [
+    "sbatch design.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "cat slurm-*.out",
+    {
+      "nano": "design.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=02:00:00\n#SBATCH --mem=16G\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\n\npython protein_mpnn_run.py \\\n  --pdb_path inputs/target.pdb \\\n  --out_folder outputs/\n"
+    },
+    "sbatch design.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}
