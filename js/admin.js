@@ -41,6 +41,7 @@ function store(key, value) {
 let published; // what the live site serves: { manifest, files }
 let work; // drafts: { manifest, files }
 let settings; // { repo, branch, baseVersion }
+let localMode = false; // served by serve.mjs: publishing saves to this computer
 
 async function fetchCopy(base = 'scenarios/', opts = { cache: 'no-cache' }) {
   const manifest = await (await fetch(`${base}tracks.json`, opts)).json();
@@ -56,6 +57,11 @@ async function fetchCopy(base = 'scenarios/', opts = { cache: 'no-cache' }) {
 }
 
 async function loadData() {
+  try {
+    localMode = !!(await (await fetch('__local', { cache: 'no-cache' })).json()).local;
+  } catch {
+    localMode = false;
+  }
   published = await fetchCopy();
   const saved = load(DRAFT_KEY);
   work = saved?.work ? saved.work : cloneCopy(published);
@@ -779,7 +785,7 @@ function renderPublish() {
   app.replaceChildren(
     h(`
     <section class="admin-page">
-      <div class="page-head"><div><h1>Publish</h1><p class="muted">Publishing commits your drafts to GitHub. The site updates in about two minutes, after the tests pass.</p></div></div>
+      <div class="page-head"><div><h1>Publish</h1><p class="muted">${localMode ? 'Publishing saves your drafts into the scenarios folder on this computer. Reload the practice site to see them.' : 'Publishing commits your drafts to GitHub. The site updates in about two minutes, after the tests pass.'}</p></div></div>
       <section class="card">
         <h2>Your changes</h2>
         ${
@@ -802,7 +808,7 @@ function renderPublish() {
         ${broken.length ? `<p class="bad-text">Fix the scenarios with problems before publishing. Open one to see what the validator found.</p>` : ''}
       </section>
 
-      <section class="card">
+      ${localMode ? localPublishCard(d, broken) : `<section class="card">
         <h2>Publish to GitHub</h2>
         <div class="grid2">
           <div class="field"><label for="p-repo" class="label">Repository</label><input type="text" id="p-repo" class="mono" value="${esc(settings.repo)}"></div>
@@ -831,9 +837,14 @@ function renderPublish() {
         <button type="button" id="p-zip" ${d.count ? '' : 'disabled'}>Download changes (.zip)</button>
       </section>
 
-      <section class="card"><h2>Live site</h2><div id="p-live" class="muted">Checking…</div></section>
+      <section class="card"><h2>Live site</h2><div id="p-live" class="muted">Checking…</div></section>`}
     </section>`),
   );
+  if (localMode) {
+    for (const b of app.querySelectorAll('[data-undo]')) b.addEventListener('click', () => undoChange(b.dataset.undo));
+    app.querySelector('#p-go').addEventListener('click', () => saveLocal());
+    return;
+  }
   app.querySelector('#p-repo').addEventListener('change', (e) => { settings.repo = e.target.value.trim(); saveWork(); });
   app.querySelector('#p-branch').addEventListener('change', (e) => { settings.branch = e.target.value.trim() || 'main'; saveWork(); });
   app.querySelector('#p-forget')?.addEventListener('click', () => { store(TOKEN_KEY, null); renderPublish(); });
@@ -944,6 +955,57 @@ async function publish(note) {
     setTimeout(renderPublishKeepLog(log.innerHTML), 0);
   } catch (e) {
     say(explainGitHubError(e), 'bad-text');
+    go.disabled = false;
+  }
+}
+
+function localPublishCard(d, broken) {
+  return `<section class="card">
+        <h2>Save to this computer</h2>
+        <p class="muted">This dashboard is running from the local server, so nothing goes to GitHub. Saved files land in <code>scenarios/</code> in this copy of the repo.</p>
+        <div class="row"><button type="button" id="p-go" class="primary" ${!d.count || broken.length ? 'disabled' : ''}>Save ${d.count} change${d.count === 1 ? '' : 's'}</button></div>
+        <ol class="log-lines" id="p-log"></ol>
+      </section>`;
+}
+
+async function saveLocal() {
+  const d = changes();
+  const log = app.querySelector('#p-log');
+  const go = app.querySelector('#p-go');
+  const say = (text, cls = '') => log.insertAdjacentHTML('beforeend', `<li class="${cls}">${text}</li>`);
+  go.disabled = true;
+  log.innerHTML = '';
+  try {
+    // Refuse to overwrite files changed on disk (by hand, or in another tab) after this page loaded.
+    const disk = await fetchCopy();
+    const conflicts = [
+      ...(JSON.stringify(disk.manifest) !== JSON.stringify(published.manifest) ? ['tracks.json'] : []),
+      ...[...d.changed, ...d.removed].filter((p) => p in disk.files && JSON.stringify(disk.files[p]) !== JSON.stringify(published.files[p])).map((p) => `${p}.json`),
+    ];
+    if (conflicts.length) {
+      say(`${conflicts.map(esc).join(', ')} changed on disk after you opened this page. Reload the dashboard to get the new version (your drafts stay), check your edits, and save again.`, 'bad-text');
+      go.disabled = false;
+      return;
+    }
+    const manifest = structuredClone(work.manifest);
+    manifest.version = (Number(published.manifest.version) || 0) + 1;
+    const write = { 'scenarios/tracks.json': JSON.stringify(manifest, null, 2) + '\n' };
+    for (const p of [...d.added, ...d.changed]) write[`scenarios/${p}.json`] = scenarioText(work.files[p]);
+    const res = await fetch('__local/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ write, remove: d.removed.map((p) => `scenarios/${p}.json`) }),
+    });
+    const out = await res.json();
+    if (!res.ok) throw new Error(out.error ?? res.status);
+    work.manifest = manifest;
+    published = cloneCopy(work);
+    settings.baseVersion = manifest.version;
+    saveWork();
+    say(`Saved ${out.saved} file${out.saved === 1 ? '' : 's'} (scenario version ${manifest.version}). Reload the <a href="./" target="_blank">practice site</a> to see the changes.`, 'good-text');
+    setTimeout(renderPublishKeepLog(log.innerHTML), 0);
+  } catch (e) {
+    say(`Couldn't save: ${esc(e.message)}. Is the local server still running?`, 'bad-text');
     go.disabled = false;
   }
 }

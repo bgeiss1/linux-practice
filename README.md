@@ -17,13 +17,19 @@ break anything.
 
 ## Run it locally
 
-Any static web server works. From the repo folder:
+You need [Node.js](https://nodejs.org) 18 or newer. From the repo folder:
 
 ```bash
-npm run serve        # same as: python3 -m http.server 8000
+npm run serve        # same as: node serve.mjs
 ```
 
-Then open http://localhost:8000.
+- Practice site: http://localhost:8000
+- Instructor dashboard: http://localhost:8000/admin.html
+
+The server only answers this computer. When the dashboard runs from it, **Publish**
+saves your drafts into `scenarios/` here instead of committing to GitHub; reload the
+practice site to try them. Push to GitHub when you're ready for students to see them.
+Use `PORT=9000 npm run serve` for another port.
 
 ## Tests
 
