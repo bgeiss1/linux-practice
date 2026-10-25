@@ -5,6 +5,21 @@
   "tier": 1,
   "title": "What does it ask for?",
   "story": "Before you submit someone else's script, check what it asks Slurm for. How many GPUs does {{script}} request?",
+  "lesson": {
+    "title": "How --gres counts GPUs",
+    "parts": [
+      {
+        "code": "#SBATCH",
+        "note": "This line is a request to Slurm. To bash it's just a comment."
+      },
+      {
+        "code": "--gres=gpu:2",
+        "note": "\"Generic resource\" `gpu`, count 2. The number after the last colon is how many GPUs."
+      }
+    ],
+    "why": "Read the request before you submit someone else's script. A job asking for 4 GPUs takes half of Geiss-01.",
+    "without": "No `--gres` line means no GPU at all."
+  },
   "vars": {
     "project": [
       "binder_design",

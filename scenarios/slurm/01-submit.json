@@ -5,6 +5,42 @@
   "tier": 1,
   "title": "Submit your first job",
   "story": "run_mpnn.sh is a job script: the #SBATCH lines at the top ask for a GPU, and the rest runs ProteinMPNN. Hand it to Slurm, then look at the queue.",
+  "lesson": {
+    "title": "Reading a job script's #SBATCH lines",
+    "lines": true,
+    "intro": "A job script asks for its resources in `#SBATCH` lines at the top. They're the same options you'd give `srun`.",
+    "parts": [
+      {
+        "code": "#!/bin/bash",
+        "note": "Run the script with bash."
+      },
+      {
+        "code": "#SBATCH --job-name=mpnn",
+        "note": "The name shown in `squeue`."
+      },
+      {
+        "code": "#SBATCH --partition=gpu",
+        "note": "The queue. `gpu` allows up to 2 days."
+      },
+      {
+        "code": "#SBATCH --gres=gpu:1",
+        "note": "One GPU."
+      },
+      {
+        "code": "#SBATCH --time=02:00:00",
+        "note": "Stop after 2 hours, finished or not."
+      },
+      {
+        "code": "#SBATCH --mem=16G",
+        "note": "Up to 16 GB of RAM."
+      },
+      {
+        "code": "#SBATCH --output=slurm-%j.out",
+        "note": "Save printed output here. `%j` becomes the job ID."
+      }
+    ],
+    "why": "`sbatch` queues the script and gives you your prompt back. The job runs when the GPU is free, even after you log out."
+  },
   "vars": {
     "project": [
       "binder_design",

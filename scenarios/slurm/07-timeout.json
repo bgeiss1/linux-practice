@@ -5,6 +5,21 @@
   "tier": 2,
   "title": "Out of time",
   "story": "Last night's AlphaFold job, af2_screen, died before it finished. Its log is slurm-{{jid}}.out. Find out why, fix fold.sh, and resubmit it so it completes.",
+  "lesson": {
+    "title": "How --time works",
+    "parts": [
+      {
+        "code": "#SBATCH",
+        "note": "A request to Slurm."
+      },
+      {
+        "code": "--time=04:00:00",
+        "note": "Hours:minutes:seconds. Also `MM`, or `D-HH:MM:SS` for days."
+      }
+    ],
+    "why": "Slurm stops a job when its time runs out, finished or not, so the next person gets the GPU. Shorter limits can also start sooner.",
+    "without": "Too short a limit and the job ends with state TIMEOUT and \"DUE TO TIME LIMIT\" in its log. Leave it out and you get the default (1 hour here)."
+  },
   "vars": {
     "project": [
       "binder_design",

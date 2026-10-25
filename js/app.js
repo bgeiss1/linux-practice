@@ -1,7 +1,8 @@
 // Student site: track list, scenario list, and the practice terminal.
 
 import { Session, TIERS } from '../engine/scenario.js';
-import { Terminal, esc, fmt, h } from './terminal.js';
+import { Terminal, esc, fmt, h, lessonHTML } from './terminal.js';
+import { guideHTML } from './guide.js';
 import { wordsFor, passphrase } from '../engine/passphrase.js';
 
 const app = document.getElementById('app');
@@ -121,6 +122,8 @@ function renderHome() {
         }
       </section>
 
+      ${GUIDE_LINK}
+
       <section style="display:grid;gap:14px" aria-labelledby="tracks-title">
         <h2 id="tracks-title">Tracks</h2>
         <div class="tracks">
@@ -165,6 +168,11 @@ function trackCard(t) {
   </a>`;
 }
 
+const GUIDE_LINK = `<a class="guide-link" href="#/guide">
+  <span style="display:grid;gap:2px"><span class="label">Guide</span><strong>Asking Slurm for GPUs, memory and time</strong><span class="muted">What --gres, --mem and --time mean, why they matter, and what happens if you leave them out.</span></span>
+  <span aria-hidden="true">→</span>
+</a>`;
+
 // ---------- track ----------
 
 function unlocked(t, i) {
@@ -183,6 +191,7 @@ function renderTrack(trackId) {
         <h1>${esc(t.title)}</h1>
         <p class="muted">${esc(t.blurb)} Scenarios unlock in order. Hints get shorter as you climb.</p>
       </div>
+      ${t.id === 'session' || t.id === 'slurm' ? GUIDE_LINK : ''}
       ${groups
         .map(
           (g) => `<div class="tier-group">
@@ -306,6 +315,7 @@ function renderPanel(coach = null) {
       <h2>${esc(session.def.title)}</h2>
     </div>
     <p class="story">${fmt(session.def.story)}</p>
+    ${lessonHTML(session.def.lesson, { open: current.lessonOpen ?? (session.def.lesson?.open || session.tier <= 2) })}
     ${
       session.tasks.length
         ? `<div style="display:grid;gap:6px"><span class="label">Tasks</span><ol class="tasks">${session.tasks
@@ -324,6 +334,8 @@ function renderPanel(coach = null) {
     </div>`),
   );
   document.getElementById('answer-form')?.addEventListener('submit', onAnswer);
+  // The panel redraws after every command, so remember whether the lesson is open.
+  panel.querySelector('.lesson')?.addEventListener('toggle', (e) => { current.lessonOpen = e.target.open; });
   document.getElementById('hint-btn')?.addEventListener('click', () => showHint());
   document.getElementById('restart-btn').addEventListener('click', () => renderScenario(def.id));
 }
@@ -393,6 +405,7 @@ function route() {
   if (kind === 'track') renderTrack(id);
   else if (kind === 's') renderScenario(id);
   else if (kind === 'sandbox') renderScenario('sandbox');
+  else if (kind === 'guide') app.replaceChildren(h(guideHTML()));
   else renderHome();
   window.scrollTo(0, 0);
 }

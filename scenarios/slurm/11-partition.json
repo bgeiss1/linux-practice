@@ -5,6 +5,25 @@
   "tier": 4,
   "title": "Stuck in the queue",
   "story": "Your job {{jname}} has been pending for an hour while GPUs sit free. Find out why, and get it running.",
+  "lesson": {
+    "title": "Time limits per partition",
+    "parts": [
+      {
+        "code": "sinfo",
+        "note": "Shows each partition's TIMELIMIT: `gpu` 2 days, `short` 1 hour."
+      },
+      {
+        "code": "#SBATCH --partition=short",
+        "note": "This job is in `short`..."
+      },
+      {
+        "code": "#SBATCH --time=03:00:00",
+        "note": "...but asks for 3 hours, which `short` never allows."
+      }
+    ],
+    "why": "Slurm won't shorten your request or move the job for you.",
+    "without": "The job waits forever with reason PartitionTimeLimit. Cancel it, fix the partition or the time, and resubmit."
+  },
   "vars": {
     "project": [
       "binder_design",

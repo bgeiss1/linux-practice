@@ -4,7 +4,7 @@
 import { Session, TIERS } from '../engine/scenario.js';
 import { validate } from '../engine/validate.js';
 import { wordsFor } from '../engine/passphrase.js';
-import { Terminal, esc, fmt, h } from './terminal.js';
+import { Terminal, esc, fmt, h, lessonHTML } from './terminal.js';
 import {
   cloneCopy, diffCopies, addScenario, removeScenario, moveScenario, blankScenario, renumber,
   makeBundle, mergeImport, makeZip, parseCSV, detectColumns, gradeRows, gradesCSV,
@@ -558,6 +558,7 @@ function startPreview(seed = (Math.random() * 2 ** 32) >>> 0) {
     h(`
     <div class="pv-panel">
       <p class="story small">${fmt(session.def.story)}</p>
+      ${lessonHTML(session.def.lesson, { open: false })}
       <ol class="tasks" id="pv-tasks"></ol>
       <div class="coach small" id="pv-coach">Type here as a student would, or press Run solution.</div>
     </div>

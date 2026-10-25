@@ -117,6 +117,29 @@ cloned repos, run with the python of their conda environment:
 session. They print a short
 log and write placeholder outputs where real tools would.
 
+## Lesson cards
+
+A scenario can carry a `lesson`: a "How it works" card above the tasks that takes one
+command (or a few `#SBATCH` lines) apart, piece by piece. It's open by default at tiers
+1 and 2, folded at 3 and 4 unless `"open": true`.
+
+```json
+"lesson": {
+  "title": "Asking for one GPU",
+  "intro": "Optional sentence before the breakdown.",
+  "parts": [
+    { "code": "srun", "note": "Ask Slurm to run something now." },
+    { "code": "--gres=gpu:1", "note": "One GPU." }
+  ],
+  "lines": false,
+  "why": "Why it matters on a shared machine.",
+  "without": "What happens if you leave it out."
+}
+```
+
+`"lines": true` puts each part on its own line, for `#SBATCH` headers. Every card links
+to the guide page (`#/guide`), which explains requesting GPUs, memory and time in full.
+
 ## Only real commands
 
 Everything a scenario asks students to type, in tasks, hints and solutions, must work

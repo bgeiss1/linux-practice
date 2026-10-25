@@ -5,6 +5,21 @@
   "tier": 3,
   "title": "Killed for memory",
   "story": "relax_all.sh keeps dying a few minutes in. Submit it, work out what went wrong, fix it, and get a run that completes.",
+  "lesson": {
+    "title": "How --mem works",
+    "parts": [
+      {
+        "code": "#SBATCH",
+        "note": "A request to Slurm."
+      },
+      {
+        "code": "--mem=48G",
+        "note": "The most RAM the whole job may use, here 48 GB. `M` means megabytes."
+      }
+    ],
+    "why": "Memory is shared too. Slurm kills a job that uses more than it asked for, so it can't crowd out other jobs.",
+    "without": "Too little and `sacct` shows OUT_OF_MEMORY. `seff JOBID` shows how much the job actually used, so you know what to ask for."
+  },
   "vars": {
     "project": [
       "binder_design",

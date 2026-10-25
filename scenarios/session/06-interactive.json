@@ -5,6 +5,30 @@
   "tier": 2,
   "title": "Borrow a GPU",
   "story": "To test something on a GPU, ask Slurm for an interactive session with one GPU. Check that you can see it, then give it back.",
+  "lesson": {
+    "title": "Asking for one GPU",
+    "intro": "You never use a GPU on Geiss-01 directly. You ask Slurm for one, and it gives you a shell where that GPU is yours.",
+    "parts": [
+      {
+        "code": "srun",
+        "note": "Ask Slurm to run something now. If nothing is free, it waits in the queue first."
+      },
+      {
+        "code": "--gres=gpu:1",
+        "note": "The resource you want: GPUs, and how many (1). Change the number to ask for more."
+      },
+      {
+        "code": "--pty",
+        "note": "Connect the job to your keyboard and screen so you can type in it."
+      },
+      {
+        "code": "bash",
+        "note": "What to run in the job: a new shell. You stay in it until you type `exit`."
+      }
+    ],
+    "why": "Eight GPUs are shared by the whole class. Slurm makes sure each one goes to one person at a time, and `exit` hands it back.",
+    "without": "`srun --pty bash` without `--gres` still gives you a shell, but with no GPU: `nvidia-smi` says \"No devices were found\" and GPU tools fail."
+  },
   "vars": {},
   "machines": {
     "cluster": {

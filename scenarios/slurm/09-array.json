@@ -5,6 +5,24 @@
   "tier": 3,
   "title": "One script, many targets",
   "story": "You have {{ntarget}} targets in inputs/, target_1.pdb to target_{{ntarget}}.pdb. mpnn_array.sh uses $SLURM_ARRAY_TASK_ID to pick one. Submit it as a job array with one task per target.",
+  "lesson": {
+    "title": "One request, many jobs",
+    "parts": [
+      {
+        "code": "sbatch",
+        "note": "Submit..."
+      },
+      {
+        "code": "--array=1-5",
+        "note": "...5 copies of the script, numbered 1 to 5. Each one is its own job with its own GPU and memory, from the script's `#SBATCH` lines."
+      },
+      {
+        "code": "mpnn_array.sh",
+        "note": "Inside, `$SLURM_ARRAY_TASK_ID` is that copy's number, so each picks a different input."
+      }
+    ],
+    "why": "Slurm runs as many copies at once as there are free GPUs, and queues the rest."
+  },
   "vars": {
     "project": [
       "binder_design",
