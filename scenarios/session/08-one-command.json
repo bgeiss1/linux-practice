@@ -1,0 +1,51 @@
+{
+  "id": "session-08-one-command",
+  "track": "session",
+  "order": 8,
+  "tier": 2,
+  "title": "One command on a GPU",
+  "story": "You don't always need a whole interactive shell. `srun` can also run a single command on a GPU and hand the GPU straight back when it finishes. Use it to run nvidia-smi on one GPU.",
+  "lesson": {
+    "title": "srun with a command",
+    "parts": [
+      {
+        "code": "srun",
+        "note": "Ask Slurm for resources and run something with them."
+      },
+      {
+        "code": "--gres=gpu:1",
+        "note": "One GPU."
+      },
+      {
+        "code": "nvidia-smi",
+        "note": "The command to run. When it ends, so does the job, and the GPU is free again."
+      }
+    ],
+    "why": "No `--pty bash` and no `exit`: the job lasts exactly as long as the command."
+  },
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run nvidia-smi on 1 GPU through srun",
+      "check": {
+        "ran": "srun",
+        "lineHas": "nvidia-smi",
+        "argHas": "gpu",
+        "ok": true
+      }
+    }
+  ],
+  "hints": [
+    "Put the command after the options: `srun --gres=gpu:1 COMMAND`.",
+    "`srun --gres=gpu:1 nvidia-smi`. It shows only the one GPU you were given."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 nvidia-smi"
+  ]
+}

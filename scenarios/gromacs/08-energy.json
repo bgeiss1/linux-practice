@@ -1,0 +1,79 @@
+{
+  "id": "gromacs-08-energy",
+  "track": "gromacs",
+  "order": 8,
+  "tier": 2,
+  "title": "Did the energy go down?",
+  "story": "The minimization finished. Its energies are in em.edr, a binary file you read with `gmx energy`. Pull out the potential energy into potential.xvg and type its average (in kJ/mol, as a whole number) in the answer box.",
+  "vars": {
+    "dir": [
+      "lysozyme_md",
+      "md_practice",
+      "lyz_water",
+      "mip662_md"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{dir}}",
+      "liveJobs": true,
+      "modules": [
+        "gromacs"
+      ],
+      "files": {
+        "~/{{dir}}/em.edr": {
+          "binary": "GROMACS energy file (.edr). Read it with `gmx energy -f FILE`.",
+          "meta": {
+            "kind": "em",
+            "atoms": 34304,
+            "proteinAtoms": 1959,
+            "sol": 10779,
+            "ions": 8,
+            "charge": 0,
+            "integrator": "steep",
+            "nsteps": 50000,
+            "dt": 0.001,
+            "emtol": 1000,
+            "top": "/home/student/w/topol.top",
+            "gro": "/home/student/w/1AKI_solv_ions.gro",
+            "energies": {
+              "final": -570334,
+              "average": -545810,
+              "steps": 869
+            }
+          }
+        },
+        "~/{{dir}}/em.gro": "Protein in water\n34304\n    1LYS      N    1   3.536   2.234   1.981\n    1LYS     H1    2   3.612   2.296   1.958\n    1LYS     H2    3   3.497   2.257   2.071\n   7.10000   7.10000   7.10000\n",
+        "~/{{dir}}/em.log": "Log file opened on Sat Oct 24 15:00:00 2026\nGROMACS version:    2024.4\nSteepest Descents converged to Fmax < 1000 in 869 steps\nPotential Energy  = -5.7033400e+05\n",
+        "~/{{dir}}/topol.top": ";\n;\tFile 'topol.top' was generated\n;\tBy user: student (5012)\n;\tOn host: geiss-01\n;\tAt date: Sat Oct 24 15:00:00 2026\n;\n;\tThis is a standalone topology file\n;\n;\tCreated by:\n;\t          :-) GROMACS - gmx pdb2gmx, 2024.4 (-:\n;\n;\tCommand line:\n;\t  gmx pdb2gmx -f 1AKI_clean.pdb -water spce -ff amber99sb-ildn\n;\tForce field was read from the standard GROMACS share directory.\n;\n\n; Include forcefield parameters\n#include \"amber99sb-ildn.ff/forcefield.itp\"\n\n[ moleculetype ]\n; Name            nrexcl\nProtein_chain_A     3\n\n[ atoms ]\n;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB\n; residue   1 LYS rtp NLYS q +2.0\n     1         N3      1    LYS      N      1     0.0966      14.01\n     2          H      1    LYS     H1      2     0.2165      1.008\n     3          H      1    LYS     H2      3     0.2165      1.008   ; qtot 0.5296\n; (practice copy: atoms 4 to 1958 are left out of this listing)\n  1959         O2    129    LEU    OC2   1959    -0.8188         16   ; qtot 8\n\n[ bonds ]\n;  ai    aj funct            c0            c1            c2            c3\n    1     2     1\n\n; Include Position restraint file\n#ifdef POSRES\n#include \"posre.itp\"\n#endif\n\n; Include water topology\n#include \"amber99sb-ildn.ff/spce.itp\"\n\n#ifdef POSRES_WATER\n; Position restraint for each water oxygen\n[ position_restraints ]\n;  i funct       fcx        fcy        fcz\n   1    1       1000       1000       1000\n#endif\n\n; Include topology for ions\n#include \"amber99sb-ildn.ff/ions.itp\"\n\n[ system ]\n; Name\n1AKI_CLEAN\n\n[ molecules ]\n; Compound        #mols\nProtein_chain_A   1\nSOL               10779\nCL                8\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Write the potential energy to potential.xvg",
+      "check": {
+        "fileContains": {
+          "path": "~/{{dir}}/potential.xvg",
+          "text": "legend \"Potential\""
+        }
+      }
+    },
+    {
+      "text": "What is the average potential energy?",
+      "check": {
+        "answer": "-545810"
+      }
+    }
+  ],
+  "hints": [
+    "`gmx energy -f em.edr -o potential.xvg` asks which terms you want. Pipe the answer in: `echo Potential | gmx energy -f em.edr -o potential.xvg`.",
+    "The average is in the table at the end, in the Average column."
+  ],
+  "solution": [
+    "echo Potential | gmx energy -f em.edr -o potential.xvg",
+    {
+      "answer": "-545810"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "id": "colabfold-06-batch",
+  "track": "colabfold",
+  "order": 6,
+  "tier": 2,
+  "title": "Fold in a batch job",
+  "story": "A batch job keeps folding after you log out. fold.sh already asks Slurm for a GPU, memory and time, but its last line, the one that folds, is missing. Add the line so it folds {{seq.0}}.fasta into {{seq.0}}_af, submit the script, and wait until the job finishes.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDIRKAEVL"
+      ],
+      [
+        "des_4471",
+        "MKIDIALPEALKKALGKEKAGLEEALPRKKKIDLPERKEADELDKLKLLKPELPARKEVRKEKLGKEIGL"
+      ],
+      [
+        "il7r_min",
+        "MAVEIAEEKKKLGELEDKRKEALLRAKLLAALAAAAAAEILLELPVAAAKRKEKEERVKDRVDKEEAALE"
+      ],
+      [
+        "pdl1_b3",
+        "MLEPIKDADEAEKRLAEVEELLRAAAEKREPAKELPAKEEPALAKKAEALEAEIEAEGKAIEEVLAVELE"
+      ],
+      [
+        "her2_mb7",
+        "MKKEKEALLAELELKKRVELGEKEPAEDEEKAAIEEDVLLKGLEERAKRKAKAEEAKGEIEELPRKKPGL"
+      ],
+      [
+        "tnf_c12",
+        "MEEKERGAKLREKKGLEAEERLLEREEARIELKKGELDLLLERDGERLLAEGLKRKLAVKERKAERKELK"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">{{seq.0}}\n{{seq.1}}\n",
+        "~/{{project}}/fold.sh": "#!/bin/bash\n#SBATCH --job-name=fold\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=01:00:00\n#SBATCH --output=fold-%j.out\n\nmodule load colabfold\n# TODO: fold {{seq.0}}.fasta into {{seq.0}}_af\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Add the colabfold_batch line to fold.sh",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/fold.sh",
+          "text": "colabfold_batch {{seq.0}}.fasta {{seq.0}}_af"
+        }
+      }
+    },
+    {
+      "text": "Submit fold.sh",
+      "check": {
+        "jobSubmitted": {
+          "name": "fold",
+          "gpus": 1
+        }
+      }
+    },
+    {
+      "text": "Wait for the job to finish and fold the sequence",
+      "check": {
+        "all": [
+          {
+            "jobState": {
+              "name": "fold",
+              "state": "CD"
+            }
+          },
+          {
+            "isFile": "~/{{project}}/{{seq.0}}_af/{{seq.0}}.done.txt"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`nano fold.sh`, and replace the TODO line with `colabfold_batch {{seq.0}}.fasta {{seq.0}}_af`.",
+    "`sbatch fold.sh`, then check `squeue --me` until the job is gone. The log is fold-JOBID.out."
+  ],
+  "solution": [
+    {
+      "nano": "fold.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=fold\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=01:00:00\n#SBATCH --output=fold-%j.out\n\nmodule load colabfold\ncolabfold_batch {{seq.0}}.fasta {{seq.0}}_af\n"
+    },
+    "sbatch fold.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "id": "mpnn-06-best",
+  "track": "mpnn",
+  "order": 6,
+  "tier": 2,
+  "title": "Pick the best-scoring design",
+  "story": "ProteinMPNN gives each design a score: lower is better (more likely to fold into the backbone). In outputs/seqs/{{b.0}}.fa, which sample has the lowest score? Type its sample number in the answer box.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "b": [
+      [
+        "pdl1",
+        ">pdl1, score=1.7304, global_score=1.8235, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=101\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=1.0784, global_score=1.0997, seq_recovery=0.0161\nQATNGSKKRIIRKKLQEELGQATNGSVKDLEKIREALDKVTNQAVELLAEIRKKLDEAAQDL\n>T=0.1, sample=2, score=1.1186, global_score=1.1399, seq_recovery=0.0323\nQAANGSVKRIIRKKLLEESGQATEGSVKDLKKIREALAKVKNQAEELLAEIRKELDTAAQDG\n>T=0.1, sample=3, score=1.1589, global_score=1.1802, seq_recovery=0.0323\nQATIGSVKRIIRKKLLEGSGQATNVSVKDEKKIREAEDKVTNQNEELLAEIRKQLDEAKQDL\n>T=0.1, sample=4, score=1.0192, global_score=1.0405, seq_recovery=0.0484\nQLTNASVKRGIRKKLEEEKGQATNGKVKKLKKIREAEDKVTNQAEENLAEIRRKLDEAAQDL\n>T=0.1, sample=5, score=1.0595, global_score=1.0808, seq_recovery=0.0161\nQAVNGSVKRIIRKKLLETSGQATNGSVKDLKKAREALDKVTNQAVELLAEIQKKLDEAADDL\n>T=0.1, sample=6, score=1.0998, global_score=1.1211, seq_recovery=0.0484\nQATNGEVKKIIRKKLLEESGLATNGSVKLLKKGREALLKVTNQQEESLAERRKKLLEAGQDL\n>T=0.1, sample=7, score=1.1401, global_score=1.1614, seq_recovery=0.0323\nTATNGSVKAIERKKLLEESGAATNGSRKELKKIRSALDKVTNEAEELLAEIRKKLDEAAKDL\n>T=0.1, sample=8, score=1.0758, global_score=1.0971, seq_recovery=0.0323\nQATNGRVKRIARKKLLEETGQALNGKVKDLKSIREALDKITNQAIELLAEIEKKLDEAAKDA\n",
+        "4"
+      ],
+      [
+        "il7r",
+        ">il7r, score=1.8552, global_score=1.6905, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=102\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=1.3354, global_score=1.3567, seq_recovery=0.1774\nIRKKLKEAAQLELLKARIAEEELLNTNQKVRIKKALAEQALLEEAVNTSGVKGSAEALKAEE\n>T=0.1, sample=2, score=1.2145, global_score=1.2358, seq_recovery=0.0968\nGRKKLDEARQEELLKGKIAEEELLGTAQKVRIKKDLAGQALLEEAQQTSGVKKSAEDLKGEE\n>T=0.1, sample=3, score=1.2548, global_score=1.2761, seq_recovery=0.1290\nIRKKIDEAAQEELLKKRIAEEELLKTAQKVRIKKDLANQALLEEAQNVSGTKGSAEDLAKKE\n>T=0.1, sample=4, score=1.3139, global_score=1.3352, seq_recovery=0.1129\nIRKKLDQAAQEELLKKLIAEEELLNNQQKVRIEKDLAEQALLEEAQNESGVKGSAEDLKKEE\n>T=0.1, sample=5, score=1.1742, global_score=1.1955, seq_recovery=0.1290\nIRKRLDEAAQEELKKKRIGEEELENTAQKVRIKSDLAEQALLLEAQNRSGVKGSAEALKKEE\n>T=0.1, sample=6, score=1.2334, global_score=1.2547, seq_recovery=0.0968\nQRKKLLEARQERLLKKRIAEEELLNTVQKVRIKKDTAEEALLEEVQNTSGVKGKAEDLKKEE\n>T=0.1, sample=7, score=1.2737, global_score=1.2950, seq_recovery=0.1290\nIRNKLLEAAQVELLKKRAAEEESLNTAQKVRIKKDLEEQALLEEAQETSGVKGSAEDLKKEV\n>T=0.1, sample=8, score=1.2574, global_score=1.2787, seq_recovery=0.0968\nVRKKLDEAKQKELLKKRIKEEELLNTDQKVRIKKDLATQALLKEAQNTSGVTGSAEDLKAEE\n",
+        "5"
+      ],
+      [
+        "her2",
+        ">her2, score=1.7524, global_score=1.8426, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=103\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=1.0697, global_score=1.0910, seq_recovery=0.0968\nGSVADLAERIIRAKLVEEAQEIAERIKKASLKIREALVNTAEELVKGSTNAVNTLLEELLDL\n>T=0.1, sample=2, score=0.9489, global_score=0.9702, seq_recovery=0.0806\nGSVKDLAERIIRRKLLEEAKDIAEEIKKGTKKKREALENTAEELVKGSTNVQNTLEEEKLDL\n>T=0.1, sample=3, score=0.9892, global_score=1.0105, seq_recovery=0.0806\nGSVKDLAERIIRKVLLEEAQGIAERAKKGSKKIREALDNTAELLVKGSTNLQNTLLEELLDI\n>T=0.1, sample=4, score=1.0106, global_score=1.0319, seq_recovery=0.0806\nGSLKDLAQRIIRKKLLEEASDIAERLKKGSKNIREALDNEEEDLVKGSKNAQNELLEELLDG\n>T=0.1, sample=5, score=1.0509, global_score=1.0722, seq_recovery=0.0806\nGEVKDLAERIIRKKLEEEAQDIAERIKIGSLKIREALDNTAEDLVLGSTNNQNTLLEELLDL\n>T=0.1, sample=6, score=0.9300, global_score=0.9513, seq_recovery=0.0968\nGDVKDLAERIIRKKLKEEAQKIAERIKKESKKIKEALDNTAEDEVKKSTNAQRTLLEELLDL\n>T=0.1, sample=7, score=0.9703, global_score=0.9916, seq_recovery=0.0645\nGSVKDLAERIIRKKLQEEAQDIEERIKKGLKKIRNALDNTAEDAVKLSTNAQNTLLEVLLRL\n>T=0.1, sample=8, score=1.0672, global_score=1.0885, seq_recovery=0.1129\nGSVQELAERIIRKKGLEEAQDIATRIKKGSKEIREALDNNKEDLVKGSTNAQNKLLAELLDR\n",
+        "6"
+      ],
+      [
+        "tnfa",
+        ">tnfa, score=1.4104, global_score=1.6966, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=104\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=1.0068, global_score=1.0281, seq_recovery=0.0161\nGSVKQATNRIIRKKLKEASGEATNLLEEKLELLDKKVREEKKRKEELLTNSGKVVDEAIRQA\n>T=0.1, sample=2, score=0.9476, global_score=0.9689, seq_recovery=0.0323\nGSVIQATNRIIRKKLDERSGQATNVLEEDNEALDKKEREEKKRNEELLTNSGKRLDEAERQA\n>T=0.1, sample=3, score=0.9073, global_score=0.9286, seq_recovery=0.0645\nGSVKQAINRAIRKKLLEAGGQANNLLEEDLEALDVKIREEKKRIEELQTNSGKVLDEEIRLA\n>T=0.1, sample=4, score=0.8859, global_score=0.9072, seq_recovery=0.0484\nGSVKQAENRIIRKVLDEASGQAVNLLEEDLEVLDKKIREKKKRIENLLTNLGKVLDEKLRQA\n>T=0.1, sample=5, score=1.0256, global_score=1.0469, seq_recovery=0.0161\nGSVAQATNRIIRKKLEEAVGQATNLTEEELEALDKKEREEKKRIEENLTNSGRVLDEAIRQA\n>T=0.1, sample=6, score=0.9665, global_score=0.9878, seq_recovery=0.0323\nASVKQATNTIKRKKLDEASGQATNLLLEVLEALDLKIRELKKRILELLTNSGLVLDEAITQA\n>T=0.1, sample=7, score=0.9262, global_score=0.9475, seq_recovery=0.0484\nGSVKQATQRIIRKKGDEASGQATTLLEEDLEALLTKIREEKKSIEALLTNSLKVLDKAISQA\n>T=0.1, sample=8, score=0.9048, global_score=0.9261, seq_recovery=0.0161\nGAVKQATNRIIRKKLDKASGGATNLAEEDLEALDKKLREEKKRIEELSTNLGKVLDEAIRQA\n",
+        "4"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/outputs/seqs/{{b.0}}.fa": "{{b.1}}"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Which sample scores best?",
+      "check": {
+        "answer": "{{b.2}}"
+      }
+    }
+  ],
+  "hints": [
+    "`grep \"^>T=\" outputs/seqs/{{b.0}}.fa` shows just the design headers.",
+    "Sort them by the score field: `grep \"^>T=\" outputs/seqs/{{b.0}}.fa | sort -t, -k3 | head -1`."
+  ],
+  "solution": [
+    "grep \"^>T=\" outputs/seqs/{{b.0}}.fa | sort -t, -k3 | head -1",
+    {
+      "answer": "{{b.2}}"
+    }
+  ]
+}

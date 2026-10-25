@@ -112,6 +112,8 @@ export class VFS {
       existing.content = append ? existing.content + content : content;
       existing.mtime = mtime;
       existing.size = null;
+      delete existing.binary;
+      delete existing.meta;
       if (mode !== undefined) existing.mode = mode;
       return existing;
     }

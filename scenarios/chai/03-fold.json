@@ -1,0 +1,115 @@
+{
+  "id": "chai-03-fold",
+  "track": "chai",
+  "order": 3,
+  "tier": 1,
+  "title": "Your first Chai-1 run",
+  "story": "Fold {{seq.0}}.fasta with Chai-1 into a new folder called {{seq.0}}_chai. Chai-1 needs a GPU and plenty of memory, so start an interactive job that asks for both, and leave it when you're done.",
+  "lesson": {
+    "title": "Folding with Chai-1",
+    "parts": [
+      {
+        "code": "srun --gres=gpu:1 --mem=32G --pty bash",
+        "note": "An interactive job with 1 GPU and 32 GB of memory."
+      },
+      {
+        "code": "conda activate chai",
+        "note": "Switch on the environment that has `chai-lab` (after `module load anaconda`)."
+      },
+      {
+        "code": "chai-lab fold",
+        "note": "The folding command."
+      },
+      {
+        "code": "{{seq.0}}.fasta",
+        "note": "The input, with Chai-1 style headers."
+      },
+      {
+        "code": "{{seq.0}}_chai",
+        "note": "The output folder. It must be new or empty."
+      }
+    ],
+    "why": "Chai-1 makes 5 structures by default (pred.model_idx_0.cif to pred.model_idx_4.cif), each with a scores file.",
+    "without": "Without a GPU, Chai-1 stops with \"No CUDA GPUs are available\". Without `--mem`, the job gets 4 GB and the run is killed."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLELAREK"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEARKLAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAARRAKR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRLPKGE"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEKKREL"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEKLLEP"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">protein|name={{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Start a GPU job with at least 16 GB of memory",
+      "check": {
+        "inInteractiveJob": {
+          "gpus": 1,
+          "memGB": 16
+        }
+      }
+    },
+    {
+      "text": "Fold {{seq.0}}.fasta into {{seq.0}}_chai",
+      "check": {
+        "isFile": "~/{{project}}/{{seq.0}}_chai/pred.model_idx_0.cif"
+      }
+    },
+    {
+      "text": "Leave the interactive job",
+      "check": {
+        "notInInteractiveJob": true
+      }
+    }
+  ],
+  "hints": [
+    "`srun --gres=gpu:1 --mem=32G --pty bash` first.",
+    "Inside: `module load anaconda`, `conda activate chai`, then `chai-lab fold {{seq.0}}.fasta {{seq.0}}_chai`.",
+    "Type `exit` when it says it wrote the structures."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load anaconda",
+    "conda activate chai",
+    "chai-lab fold {{seq.0}}.fasta {{seq.0}}_chai",
+    "exit"
+  ]
+}

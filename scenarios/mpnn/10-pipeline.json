@@ -1,0 +1,139 @@
+{
+  "id": "mpnn-10-pipeline",
+  "track": "mpnn",
+  "order": 10,
+  "tier": 4,
+  "title": "Design for every backbone",
+  "story": "backbones has three target-binder complexes (chain A is the target, chain B the binder). In one batch job, design 8 sequences for the binder chain of every complex at temperature 0.2 with seed 7, writing everything to outputs.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/backbones/{{target}}_1.pdb": {
+          "lib": "pdb:chains A:110,B:58"
+        },
+        "~/{{project}}/backbones/{{target}}_2.pdb": {
+          "lib": "pdb:chains A:110,B:62"
+        },
+        "~/{{project}}/backbones/{{target}}_3.pdb": {
+          "lib": "pdb:chains A:110,B:66"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run the designs in a batch job",
+      "check": {
+        "jobSubmitted": {}
+      }
+    },
+    {
+      "text": "Design 8 binder sequences per complex",
+      "check": {
+        "all": [
+          {
+            "all": [
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_1.fa",
+                  "text": "designed_chains=['B']"
+                }
+              },
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_1.fa",
+                  "text": ">T=0.2, sample=8,"
+                }
+              },
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_1.fa",
+                  "text": "seed=7"
+                }
+              }
+            ]
+          },
+          {
+            "all": [
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_2.fa",
+                  "text": "designed_chains=['B']"
+                }
+              },
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_2.fa",
+                  "text": ">T=0.2, sample=8,"
+                }
+              },
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_2.fa",
+                  "text": "seed=7"
+                }
+              }
+            ]
+          },
+          {
+            "all": [
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_3.fa",
+                  "text": "designed_chains=['B']"
+                }
+              },
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_3.fa",
+                  "text": ">T=0.2, sample=8,"
+                }
+              },
+              {
+                "fileContains": {
+                  "path": "~/{{project}}/outputs/seqs/{{target}}_3.fa",
+                  "text": "seed=7"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "A for loop in the script runs ProteinMPNN once per file: `for f in backbones/*.pdb; do python ... --pdb_path $f --pdb_path_chains B ...; done`. Or parse the folder and use the jsonl helpers."
+  ],
+  "solution": [
+    {
+      "nano": "design.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n\nmodule load anaconda\nconda activate proteinmpnn\nfor f in backbones/*.pdb; do\n  python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path $f --pdb_path_chains B --out_folder outputs --num_seq_per_target 8 --sampling_temp 0.2 --seed 7\ndone\n"
+    },
+    "sbatch design.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

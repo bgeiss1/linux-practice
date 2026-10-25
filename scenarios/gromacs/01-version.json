@@ -1,0 +1,53 @@
+{
+  "id": "gromacs-01-version",
+  "track": "gromacs",
+  "order": 1,
+  "tier": 1,
+  "title": "Meet GROMACS",
+  "story": "GROMACS runs molecular dynamics: it simulates how a protein moves in water. Every GROMACS tool is a subcommand of one program, `gmx`, which comes from a module. Load it and find out which version of GROMACS Geiss-01 has. Type the version number in the answer box.",
+  "vars": {
+    "dir": [
+      "lysozyme_md",
+      "md_practice",
+      "lyz_water",
+      "mip662_md"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{dir}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{dir}}/1aki.pdb": {
+          "lib": "pdb:1aki"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Load the gromacs module",
+      "check": {
+        "moduleLoaded": "gromacs"
+      }
+    },
+    {
+      "text": "Which version is it?",
+      "check": {
+        "answer": "2024.4"
+      }
+    }
+  ],
+  "hints": [
+    "`module load gromacs` puts `gmx` on your PATH.",
+    "`gmx --version` prints the version and how it was built.",
+    "The version is on the line `GROMACS version:`. `module list` shows it too."
+  ],
+  "solution": [
+    "module load gromacs",
+    "gmx --version",
+    {
+      "answer": "2024.4"
+    }
+  ]
+}

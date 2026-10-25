@@ -1,0 +1,117 @@
+{
+  "id": "mpnn-08-fixed",
+  "track": "mpnn",
+  "order": 8,
+  "tier": 3,
+  "title": "Keep the hotspot residues",
+  "story": "Binder residues 1 to 5 of chain B touch the target, and you want to keep them. inputs/{{target}}_complex.pdb is already parsed into parsed.jsonl. Make chains.jsonl that designs chain B only, make fixed.jsonl that fixes B residues 1 2 3 4 5, then design 4 sequences into outputs using both.",
+  "lesson": {
+    "title": "Fixing positions",
+    "parts": [
+      {
+        "code": "python /opt/ProteinMPNN/helper_scripts/make_fixed_positions_dict.py",
+        "note": "Helper that writes which residues to keep."
+      },
+      {
+        "code": "--input_path=parsed.jsonl",
+        "note": "The parsed structures."
+      },
+      {
+        "code": "--output_path=fixed.jsonl",
+        "note": "Where to write the fixed positions."
+      },
+      {
+        "code": "--chain_list \"B\"",
+        "note": "Which chain the positions are on."
+      },
+      {
+        "code": "--position_list \"1 2 3 4 5\"",
+        "note": "Residue numbers to keep, separated by spaces (counting from 1 in the chain)."
+      }
+    ],
+    "why": "assign_fixed_chains.py works the same way: its `--chain_list` names the chains to design, and every other chain is kept. Pass the two files to ProteinMPNN with `--chain_id_jsonl` and `--fixed_positions_jsonl`."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "modules": [
+        "anaconda"
+      ],
+      "conda": "proteinmpnn",
+      "files": {
+        "~/{{project}}/inputs/{{target}}_complex.pdb": {
+          "lib": "pdb:chains A:90,B:54"
+        },
+        "~/{{project}}/parsed.jsonl": "{\"seq_chain_A\":\"MAIVKDADEKKRARLRIKEELKKLAELEEDLEAIEELIKAAEELERLLAVILLGLKEELEKAKEPKEIPLLKEALVKRLVKELREEDDLA\",\"coords_chain_A\":{\"N_chain_A\":[[1.404,-0.767,-0.6]],\"CA_chain_A\":[[2.3,0,0]],\"C_chain_A\":[[1.531,0.739,0.6]],\"O_chain_A\":[[1.071,0.902,1.4]]},\"seq_chain_B\":\"MERLAAVLEEREEERLEERRAEKRAVEALKAPKEEAKAPLLKLELIAPKLPRAA\",\"coords_chain_B\":{\"N_chain_B\":[[1.404,-0.767,-0.6]],\"CA_chain_B\":[[2.3,0,0]],\"C_chain_B\":[[1.531,0.739,0.6]],\"O_chain_B\":[[1.071,0.902,1.4]]},\"name\":\"{{target}}_complex\",\"num_of_chains\":2,\"seq\":\"MAIVKDADEKKRARLRIKEELKKLAELEEDLEAIEELIKAAEELERLLAVILLGLKEELEKAKEPKEIPLLKEALVKRLVKELREEDDLAMERLAAVLEEREEERLEERRAEKRAVEALKAPKEEAKAPLLKLELIAPKLPRAA\"}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make chains.jsonl that designs chain B",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/chains.jsonl",
+          "text": "[[\"B\"],[\"A\"]]"
+        }
+      }
+    },
+    {
+      "text": "Make fixed.jsonl that fixes B 1-5",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/fixed.jsonl",
+          "text": "\"B\":[1,2,3,4,5]"
+        }
+      }
+    },
+    {
+      "text": "Design 4 sequences with both files",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}_complex.fa",
+              "text": "sample=4,"
+            }
+          },
+          {
+            "ran": "python",
+            "lineHas": "--fixed_positions_jsonl"
+          },
+          {
+            "ran": "python",
+            "lineHas": "--chain_id_jsonl"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`.../assign_fixed_chains.py --input_path=parsed.jsonl --output_path=chains.jsonl --chain_list \"B\"`, then `.../make_fixed_positions_dict.py ... --output_path=fixed.jsonl --chain_list \"B\" --position_list \"1 2 3 4 5\"`, then ProteinMPNN with `--jsonl_path parsed.jsonl --chain_id_jsonl chains.jsonl --fixed_positions_jsonl fixed.jsonl`."
+  ],
+  "solution": [
+    "python /opt/ProteinMPNN/helper_scripts/assign_fixed_chains.py --input_path=parsed.jsonl --output_path=chains.jsonl --chain_list \"B\"",
+    "python /opt/ProteinMPNN/helper_scripts/make_fixed_positions_dict.py --input_path=parsed.jsonl --output_path=fixed.jsonl --chain_list \"B\" --position_list \"1 2 3 4 5\"",
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --jsonl_path parsed.jsonl --chain_id_jsonl chains.jsonl --fixed_positions_jsonl fixed.jsonl --out_folder outputs --num_seq_per_target 4"
+  ]
+}

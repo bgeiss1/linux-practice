@@ -223,12 +223,16 @@ function validate(opts) {
 function submit(ctx, opts, { scriptPath, scriptText, command }) {
   const { sh } = ctx;
   const { cluster } = sh;
-  const name = opts['job-name'] ?? (scriptPath ? basename(scriptPath) : command?.split(' ')[0] ?? 'wrap');
+  const name = opts['job-name'] ?? (scriptPath ? basename(scriptPath) : 'wrap');
   const partition = opts.partition ?? 'gpu';
   const gpus = gpusFrom(opts);
   const memGB = parseMem(opts.mem) ?? 4;
   const timeMin = parseTime(opts.time) ?? 60;
   const rule = cluster.ruleFor(scriptPath ?? command ?? '', scriptText ?? '');
+  // No rule for this script: on a live cluster the script itself decides.
+  const live = cluster.liveJobs && !Object.keys(rule).length;
+  const env = { modules: [...cluster.modules], conda: cluster.condaEnv, vars: { ...sh.vars } };
+  const cpus = Number(opts['cpus-per-task'] ?? 1) || 1;
 
   let result = rule.result ?? 'COMPLETED';
   let log = rule.log ?? `Job started on ${NODE.name}\nJob finished\n`;
@@ -270,6 +274,10 @@ function submit(ctx, opts, { scriptPath, scriptText, command }) {
         memUsedGB: rule.memUsedGB ?? Math.min(memGB, 3.2),
         dependency: opts.dependency ?? null,
         reason: timeMin > PARTITIONS[partition].limitMin ? 'PartitionTimeLimit' : null,
+        live,
+        script: live ? scriptText ?? `#!/bin/bash\n${command}\n` : null,
+        env: live ? env : null,
+        cpus,
       }),
     );
   }
@@ -552,6 +560,8 @@ export function srun(ctx) {
     ctx.coach('srun-cmd', 'For an interactive shell, use `srun --pty bash`.');
     return 1;
   }
+  // Inside a batch job, srun runs a command as a step of that job.
+  if (cluster.interactive?.batch) return sh.exec(command[0], { ...ctx, name: command[0], args: command.slice(1) });
   if (cluster.interactive) {
     ctx.err('srun: error: You are already inside an interactive job. Type `exit` to leave it first.\n');
     return 1;
@@ -565,17 +575,21 @@ export function srun(ctx) {
     ctx.coach('srun-wait', 'Every GPU is busy. On the real server srun would wait here until one frees up.');
     return 1;
   }
-  const job = cluster.makeJob({ id, name: command[0], gpus, memGB: parseMem(opts.mem) ?? 4, timeMin: parseTime(opts.time) ?? 60, state: 'R', startStep: cluster.step, runSteps: Infinity, interactive: true });
+  const memGB = parseMem(opts.mem) ?? 4;
+  const timeMin = parseTime(opts.time) ?? 60;
+  const cpus = Number(opts['cpus-per-task'] ?? 1) || 1;
+  const job = cluster.makeJob({ id, name: command[0], gpus, memGB, timeMin, cpus, state: 'R', startStep: cluster.step, runSteps: Infinity, interactive: true });
   cluster.jobs.push(job);
+  const session = { jobId: id, gpus, memGB, timeMin, cpus };
   if (opts.pty !== undefined && /^(bash|sh)$/.test(command[0])) {
     // What you load inside the job is gone after exit, like a real new shell.
-    cluster.interactive = { jobId: id, gpus, saved: { modules: [...cluster.modules], conda: cluster.condaEnv, cwd: sh.cwd } };
+    cluster.interactive = { ...session, saved: { modules: [...cluster.modules], conda: cluster.condaEnv, cwd: sh.cwd } };
     ctx.out(`srun: job ${id} queued and waiting for resources\nsrun: job ${id} has been allocated resources\n`);
     ctx.coach('srun-in', `You're in an interactive job with ${gpus} GPU${gpus === 1 ? '' : 's'}. Type \`exit\` when you're done so others can use ${gpus === 1 ? 'it' : 'them'}.`);
     return 0;
   }
   // Run one command inside a temporary allocation.
-  cluster.interactive = { jobId: id, gpus };
+  cluster.interactive = session;
   const code = sh.exec(command[0], { ...ctx, name: command[0], args: command.slice(1) });
   cluster.interactive = null;
   job.state = 'CD';

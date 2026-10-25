@@ -1,0 +1,108 @@
+{
+  "id": "chai-02-headers",
+  "track": "chai",
+  "order": 2,
+  "tier": 1,
+  "title": "Headers Chai-1 can read",
+  "story": "Chai-1 needs every FASTA header to say what kind of molecule it is and give it a name, like `>protein|name=binder`. {{seq.0}}.fasta has a plain header. Change it to the Chai-1 style, naming the protein {{seq.0}}.",
+  "lesson": {
+    "title": "A Chai-1 FASTA header",
+    "parts": [
+      {
+        "code": ">",
+        "note": "Starts a header line, as in any FASTA file."
+      },
+      {
+        "code": "protein",
+        "note": "The kind of molecule: protein, ligand, dna, rna or glycan."
+      },
+      {
+        "code": "|",
+        "note": "A separator between the two parts."
+      },
+      {
+        "code": "name={{seq.0}}",
+        "note": "The name Chai-1 uses for this chain in its output."
+      }
+    ],
+    "why": "Chai-1 folds mixtures of molecules, so it can't guess what a sequence is. For a ligand, the line under the header is a SMILES string instead of a sequence.",
+    "without": "A plain header like `>{{seq.0}}` stops Chai-1 with \"Could not parse FASTA header\"."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLEL"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAAR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRL"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEK"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEK"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">{{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Change the header to >protein|name={{seq.0}}",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/{{seq.0}}.fasta",
+              "text": ">protein|name={{seq.0}}\n"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/{{seq.0}}.fasta",
+              "text": "{{seq.1}}"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`nano {{seq.0}}.fasta` opens it.",
+    "Change only the first line. The sequence stays as it is.",
+    "The first line should read `>protein|name={{seq.0}}`. Save with Ctrl+O, then Enter."
+  ],
+  "solution": [
+    {
+      "nano": "{{seq.0}}.fasta",
+      "text": ">protein|name={{seq.0}}\n{{seq.1}}\n"
+    }
+  ]
+}

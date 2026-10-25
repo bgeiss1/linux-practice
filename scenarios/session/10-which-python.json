@@ -1,0 +1,46 @@
+{
+  "id": "session-10-which-python",
+  "track": "session",
+  "order": 10,
+  "tier": 3,
+  "title": "Which Python is this?",
+  "story": "Each conda environment has its own Python with its own packages. Switch on the {{env}} environment, then find the full path of the `python` you'd now run and type it in the answer box.",
+  "vars": {
+    "env": [
+      "proteinmpnn",
+      "chai",
+      "rfd4"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Activate {{env}}",
+      "check": {
+        "condaEnv": "{{env}}"
+      }
+    },
+    {
+      "text": "Type the full path of python",
+      "check": {
+        "answer": "/opt/conda/envs/{{env}}/bin/python"
+      }
+    }
+  ],
+  "hints": [
+    "`module load anaconda`, `conda activate {{env}}`, then `which python`."
+  ],
+  "solution": [
+    "module load anaconda",
+    "conda activate {{env}}",
+    "which python",
+    {
+      "answer": "/opt/conda/envs/{{env}}/bin/python"
+    }
+  ]
+}

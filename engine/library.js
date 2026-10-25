@@ -24,6 +24,9 @@ function pdbLines(chain = 'A', offset = 0) {
 }
 
 export const LIBRARY = {
+  // Compressed or binary data, like a .cif.zst structure.
+  binary: () => '\u0000\u0000(binary data)\u0000\n',
+
   'pdb:small': () =>
     [
       'HEADER    DE NOVO PROTEIN                         24-OCT-26   XXXX',
@@ -93,8 +96,63 @@ export const LIBRARY = {
     ].join('\n') + '\n',
 };
 
+// A whole protein, one helix per chain, with N, CA, C and O for every residue:
+// enough for ProteinMPNN and GROMACS to read. chains: [{ id, seq }].
+const THREE = { A: 'ALA', R: 'ARG', N: 'ASN', D: 'ASP', C: 'CYS', Q: 'GLN', E: 'GLU', G: 'GLY', H: 'HIS', I: 'ILE', L: 'LEU', K: 'LYS', M: 'MET', F: 'PHE', P: 'PRO', S: 'SER', T: 'THR', W: 'TRP', Y: 'TYR', V: 'VAL' };
+export const ONE = Object.fromEntries(Object.entries(THREE).map(([k, v]) => [v, k]));
+
+export function proteinPdb({ title = 'DESIGN TARGET (TEACHING EXAMPLE)', header = 'DE NOVO PROTEIN', chains, waters = 0 }) {
+  const out = [`HEADER    ${header.padEnd(40)}24-OCT-26   XXXX`, `TITLE     ${title}`];
+  let serial = 0;
+  const atom = (rec, name, res, chain, num, x, y, z, el) =>
+    `${rec.padEnd(6)}${String(++serial).padStart(5)} ${(name.length < 4 ? ' ' + name : name).padEnd(4)} ${res} ${chain}${String(num).padStart(4)}    ${[x, y, z].map((v) => v.toFixed(3).padStart(8)).join('')}  1.00 20.00           ${el}`;
+  chains.forEach(({ id, seq }, c) => {
+    [...seq].forEach((aa, i) => {
+      const t = (i * 100 * Math.PI) / 180;
+      const x0 = c * 12;
+      const z = i * 1.5;
+      for (const [name, r, dt, dz] of [['N', 1.6, -0.5, -0.6], ['CA', 2.3, 0, 0], ['C', 1.7, 0.45, 0.6], ['O', 1.4, 0.7, 1.4]]) {
+        out.push(atom('ATOM', name, THREE[aa] ?? 'GLY', id, i + 1, x0 + r * Math.cos(t + dt), r * Math.sin(t + dt), z + dz, name[0]));
+      }
+    });
+    out.push('TER');
+  });
+  for (let w = 0; w < waters; w++) out.push(atom('HETATM', 'O', 'HOH', 'A', 201 + w, 8 + w, -6, w * 2.1, 'O'));
+  return out.join('\n') + '\nEND\n';
+}
+
+// A made-up but steady sequence for a chain, mostly helix-forming residues.
+export function designSeq(key, length) {
+  const letters = 'AEELLKKLAERIKELAKKAEEAIRRGDPELVKKALEL';
+  let h = 7;
+  for (const ch of key) h = (Math.imul(h, 31) + ch.charCodeAt(0)) >>> 0;
+  let seq = 'M';
+  for (let i = 1; i < length; i++) {
+    h = (Math.imul(h, 1103515245) + 12345) >>> 0;
+    seq += letters[(h >>> 8) % letters.length];
+  }
+  return seq;
+}
+
+export const LYSOZYME = 'KVFGRCELAAAMKRHGLDNYRGYSLGNWVCAAKFESNFNTQATNRNTDGSTDYGILQINSRWWCNDGRTPGSRNLCNIPCSALLSSDITASVNCAKKIVSDGNGMNAWVAWRNRCKGTDVQAWIRGCRL';
+
+// Library names with settings: "pdb:chains A:60,B:45" builds a design target
+// with those chain lengths; "pdb:1aki" is hen lysozyme with crystal waters.
+function parametric(name) {
+  const m = name.match(/^pdb:chains\s+(.+)$/);
+  if (m) {
+    const chains = m[1].split(',').map((part) => {
+      const [id, len] = part.trim().split(':');
+      return { id, seq: designSeq(m[1] + id, Number(len)) };
+    });
+    return () => proteinPdb({ chains, title: chains.length > 1 ? `TARGET (CHAIN A) WITH PARTNER CHAIN${chains.length > 2 ? 'S' : ''} ${chains.slice(1).map((c) => c.id).join(', ')}` : 'DESIGN TARGET (TEACHING EXAMPLE)' });
+  }
+  if (name === 'pdb:1aki') return () => proteinPdb({ header: 'HYDROLASE', title: 'LYSOZYME (PRACTICE COPY OF 1AKI)', chains: [{ id: 'A', seq: LYSOZYME }], waters: 6 });
+  return null;
+}
+
 export function fromLibrary(name) {
-  const make = LIBRARY[name];
+  const make = LIBRARY[name] ?? parametric(name);
   if (!make) throw new Error(`Unknown library file "${name}"`);
   return make();
 }

@@ -1,0 +1,87 @@
+{
+  "id": "mpnn-05-chains",
+  "track": "mpnn",
+  "order": 5,
+  "tier": 3,
+  "title": "Design only the binder",
+  "story": "inputs/{{target}}_complex.pdb has your binder and its target. Keep the target as it is and design 4 sequences for the binder only, into outputs. The binder is the shorter chain.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ],
+    "ch": [
+      [
+        "A:52,B:96",
+        "A"
+      ],
+      [
+        "A:94,B:48",
+        "B"
+      ],
+      [
+        "A:88,B:56",
+        "B"
+      ],
+      [
+        "A:44,B:102",
+        "A"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "modules": [
+        "anaconda"
+      ],
+      "conda": "proteinmpnn",
+      "files": {
+        "~/{{project}}/inputs/{{target}}_complex.pdb": {
+          "lib": "pdb:chains {{ch.0}}"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Design 4 sequences for the binder chain only",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}_complex.fa",
+              "text": "designed_chains=['{{ch.1}}']"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}_complex.fa",
+              "text": "sample=4,"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "Count residues per chain: `grep \" CA \" inputs/{{target}}_complex.pdb | cut -c22 | uniq -c`. Then add `--pdb_path_chains X` (the binder's chain) and `--num_seq_per_target 4`."
+  ],
+  "solution": [
+    "grep \" CA \" inputs/{{target}}_complex.pdb | cut -c22 | uniq -c",
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}_complex.pdb --pdb_path_chains {{ch.1}} --out_folder outputs --num_seq_per_target 4"
+  ]
+}

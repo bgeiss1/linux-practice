@@ -1,0 +1,87 @@
+{
+  "id": "mpnn-04-temperature",
+  "track": "mpnn",
+  "order": 4,
+  "tier": 2,
+  "title": "More sequences, two temperatures",
+  "story": "Sampling temperature controls how adventurous the designs are: low (0.1) stays close to what ProteinMPNN likes best, higher (0.3) gives more variety. Make 8 sequences for inputs/{{target}}.pdb at 0.1 into out_t01, then 8 at 0.3 into out_t03.",
+  "lesson": {
+    "title": "How many, and how varied",
+    "parts": [
+      {
+        "code": "--num_seq_per_target 8",
+        "note": "Designs per structure. The default is 1."
+      },
+      {
+        "code": "--sampling_temp 0.1",
+        "note": "Lower means safer, more similar designs. The ProteinMPNN authors suggest 0.1 to 0.3."
+      },
+      {
+        "code": "--out_folder out_t01",
+        "note": "A separate folder for each setting, so runs don't overwrite each other."
+      }
+    ],
+    "why": "Two runs at different temperatures give you a careful set and a varied set to compare."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "modules": [
+        "anaconda"
+      ],
+      "conda": "proteinmpnn",
+      "files": {
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:chains A:70"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "8 sequences at temperature 0.1 into out_t01",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/out_t01/seqs/{{target}}.fa",
+          "text": ">T=0.1, sample=8,"
+        }
+      }
+    },
+    {
+      "text": "8 sequences at temperature 0.3 into out_t03",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/out_t03/seqs/{{target}}.fa",
+          "text": ">T=0.3, sample=8,"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "The environment is already active. `python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}.pdb --out_folder out_t01 --num_seq_per_target 8 --sampling_temp 0.1`",
+    "Run it again with `--sampling_temp 0.3` and `--out_folder out_t03`."
+  ],
+  "solution": [
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}.pdb --out_folder out_t01 --num_seq_per_target 8 --sampling_temp 0.1",
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}.pdb --out_folder out_t03 --num_seq_per_target 8 --sampling_temp 0.3"
+  ]
+}

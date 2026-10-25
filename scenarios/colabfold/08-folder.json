@@ -1,0 +1,108 @@
+{
+  "id": "colabfold-08-folder",
+  "track": "colabfold",
+  "order": 8,
+  "tier": 3,
+  "title": "Fold every design at once",
+  "story": "The designs folder has 5 designs, one FASTA file each. ColabFold can fold a whole folder in one run: give it the folder instead of a file. Fold them all into designs_af, then find the design whose rank 1 model has the highest pLDDT and type its name (like design_03) in the answer box.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "set": [
+      [
+        "MKVRKKIKLALDEAKEAKALELLLEEIAGRLKARVRLLERREPIIIAAGKKLLKKELLEAPKE",
+        "MILKDLAVKLAEEEEAKLLAELAAAGEALKELRRLAELRKAALIREEEILKKAKLKAEALEEKLGI",
+        "MLPERAEKLLLEALAAGKALDAARLGLEAIVIALKKKLLLLGKREILRVKAKLALAEVKGEEVKELAGE",
+        "MLGLKDEKKEEKKPLAREIKAAAKLKKELELVEKKKLLLLAEALPLEIELKEELKAAGAREAIEAALAKKKV",
+        "MGLAAAEEEEGEAEIEKLALLRRLVKAAEEDEARKEDVEPEIEELAKKDAEPKAREKELEKILLEKELLIKKLEA",
+        "design_02"
+      ],
+      [
+        "MEDELKIKPKAALLKAAEVAKALLAVKKLKKLKKLLEKEAAEERLLIADKLEIAEEAAGKELK",
+        "MLRAERLLLLREKIAVKVALEALKEVEEAKKLVLKGKKLEIRAKEEKRRAKREIELPLLKKILGIP",
+        "MAKGLKEALALKREAKELAKELLLAELDLLELKKILLKDLIKRRILIGKLRKELADIEAKKPGRKLRIK",
+        "MKKEEERKAGAEVALKIKLEPDEELIKREEKAVAAILKRAIEGDKAKDLKGGEEVEKVEKRLLRLLAERKKR",
+        "MELILEEELKEREAEAEAKRLEEAEIEEGDARKKKIEKKRKRPAELRKPKVKPAAKDREKKELERRELEEKALAE",
+        "design_04"
+      ],
+      [
+        "MKKKKAAPELKPRLEPREKLAIIALEKLAEELARIALLEELAIRALDEPEELAKAKKELGRAA",
+        "MLVDELELELKEVKGLEREAALIKLGEPLELIELPEKEREAAEIKKAEGKLALLLLLAKRKEEKLK",
+        "MLEVIAEEKAALLEALKVELLVIVGKKLLLEVAIKKEELIGAARGLGLKELILLREEEKELEILKEAAI",
+        "MEDRKLEKKERKLLPAGEKKEAIKEKIREKEEERRKPALLLIKGLVEKVAELADEELLKKDLLEARGLGLLK",
+        "MEEPPAELLKLLPPRPRKELEEILDKELLALEAAADVAEKRKEAKKGAEEEAKEDKELEEAKADRDLIALKKDDL",
+        "design_01"
+      ],
+      [
+        "MAPPKELEELKEREKDGILAEIELLVKEREAAKLKEEKEEAELLARLKEAEIKALALKEKDGI",
+        "MRGKDEEADDAALLEAAEELDAEAEEIALDALGKALAKLDLKKIVREKDALELALDAKEKAKLLVK",
+        "MKARRERLKAKAPKEKKRLKLERELIKKEKKAKAAEAADALELEERVEAEEPEEKELLIVAIAKEEALA",
+        "MEKEKKEKERILIEARLLAELLRAAIRELRKRGKEEIAREELEGARLRKAKLIKEEEEREEPREREDAVALK",
+        "MRVIALKVEEKIKRAGIEKIAKREKEEKELEKKLEELAKERKIPERLILLRKRKRGLLLAILKKKALAAELAAGA",
+        "design_04"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/designs/design_01.fasta": ">design_01\n{{set.0}}\n",
+        "~/{{project}}/designs/design_02.fasta": ">design_02\n{{set.1}}\n",
+        "~/{{project}}/designs/design_03.fasta": ">design_03\n{{set.2}}\n",
+        "~/{{project}}/designs/design_04.fasta": ">design_04\n{{set.3}}\n",
+        "~/{{project}}/designs/design_05.fasta": ">design_05\n{{set.4}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Fold all 5 designs into designs_af",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/designs_af/design_01.done.txt"
+          },
+          {
+            "isFile": "~/{{project}}/designs_af/design_02.done.txt"
+          },
+          {
+            "isFile": "~/{{project}}/designs_af/design_03.done.txt"
+          },
+          {
+            "isFile": "~/{{project}}/designs_af/design_04.done.txt"
+          },
+          {
+            "isFile": "~/{{project}}/designs_af/design_05.done.txt"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Which design is the most confident?",
+      "check": {
+        "answer": "{{set.5}}"
+      }
+    }
+  ],
+  "hints": [
+    "`colabfold_batch designs designs_af` in a GPU job. Then `grep rank_001 designs_af/log.txt` lists every design's best pLDDT."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load colabfold",
+    "colabfold_batch designs designs_af",
+    "exit",
+    "grep rank_001 designs_af/log.txt",
+    {
+      "answer": "{{set.5}}"
+    }
+  ]
+}

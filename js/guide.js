@@ -31,9 +31,11 @@ const OPTIONS = [
 ];
 
 const SIZES = [
-  ['ProteinMPNN', '1', '16G', '02:00:00'],
-  ['RFdiffusion', '1', '16G–32G', '02:00:00'],
-  ['ColabFold', '1', '32G', '01:00:00–03:00:00'],
+  ['ColabFold', '1', '32G (64G for big complexes)', '01:00:00–03:00:00'],
+  ['Chai-1', '1', '32G', '01:00:00'],
+  ['ProteinMPNN', '0 or 1', '16G', '01:00:00'],
+  ['RFD4-Proteina', '1', '32G', '01:00:00–02:00:00'],
+  ['GROMACS mdrun', '1', '8G', 'Depends on the length: about 4 minutes per ns here'],
   ['AlphaFold', '1', '64G', '04:00:00'],
   ['Rosetta relax', '0', '16G and up', '02:00:00'],
 ];

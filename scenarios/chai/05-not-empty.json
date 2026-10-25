@@ -1,0 +1,103 @@
+{
+  "id": "chai-05-not-empty",
+  "track": "chai",
+  "order": 5,
+  "tier": 2,
+  "title": "The folder isn't empty",
+  "story": "You want a second Chai-1 run of {{seq.0}}, but `chai-lab fold {{seq.0}}.fasta {{seq.0}}_chai` fails because {{seq.0}}_chai holds the first run. Keep the first run's results, and write the new run to {{seq.0}}_run2 instead.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLELAREK"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEARKLAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAARRAKR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRLPKGE"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEKKREL"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEKLLEP"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">protein|name={{seq.0}}\n{{seq.1}}\n",
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_0.cif": "data_pred.model_idx_0\n#\n_entry.id pred.model_idx_0\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_0.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_1.cif": "data_pred.model_idx_1\n#\n_entry.id pred.model_idx_1\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_1.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_2.cif": "data_pred.model_idx_2\n#\n_entry.id pred.model_idx_2\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_2.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_3.cif": "data_pred.model_idx_3\n#\n_entry.id pred.model_idx_3\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_3.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_4.cif": "data_pred.model_idx_4\n#\n_entry.id pred.model_idx_4\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_4.npz": {
+          "binary": "npz",
+          "size": "3K"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Fold {{seq.0}} again into {{seq.0}}_run2",
+      "check": {
+        "isFile": "~/{{project}}/{{seq.0}}_run2/pred.model_idx_4.cif"
+      }
+    },
+    {
+      "text": "Keep the first run's results",
+      "check": {
+        "isFile": "~/{{project}}/{{seq.0}}_chai/pred.model_idx_4.cif"
+      }
+    }
+  ],
+  "hints": [
+    "Chai-1 won't write into a folder that already has files. Give it a new folder name.",
+    "In a GPU job with the chai environment: `chai-lab fold {{seq.0}}.fasta {{seq.0}}_run2`."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load anaconda",
+    "conda activate chai",
+    "chai-lab fold {{seq.0}}.fasta {{seq.0}}_run2",
+    "exit"
+  ]
+}

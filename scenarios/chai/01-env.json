@@ -1,0 +1,50 @@
+{
+  "id": "chai-01-env",
+  "track": "chai",
+  "order": 1,
+  "tier": 1,
+  "title": "Find Chai-1",
+  "story": "Chai-1 predicts the structure of proteins together with ligands, DNA and RNA. On Geiss-01 it's installed in a conda environment called chai, and its command is `chai-lab`. Switch the environment on, then read the help for `chai-lab fold` to find how many structures (diffusion samples) it makes by default. Type the number in the answer box.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "liveJobs": true,
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Activate the chai environment",
+      "check": {
+        "condaEnv": "chai"
+      }
+    },
+    {
+      "text": "Read the help for chai-lab fold",
+      "check": {
+        "ran": "chai-lab",
+        "argHas": "--help"
+      }
+    },
+    {
+      "text": "How many samples does it make by default?",
+      "check": {
+        "answer": "5"
+      }
+    }
+  ],
+  "hints": [
+    "`module load anaconda` gives you `conda`; `conda activate chai` switches the environment on.",
+    "`chai-lab --help` lists the subcommands; `chai-lab fold --help` lists the options for folding.",
+    "Look at `--num-diffn-samples`."
+  ],
+  "solution": [
+    "module load anaconda",
+    "conda activate chai",
+    "chai-lab fold --help",
+    {
+      "answer": "5"
+    }
+  ]
+}

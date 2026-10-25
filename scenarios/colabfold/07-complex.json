@@ -1,0 +1,97 @@
+{
+  "id": "colabfold-07-complex",
+  "track": "colabfold",
+  "order": 7,
+  "tier": 3,
+  "title": "Fold a binder with its target",
+  "story": "To see whether {{c.0}} binds {{c.2}}, fold them together as one complex. ColabFold folds a complex when one FASTA record holds both sequences joined by a colon (`:`). Make complex.fasta with one record named {{c.0}}_{{c.2}}, then fold it into complex_af.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "c": [
+      [
+        "binder_01",
+        "MLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEV",
+        "pdl1",
+        "MDAELLLIKAIVREEKAKLREGAEDALKPKEDEAAEEKLEEEARDRPEAKAELEAAAAEPEIERLIAELEALEALREEKGRKLLLEEELLLVKEKLVAREEPRAAKEAKK"
+      ],
+      [
+        "des_4471",
+        "MKIDIALPEALKKALGKEKAGLEEALPRKKKIDLPERKEADELDKLKLLKPELPARKEVR",
+        "il7r",
+        "MILLEAAEGRKKLAKEREALRIAGARELKKLLKVVKEAEDEKELEAKDELRPPELLAEADAAPLKDRAKEEDALPLLALAAEARAGEAPEKAKEPLKAVKAPEKREAAGD"
+      ],
+      [
+        "il7r_min",
+        "MAVEIAEEKKKLGELEDKRKEALLRAKLLAALAAAAAAEILLELPVAAAKRKEKEERVKD",
+        "her2",
+        "MLEALGKRKERAAAREAAKKPAAKKLLAIEAKEKEKKKLAEKLEAEDPRAEELEAEAADAELEKPEAEGARKAELEDKEKKEEKLAEEEKKRGEKAEKEKAELAAKAEEK"
+      ],
+      [
+        "pdl1_b3",
+        "MLEPIKDADEAEKRLAEVEELLRAAAEKREPAKELPAKEEPALAKKAEALEAEIEAEGKA",
+        "tnfr1",
+        "MEEIAAEAKKEEEKELLLAELEALILEKKELEKEEKAIEEEEKKKAAEALKKERKALLPLKLIERKKEEAILLEIEEEAIEKKREEELAAEEEKALLIKEEEKRELEEKE"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{c.0}}.fasta": ">{{c.0}}\n{{c.1}}\n",
+        "~/{{project}}/{{c.2}}.fasta": ">{{c.2}}\n{{c.3}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Write complex.fasta with both sequences joined by :",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/complex.fasta",
+              "text": "{{c.1}}:{{c.3}}"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/complex.fasta",
+              "text": ">{{c.0}}_{{c.2}}"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "text": "Fold it as a complex into complex_af",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/complex_af/log.txt",
+          "text": "alphafold2_multimer_v3"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "In nano: a header line `>{{c.0}}_{{c.2}}`, then one line with the binder sequence, a colon, and the target sequence. Then fold it in a GPU job with enough memory."
+  ],
+  "solution": [
+    {
+      "nano": "complex.fasta",
+      "text": ">{{c.0}}_{{c.2}}\n{{c.1}}:{{c.3}}\n"
+    },
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load colabfold",
+    "colabfold_batch complex.fasta complex_af",
+    "exit"
+  ]
+}

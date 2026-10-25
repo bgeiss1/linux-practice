@@ -1,0 +1,78 @@
+{
+  "id": "chai-10-array",
+  "track": "chai",
+  "order": 10,
+  "tier": 4,
+  "title": "Fold four complexes at once",
+  "story": "inputs has complex_1.fasta to complex_4.fasta. Fold all four with one array job: each task folds one file into results/complex_N, where N is the task's number. Each task needs 1 GPU and 32 GB.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/inputs/complex_1.fasta": ">protein|name=binder_1\nMRRLKRKREAGKKIEAVGAKEEVIVELKKLAILERLEKELEEREKEKRLPKRVLAELELLRAER\n>protein|name=target\nMIDGAIIKEKAAKKEEKGVAGDLAERALKKVAAAIKLGAVREIEVLVALKERARALKKAEAELKRKLLKVEEEVKPREERVEELDARLAKRLALRIALAVLAKKKIAAAKRREKELLARL\n",
+        "~/{{project}}/inputs/complex_2.fasta": ">protein|name=binder_2\nMEAAAKPREAVLEAKLEEEEDEVLGEKLEEVVPKLREKVKAKGKLKLAEEAKLEGLELEAKGKARALD\n>protein|name=target\nMIDGAIIKEKAAKKEEKGVAGDLAERALKKVAAAIKLGAVREIEVLVALKERARALKKAEAELKRKLLKVEEEVKPREERVEELDARLAKRLALRIALAVLAKKKIAAAKRREKELLARL\n",
+        "~/{{project}}/inputs/complex_3.fasta": ">protein|name=binder_3\nMAKKLAIIDLLKAAPELDREAAKRAAIDDDLELAKKKKALELPLIELKLDLREALLLEEKEKEEERALKDAK\n>protein|name=target\nMIDGAIIKEKAAKKEEKGVAGDLAERALKKVAAAIKLGAVREIEVLVALKERARALKKAEAELKRKLLKVEEEVKPREERVEELDARLAKRLALRIALAVLAKKKIAAAKRREKELLARL\n",
+        "~/{{project}}/inputs/complex_4.fasta": ">protein|name=binder_4\nMIAEEELGAILLEAAAAKDKEAKRKAKKKKGEPKIKLKLDVLVEEKLKLKKKPAKDKLIKPIKALPDLAKELLLAK\n>protein|name=target\nMIDGAIIKEKAAKKEEKGVAGDLAERALKKVAAAIKLGAVREIEVLVALKERARALKKAEAELKRKLLKVEEEVKPREERVEELDARLAKRLALRIALAVLAKKKIAAAKRREKELLARL\n",
+        "~/{{project}}/results/": {}
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit one array job with 4 tasks",
+      "check": {
+        "jobSubmitted": {
+          "array": 4,
+          "gpus": 1,
+          "memGB": 32
+        }
+      }
+    },
+    {
+      "text": "Fold all four complexes",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/results/complex_1/pred.model_idx_0.cif"
+          },
+          {
+            "isFile": "~/{{project}}/results/complex_2/pred.model_idx_0.cif"
+          },
+          {
+            "isFile": "~/{{project}}/results/complex_3/pred.model_idx_0.cif"
+          },
+          {
+            "isFile": "~/{{project}}/results/complex_4/pred.model_idx_0.cif"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`#SBATCH --array=1-4` makes 4 tasks, and `$SLURM_ARRAY_TASK_ID` is each task's number: `chai-lab fold inputs/complex_$SLURM_ARRAY_TASK_ID.fasta results/complex_$SLURM_ARRAY_TASK_ID`."
+  ],
+  "solution": [
+    {
+      "nano": "array.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=chai_array\n#SBATCH --array=1-4\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=01:00:00\n#SBATCH --output=chai-%A_%a.out\n\nmodule load anaconda\nconda activate chai\nchai-lab fold inputs/complex_$SLURM_ARRAY_TASK_ID.fasta results/complex_$SLURM_ARRAY_TASK_ID\n"
+    },
+    "sbatch array.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

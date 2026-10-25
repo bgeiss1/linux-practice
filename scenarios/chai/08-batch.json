@@ -1,0 +1,99 @@
+{
+  "id": "chai-08-batch",
+  "track": "chai",
+  "order": 8,
+  "tier": 3,
+  "title": "Write a Chai-1 job script",
+  "story": "Write chai.sh, a job script named chai that asks for 1 GPU, 32 GB of memory and 1 hour, switches on the chai environment, and folds {{seq.0}}.fasta with an MSA into {{seq.0}}_batch. Submit it and wait until it finishes.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLELAREK"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEARKLAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAARRAKR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRLPKGE"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEKKREL"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEKLLEP"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">protein|name={{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit chai.sh with a GPU and at least 32 GB",
+      "check": {
+        "jobSubmitted": {
+          "name": "chai",
+          "gpus": 1,
+          "memGB": 32
+        }
+      }
+    },
+    {
+      "text": "Let it finish and fold {{seq.0}}",
+      "check": {
+        "all": [
+          {
+            "jobState": {
+              "name": "chai",
+              "state": "CD"
+            }
+          },
+          {
+            "isFile": "~/{{project}}/{{seq.0}}_batch/pred.model_idx_0.cif"
+          },
+          {
+            "isDir": "~/{{project}}/{{seq.0}}_batch/msas"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "Start with `#!/bin/bash`, then `#SBATCH` lines for --job-name=chai, --gres=gpu:1, --mem=32G and --time=01:00:00. Then `module load anaconda`, `conda activate chai`, and the `chai-lab fold --use-msa-server ...` line."
+  ],
+  "solution": [
+    {
+      "nano": "chai.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=chai\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=01:00:00\n#SBATCH --output=chai-%j.out\n\nmodule load anaconda\nconda activate chai\nchai-lab fold --use-msa-server {{seq.0}}.fasta {{seq.0}}_batch\n"
+    },
+    "sbatch chai.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Shell } from '../engine/shell.js';
+import { fromLibrary } from '../engine/library.js';
 import { parse } from '../engine/parser.js';
 import { WORDS, wordsFor, passphrase, verify } from '../engine/passphrase.js';
 
@@ -140,33 +141,97 @@ test('nano opens an editor and saving writes the file', () => {
   assert.equal(sh.vfs.readFile('/home/student/notes.txt'), 'hello\n');
 });
 
-test('design tools need their environment and a GPU', () => {
+test('ProteinMPNN needs its environment and runs on a CPU', () => {
   const sh = shell();
+  sh.vfs.writeFile('/home/student/proj/inputs/c.pdb', fromLibrary('pdb:chains A:30,B:20'));
   sh.run('cd proj');
-  const mpnn = 'python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out';
-  assert.match(errors(sh.run('protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /command not found/);
+  const mpnn = 'python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/c.pdb --out_folder out --num_seq_per_target 3 --pdb_path_chains B --seed 5';
+  assert.match(errors(sh.run('protein_mpnn_run.py --pdb_path inputs/c.pdb --out_folder out')), /command not found/);
   assert.match(errors(sh.run(mpnn)), /python: command not found/);
   sh.run('module load anaconda');
   assert.match(errors(sh.run(mpnn)), /No module named 'torch'/);
   sh.run('conda activate proteinmpnn');
-  assert.match(errors(sh.run(mpnn)), /No CUDA GPUs/);
-  assert.match(errors(sh.run('python protein_mpnn_run.py --pdb_path inputs/a.pdb --out_folder out')), /can't open file/);
-  sh.run('srun --gres=gpu:1 --pty bash');
-  sh.run(mpnn);
-  assert.ok(sh.vfs.get('/home/student/proj/out/seqs/a.fa'));
-  sh.run('exit');
-  assert.equal(sh.cluster.condaEnv, 'proteinmpnn'); // activated before srun, so it stays
+  assert.match(errors(sh.run('python protein_mpnn_run.py --pdb_path inputs/c.pdb --out_folder out')), /can't open file/);
+  assert.equal(errors(sh.run(mpnn)), '');
+  const fa = sh.vfs.readFile('/home/student/proj/out/seqs/c.fa');
+  assert.match(fa, /fixed_chains=\['A'\], designed_chains=\['B'\]/);
+  assert.match(fa, /sample=3, score=/);
+  assert.match(errors(sh.run('python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/c.pdb --out_folder out --pdb_path_chains C')), /seq_chain_C/);
 });
 
-test('RFdiffusion runs by path and needs a contig map', () => {
+test('GPU tools need a GPU and enough memory from Slurm', () => {
   const sh = shell();
+  sh.vfs.writeFile('/home/student/proj/a.fasta', '>binder\nMSEELLKKAEELIKRAKELGDPELVKRAL\n');
   sh.run('cd proj');
-  sh.run('module load anaconda');
-  sh.run('conda activate rfdiffusion');
+  sh.run('module load colabfold');
+  assert.match(text(sh.run('colabfold_batch a.fasta out')), /no GPU detected/);
   sh.run('srun --gres=gpu:1 --pty bash');
-  assert.match(errors(sh.run('/opt/RFdiffusion/scripts/run_inference.py inference.output_prefix=out/b')), /contigmap.contigs/);
-  sh.run("/opt/RFdiffusion/scripts/run_inference.py inference.input_pdb=inputs/a.pdb inference.output_prefix=out/b 'contigmap.contigs=[A1-150/0 70-100]' inference.num_designs=2");
-  assert.ok(sh.vfs.get('/home/student/proj/out/b_1.pdb'));
+  assert.match(errors(sh.run('colabfold_batch a.fasta out')), /Killed/); // the default 4 GB isn't enough
+  sh.run('exit');
+  sh.run('srun --gres=gpu:1 --mem=32G --pty bash');
+  sh.run('colabfold_batch a.fasta out');
+  assert.ok(sh.vfs.get('/home/student/proj/out/binder.done.txt'));
+  assert.match(sh.vfs.readFile('/home/student/proj/out/log.txt'), /rank_001_alphafold2_ptm_model_\d_seed_000 pLDDT=/);
+});
+
+test('chai-lab needs Chai-1 headers and an empty output folder', () => {
+  const sh = shell();
+  sh.vfs.writeFile('/home/student/proj/x.fasta', '>binder\nMSEELLKK\n');
+  sh.run('cd proj');
+  assert.match(errors(sh.run('chai-lab fold x.fasta out')), /command not found/);
+  sh.run('module load anaconda');
+  sh.run('conda activate chai');
+  sh.run('srun --gres=gpu:1 --mem=32G --pty bash');
+  assert.match(errors(sh.run('chai-lab fold x.fasta out')), /Could not parse FASTA header/);
+  sh.vfs.writeFile('/home/student/proj/x.fasta', '>protein|name=binder\nMSEELLKK\n');
+  sh.run('chai-lab fold x.fasta out');
+  assert.ok(sh.vfs.get('/home/student/proj/out/pred.model_idx_4.cif'));
+  assert.match(errors(sh.run('chai-lab fold x.fasta out')), /is not empty/);
+});
+
+test('GROMACS checks atom counts and charge like the real grompp', () => {
+  const sh = shell();
+  sh.vfs.writeFile('/home/student/proj/p.pdb', fromLibrary('pdb:1aki'));
+  sh.vfs.writeFile('/home/student/proj/em.mdp', 'integrator = steep\nnsteps = 500\ncoulombtype = PME\n');
+  sh.run('cd proj');
+  sh.run('module load gromacs');
+  sh.run('gmx pdb2gmx -f p.pdb -o p.gro -water spce -ff amber99sb-ildn');
+  assert.match(sh.vfs.readFile('/home/student/proj/topol.top'), /qtot 8/);
+  sh.run('gmx editconf -f p.gro -o box.gro -c -d 1.0 -bt cubic');
+  sh.run('gmx solvate -cp box.gro -cs spc216.gro -o solv.gro');
+  assert.match(errors(sh.run('gmx grompp -f em.mdp -c solv.gro -p topol.top -o em.tpr')), /does not match topology/);
+  sh.run('gmx solvate -cp box.gro -cs spc216.gro -o solv.gro -p topol.top');
+  assert.ok(sh.vfs.get('/home/student/proj/#solv.gro.1#'), 'GROMACS backs up files it overwrites');
+  assert.match(errors(sh.run('gmx grompp -f em.mdp -c solv.gro -p topol.top -o em.tpr')), /Too many warnings/);
+  // grompp refused, so make the tpr with -maxwarn just for genion
+  sh.run('gmx grompp -f em.mdp -c solv.gro -p topol.top -o ions.tpr -maxwarn 1');
+  assert.match(text(sh.run('gmx genion -s ions.tpr -o ions.gro -p topol.top -neutral')), /can't type answers/);
+  sh.run('echo SOL | gmx genion -s ions.tpr -o ions.gro -p topol.top -pname NA -nname CL -neutral');
+  assert.match(sh.vfs.readFile('/home/student/proj/topol.top'), /\nCL\s+8\n/);
+  assert.equal(errors(sh.run('gmx grompp -f em.mdp -c ions.gro -p topol.top -o em.tpr')), '');
+  sh.run('gmx mdrun -v -deffnm em');
+  assert.match(text(sh.run('echo Potential | gmx energy -f em.edr')), /Potential\s+-\d+/);
+});
+
+test('live batch jobs run their script with what they asked for', () => {
+  const sh = shell();
+  sh.cluster.liveJobs = true;
+  sh.vfs.writeFile('/home/student/proj/a.fasta', '>binder\nMSEELLKKAEELIKRAKELGDPELVKRAL\n');
+  sh.vfs.writeFile('/home/student/proj/fold.sh', '#!/bin/bash\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\nmodule load colabfold\ncolabfold_batch a.fasta out\necho "job $SLURM_JOB_ID done"\n');
+  sh.run('cd proj');
+  sh.run('sbatch fold.sh');
+  sh.run('sbatch --mem=2G fold.sh');
+  sh.run('sbatch --gres=gpu:0 --wrap="module load colabfold; colabfold_batch a.fasta out2"');
+  for (let i = 0; i < 6; i++) sh.run('squeue --me');
+  const [ok, oom, cpu] = sh.cluster.jobs.filter((j) => j.user === 'student');
+  assert.equal(ok.state, 'CD');
+  assert.match(sh.vfs.readFile(`/home/student/proj/slurm-${ok.id}.out`), new RegExp(`Done\\njob ${ok.id} done`));
+  assert.ok(sh.vfs.get('/home/student/proj/out/binder.done.txt'));
+  assert.equal(oom.state, 'OOM');
+  assert.equal(cpu.state, 'F');
+  assert.equal(cpu.name, 'wrap');
+  assert.ok(!sh.events.some((e) => e.cmd === 'colabfold_batch'), 'job commands are not the student\'s');
+  assert.equal(sh.cluster.modules.length, 0, 'the job\'s module load stays in the job');
 });
 
 test('Rosetta and AlphaFold come from modules', () => {

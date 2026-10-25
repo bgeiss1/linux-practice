@@ -1,0 +1,97 @@
+{
+  "id": "chai-06-ligand",
+  "track": "chai",
+  "order": 6,
+  "tier": 2,
+  "title": "Add a ligand",
+  "story": "Fold {{l.0}} together with {{l.2}}. Add the ligand to {{l.0}}.fasta as a second record: a header `>ligand|name={{l.2}}`, then its SMILES string from ligands.txt on the next line. Then fold it into {{l.0}}_{{l.2}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "l": [
+      [
+        "binder_01",
+        "MELKLVEEERAAALEGEEERLERLDLREAVAEEEKALLRLEERLAEKKLKKKEEEKKLPELALEKERPKAAKLA",
+        "ATP",
+        "Nc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1O"
+      ],
+      [
+        "des_4471",
+        "MKLAEAGAIAEKKKKRIAVKAVVKPREEEKRDEERILPKDARAAPELLAVLAADEKRLLAVERVLLARIEDLKD",
+        "caffeine",
+        "Cn1cnc2c1c(=O)n(C)c(=O)n2C"
+      ],
+      [
+        "il7r_min",
+        "MGELEAKLEAKPKLAAEAELGAPELILREALKLGLKAAIKLPARLEAAKAEPLKKELDKLIEELDAEKPPLKAA",
+        "ibuprofen",
+        "CC(C)Cc1ccc(cc1)C(C)C(=O)O"
+      ],
+      [
+        "pdl1_b3",
+        "MEDLKEKPLEEKVEKEAALEAKLIEKKKRKEAAALLAGKKAEKLRKREAAALLRLLDKREERKELLEAEEEDLI",
+        "biotin",
+        "OC(=O)CCCC[C@@H]1SC[C@@H]2NC(=O)N[C@H]12"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{l.0}}.fasta": ">protein|name={{l.0}}\n{{l.1}}\n",
+        "~/{{project}}/ligands.txt": "ATP\tNc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1O\ncaffeine\tCn1cnc2c1c(=O)n(C)c(=O)n2C\nibuprofen\tCC(C)Cc1ccc(cc1)C(C)C(=O)O\nbiotin\tOC(=O)CCCC[C@@H]1SC[C@@H]2NC(=O)N[C@H]12\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Add {{l.2}} to {{l.0}}.fasta",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/{{l.0}}.fasta",
+              "text": ">ligand|name={{l.2}}\n{{l.3}}"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/{{l.0}}.fasta",
+              "text": ">protein|name={{l.0}}\n"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "text": "Fold the protein and ligand into {{l.0}}_{{l.2}}",
+      "check": {
+        "isFile": "~/{{project}}/{{l.0}}_{{l.2}}/pred.model_idx_0.cif"
+      }
+    }
+  ],
+  "hints": [
+    "`grep {{l.2}} ligands.txt` shows the SMILES. Add two lines at the end of the FASTA file with `nano`.",
+    "Then in a GPU job: `chai-lab fold {{l.0}}.fasta {{l.0}}_{{l.2}}`."
+  ],
+  "solution": [
+    "grep {{l.2}} ligands.txt",
+    {
+      "nano": "{{l.0}}.fasta",
+      "text": ">protein|name={{l.0}}\n{{l.1}}\n>ligand|name={{l.2}}\n{{l.3}}\n"
+    },
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load anaconda",
+    "conda activate chai",
+    "chai-lab fold {{l.0}}.fasta {{l.0}}_{{l.2}}",
+    "exit"
+  ]
+}

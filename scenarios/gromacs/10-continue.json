@@ -1,0 +1,157 @@
+{
+  "id": "gromacs-10-continue",
+  "track": "gromacs",
+  "order": 10,
+  "tier": 4,
+  "title": "Pick up where it stopped",
+  "story": "Your 10 ns run (job 48100) hit its 20-minute time limit part way through. mdrun saved a checkpoint, md.cpt. Continue the run from the checkpoint in a new batch job with enough time, without starting over, and let it finish.",
+  "vars": {
+    "dir": [
+      "lysozyme_md",
+      "md_practice",
+      "lyz_water",
+      "mip662_md"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{dir}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{dir}}/em.gro": "Protein in water\n34304\n    1LYS      N    1   3.536   2.234   1.981\n    1LYS     H1    2   3.612   2.296   1.958\n    1LYS     H2    3   3.497   2.257   2.071\n   7.10000   7.10000   7.10000\n",
+        "~/{{dir}}/md-48100.out": "                  :-) GROMACS - gmx mdrun, 2024.4 (-:\n\nExecutable:   /opt/modules/gromacs/2024.4/bin/gmx\nData prefix:  /opt/modules/gromacs/2024.4\nWorking dir:  /home/student/w\nCommand line:\n  gmx mdrun -deffnm md -nb gpu\n\nReading file md.tpr, VERSION 2024.4 (single precision)\n1 GPU selected for this run.\nMapping of GPU IDs to the 2 GPU tasks in the 1 rank on this node:\n  PP:0,PME:0\nPP tasks will do (non-perturbed) short-ranged interactions on the GPU\nPME tasks will do all aspects on the GPU\nUsing 1 MPI thread\nUsing 1 OpenMP thread\n\nstarting mdrun 'Protein in water'\n5000000 steps, 10000.0 ps.\nslurmstepd: error: *** JOB 48100 ON geiss-01 CANCELLED DUE TO TIME LIMIT ***\n",
+        "~/{{dir}}/md.cpt": {
+          "binary": "GROMACS checkpoint. Continue a stopped run with `gmx mdrun -deffnm NAME -cpi NAME.cpt`.",
+          "meta": {
+            "kind": "md",
+            "atoms": 34304,
+            "proteinAtoms": 1959,
+            "sol": 10779,
+            "ions": 8,
+            "charge": 0,
+            "integrator": "md",
+            "nsteps": 5000000,
+            "dt": 0.002,
+            "emtol": 10,
+            "top": "/home/student/w/topol.top",
+            "gro": "/home/student/w/em.gro",
+            "step": 2600000
+          }
+        },
+        "~/{{dir}}/md.edr": {
+          "binary": "GROMACS energy file (.edr). Read it with `gmx energy -f FILE`.",
+          "meta": {
+            "kind": "md",
+            "atoms": 34304,
+            "proteinAtoms": 1959,
+            "sol": 10779,
+            "ions": 8,
+            "charge": 0,
+            "integrator": "md",
+            "nsteps": 5000000,
+            "dt": 0.002,
+            "emtol": 10,
+            "top": "/home/student/w/topol.top",
+            "gro": "/home/student/w/em.gro",
+            "step": 2600000
+          }
+        },
+        "~/{{dir}}/md.log": "Log file opened on Sat Oct 24 15:00:00 2026\nGROMACS version:    2024.4\nGPU support:        CUDA\n1 GPU selected for this run.\nStarted mdrun on rank 0 Sat Oct 24 15:00:00 2026\n           Step           Time\n        2600000     5200.00000\n",
+        "~/{{dir}}/md.mdp": "; md.mdp - 10 ns production run\nintegrator              = md        ; leap-frog integrator\nnsteps                  = 5000000   ; 2 * 5000000 = 10000 ps (10 ns)\ndt                      = 0.002     ; 2 fs\nnstxout-compressed      = 5000      ; save coordinates every 10.0 ps\nnstenergy               = 5000\nnstlog                  = 5000\ncontinuation            = no\nconstraints             = h-bonds\ncutoff-scheme           = Verlet\ncoulombtype             = PME\nrcoulomb                = 1.0\nrvdw                    = 1.0\ntcoupl                  = V-rescale\ntc-grps                 = Protein Non-Protein\ntau_t                   = 0.1     0.1\nref_t                   = 300     300\npcoupl                  = Parrinello-Rahman\ntau_p                   = 2.0\nref_p                   = 1.0\ncompressibility         = 4.5e-5\npbc                     = xyz\n",
+        "~/{{dir}}/md.sh": "#!/bin/bash\n#SBATCH --job-name=md\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=8G\n#SBATCH --time=00:20:00\n#SBATCH --output=md-%j.out\n\nmodule load gromacs\ngmx mdrun -deffnm md -nb gpu\n",
+        "~/{{dir}}/md.tpr": {
+          "binary": "GROMACS run input (.tpr). `gmx dump -s FILE` prints it as text; `gmx mdrun -deffnm NAME` runs it.",
+          "meta": {
+            "atoms": 34304,
+            "proteinAtoms": 1959,
+            "sol": 10779,
+            "ions": 8,
+            "charge": 0,
+            "integrator": "md",
+            "nsteps": 5000000,
+            "dt": 0.002,
+            "emtol": 10,
+            "top": "/home/student/w/topol.top",
+            "gro": "/home/student/w/em.gro"
+          }
+        },
+        "~/{{dir}}/md.xtc": {
+          "binary": "GROMACS trajectory. Look at it in a viewer such as VMD, or analyse it with gmx tools.",
+          "meta": {
+            "kind": "md",
+            "atoms": 34304,
+            "proteinAtoms": 1959,
+            "sol": 10779,
+            "ions": 8,
+            "charge": 0,
+            "integrator": "md",
+            "nsteps": 5000000,
+            "dt": 0.002,
+            "emtol": 10,
+            "top": "/home/student/w/topol.top",
+            "gro": "/home/student/w/em.gro",
+            "step": 2600000
+          }
+        },
+        "~/{{dir}}/posre.itp": "; In this topology include file, you will find position restraint\n; entries for all the heavy atoms in your original pdb file.\n; This means that all the protons which were added by pdb2gmx are\n; not restrained.\n\n[ position_restraints ]\n; atom  type      fx      fy      fz\n     1     1  1000  1000  1000\n     5     1  1000  1000  1000\n",
+        "~/{{dir}}/topol.top": ";\n;\tFile 'topol.top' was generated\n;\tBy user: student (5012)\n;\tOn host: geiss-01\n;\tAt date: Sat Oct 24 15:00:00 2026\n;\n;\tThis is a standalone topology file\n;\n;\tCreated by:\n;\t          :-) GROMACS - gmx pdb2gmx, 2024.4 (-:\n;\n;\tCommand line:\n;\t  gmx pdb2gmx -f 1AKI_clean.pdb -water spce -ff amber99sb-ildn\n;\tForce field was read from the standard GROMACS share directory.\n;\n\n; Include forcefield parameters\n#include \"amber99sb-ildn.ff/forcefield.itp\"\n\n[ moleculetype ]\n; Name            nrexcl\nProtein_chain_A     3\n\n[ atoms ]\n;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB\n; residue   1 LYS rtp NLYS q +2.0\n     1         N3      1    LYS      N      1     0.0966      14.01\n     2          H      1    LYS     H1      2     0.2165      1.008\n     3          H      1    LYS     H2      3     0.2165      1.008   ; qtot 0.5296\n; (practice copy: atoms 4 to 1958 are left out of this listing)\n  1959         O2    129    LEU    OC2   1959    -0.8188         16   ; qtot 8\n\n[ bonds ]\n;  ai    aj funct            c0            c1            c2            c3\n    1     2     1\n\n; Include Position restraint file\n#ifdef POSRES\n#include \"posre.itp\"\n#endif\n\n; Include water topology\n#include \"amber99sb-ildn.ff/spce.itp\"\n\n#ifdef POSRES_WATER\n; Position restraint for each water oxygen\n[ position_restraints ]\n;  i funct       fcx        fcy        fcz\n   1    1       1000       1000       1000\n#endif\n\n; Include topology for ions\n#include \"amber99sb-ildn.ff/ions.itp\"\n\n[ system ]\n; Name\n1AKI_CLEAN\n\n[ molecules ]\n; Compound        #mols\nProtein_chain_A   1\nSOL               10779\nCL                8\n"
+      },
+      "jobs": [
+        {
+          "id": 48100,
+          "name": "md",
+          "state": "TO",
+          "gpus": 1,
+          "memGB": 8,
+          "timeMin": 20,
+          "startStep": -40,
+          "endStep": -20,
+          "submitStep": -42,
+          "elapsedMin": 20
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Continue md from its checkpoint in a batch job",
+      "check": {
+        "jobSubmitted": {
+          "gpus": 1,
+          "timeMin": 30
+        }
+      }
+    },
+    {
+      "text": "Finish the 10 ns run",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{dir}}/md.gro"
+          },
+          {
+            "fileContains": {
+              "path": "~/{{dir}}/md.log",
+              "text": "Restarted from checkpoint"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`gmx mdrun -deffnm md -cpi md.cpt` continues from the checkpoint and appends to the old files. Give the job a longer `--time`."
+  ],
+  "solution": [
+    {
+      "nano": "md.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=md\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=8G\n#SBATCH --time=01:00:00\n#SBATCH --output=md-%j.out\n\nmodule load gromacs\ngmx mdrun -deffnm md -nb gpu -cpi md.cpt\n"
+    },
+    "sbatch md.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

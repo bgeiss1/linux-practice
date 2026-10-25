@@ -1,0 +1,78 @@
+{
+  "id": "session-12-workday",
+  "track": "session",
+  "order": 12,
+  "tier": 4,
+  "title": "Set up a work session",
+  "story": "You'll spend the afternoon testing GPU code. Start an interactive job with {{gpus}} GPUs, {{mem}} GB of memory and {{hours.0}} hours, load the cuda module inside it, check that you can see your GPUs, then leave the job.",
+  "vars": {
+    "gpus": [
+      "2",
+      "3"
+    ],
+    "mem": [
+      "64",
+      "96"
+    ],
+    "hours": [
+      [
+        "3",
+        "180"
+      ],
+      [
+        "4",
+        "240"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Start the job with {{gpus}} GPUs, {{mem}} GB and {{hours.0}} hours",
+      "check": {
+        "inInteractiveJob": {
+          "gpus": "{{gpus}}",
+          "memGB": "{{mem}}",
+          "timeMin": "{{hours.1}}"
+        }
+      }
+    },
+    {
+      "text": "Load cuda and check your GPUs",
+      "check": {
+        "all": [
+          {
+            "moduleLoaded": "cuda"
+          },
+          {
+            "ran": "nvidia-smi",
+            "ok": true
+          },
+          {
+            "inInteractiveJob": true
+          }
+        ]
+      }
+    },
+    {
+      "text": "Leave the job",
+      "check": {
+        "notInInteractiveJob": true
+      }
+    }
+  ],
+  "hints": [
+    "Time is `--time=HH:MM:SS`. `srun --gres=gpu:{{gpus}} --mem={{mem}}G --time={{hours.0}}:00:00 --pty bash`, then `module load cuda`, `nvidia-smi`, `exit`."
+  ],
+  "solution": [
+    "srun --gres=gpu:{{gpus}} --mem={{mem}}G --time={{hours.0}}:00:00 --pty bash",
+    "module load cuda",
+    "nvidia-smi",
+    "exit"
+  ]
+}
