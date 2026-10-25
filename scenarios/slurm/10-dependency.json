@@ -5,6 +5,25 @@
   "tier": 3,
   "title": "One after the other",
   "story": "ProteinMPNN (mpnn.sh) needs the backbones that RFdiffusion (rfd.sh) makes. Submit rfd.sh, then submit mpnn.sh so that it only starts after rfd.sh finishes successfully.",
+  "lesson": {
+    "title": "Waiting for another job",
+    "parts": [
+      {
+        "code": "sbatch",
+        "note": "Submit..."
+      },
+      {
+        "code": "--dependency=afterok:48215",
+        "note": "...but don't start until job 48215 finishes successfully. Use the job ID `sbatch` printed for the first job."
+      },
+      {
+        "code": "mpnn.sh",
+        "note": "The second step."
+      }
+    ],
+    "why": "You can queue a whole pipeline at once, and each step only takes a GPU when its inputs exist.",
+    "without": "Both jobs start together, and the second finds no backbones to work on. If the first job fails, an `afterok` job never starts (reason DependencyNeverSatisfied)."
+  },
   "vars": {
     "project": [
       "binder_design",

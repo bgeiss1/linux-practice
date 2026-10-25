@@ -35,6 +35,12 @@ export function validate(def, { seeds = 20 } = {}) {
     if (!t.text) errors.push(`task ${i + 1}: missing "text"`);
     checkShape(t.check, `task ${i + 1}`, errors);
   });
+  if (def.lesson !== undefined) {
+    const parts = def.lesson?.parts;
+    if (!def.lesson?.title) errors.push('lesson: missing "title"');
+    if (!Array.isArray(parts) || !parts.length) errors.push('lesson: "parts" must list the pieces of the command');
+    else parts.forEach((p, i) => { if (!p?.code || !p?.note) errors.push(`lesson part ${i + 1}: needs "code" and "note"`); });
+  }
   const maxHints = { 1: 3, 2: 2, 3: 1, 4: 1 }[def.tier];
   if (def.hints?.length > maxHints) warnings.push(`tier ${def.tier} shows at most ${maxHints} hint(s); extra hints are never shown`);
   if (errors.length) return { errors, warnings };

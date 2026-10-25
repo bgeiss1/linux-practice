@@ -12,6 +12,35 @@ export function fmt(s) {
   return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>');
 }
 
+// A command taken apart: each part gets a number under it and a note below.
+// parts: [{ "code": "--gres=gpu:1", "note": "..." }]. With lines, each part is
+// its own line (for #SBATCH headers); otherwise they read as one command.
+export function breakdownHTML(parts, { lines = false } = {}) {
+  const tokens = parts
+    .map((p, i) => `<span class="bd-part"><span class="bd-tok">${esc(p.code)}</span><span class="bd-num" aria-hidden="true">${i + 1}</span></span>`)
+    .join(lines ? '\n' : ' ');
+  return `<div class="breakdown">
+    <pre class="bd-cmd${lines ? ' bd-lines' : ''}" aria-label="${esc(parts.map((p) => p.code).join(lines ? '; ' : ' '))}">${tokens}</pre>
+    <ol class="bd-notes">${parts.map((p) => `<li><code>${esc(p.code)}</code> ${fmt(p.note)}</li>`).join('')}</ol>
+  </div>`;
+}
+
+// The "how this works" card at the top of a scenario, from its "lesson" field:
+// { title, intro?, parts, lines?, why?, without? }.
+export function lessonHTML(lesson, { open = true } = {}) {
+  if (!lesson?.parts?.length) return '';
+  return `<details class="lesson"${open ? ' open' : ''}>
+    <summary><span class="label">How it works</span> ${fmt(lesson.title)}</summary>
+    <div class="lesson-body">
+      ${lesson.intro ? `<p>${fmt(lesson.intro)}</p>` : ''}
+      ${breakdownHTML(lesson.parts, { lines: lesson.lines })}
+      ${lesson.why ? `<p><strong>Why:</strong> ${fmt(lesson.why)}</p>` : ''}
+      ${lesson.without ? `<p><strong>Leave it out and:</strong> ${fmt(lesson.without)}</p>` : ''}
+      <p><a href="./#/guide">Guide: asking Slurm for GPUs, memory and time</a></p>
+    </div>
+  </details>`;
+}
+
 export function h(html) {
   const t = document.createElement('template');
   t.innerHTML = html.trim();

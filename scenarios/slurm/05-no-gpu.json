@@ -5,6 +5,22 @@
   "tier": 2,
   "title": "It failed in seconds",
   "story": "design.sh runs ProteinMPNN, but someone deleted a line from its #SBATCH header. Submit it, see why it fails, fix the script, and get a run that completes.",
+  "lesson": {
+    "title": "No --gres, no GPU",
+    "lines": true,
+    "parts": [
+      {
+        "code": "#SBATCH --partition=gpu",
+        "note": "This picks the queue only. Being in the `gpu` queue does not give you a GPU."
+      },
+      {
+        "code": "#SBATCH --gres=gpu:1",
+        "note": "This line is what reserves the GPU."
+      }
+    ],
+    "why": "Slurm hides every GPU the job didn't ask for, so other people's jobs aren't disturbed.",
+    "without": "ProteinMPNN starts, finds no GPU, and stops with \"RuntimeError: No CUDA GPUs are available\"."
+  },
   "vars": {
     "project": [
       "binder_design",

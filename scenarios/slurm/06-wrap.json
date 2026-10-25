@@ -5,6 +5,25 @@
   "tier": 2,
   "title": "A quick one-liner",
   "story": "You just want to count the PDB files in /scratch/{{user}}/{{dataset}} as a job, without writing a script. Submit it with sbatch --wrap, naming the job {{jname}}.",
+  "lesson": {
+    "title": "A job without a script",
+    "parts": [
+      {
+        "code": "sbatch",
+        "note": "Submit a batch job."
+      },
+      {
+        "code": "-J count",
+        "note": "Short for `--job-name=count`."
+      },
+      {
+        "code": "--wrap=\"ls /scratch/student | wc -l\"",
+        "note": "The command to run. sbatch wraps it in a tiny script for you. Quote it so the `|` belongs to the job, not to your shell."
+      }
+    ],
+    "why": "Handy for one quick command. Anything longer is easier to fix in a script.",
+    "without": "With no `--gres` or `--mem`, the job gets no GPU and the default memory, which is fine for a quick count."
+  },
   "vars": {
     "dataset": [
       "pdb_mirror",

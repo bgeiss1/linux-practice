@@ -5,6 +5,24 @@
   "tier": 4,
   "title": "The job you forgot",
   "story": "Yesterday you started an interactive job with 4 GPUs and closed your laptop without typing exit. It's still holding the GPUs, and the server is full. Find that job, cancel it, then start a fresh 1-GPU session.",
+  "lesson": {
+    "title": "Give your interactive jobs a time limit",
+    "parts": [
+      {
+        "code": "squeue --me",
+        "note": "Your jobs. An interactive job shows up with the name `bash`."
+      },
+      {
+        "code": "scancel JOBID",
+        "note": "End a job and free everything it holds."
+      },
+      {
+        "code": "srun --gres=gpu:1 --time=02:00:00 --pty bash",
+        "note": "Next time, add `--time`: Slurm ends the job after 2 hours even if you forget to `exit`."
+      }
+    ],
+    "why": "An interactive job holds its GPUs until it ends, even while you're asleep."
+  },
   "vars": {},
   "machines": {
     "cluster": {

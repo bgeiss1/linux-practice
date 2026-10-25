@@ -5,6 +5,29 @@
   "tier": 2,
   "title": "Pick a partition",
   "story": "Slurm splits Geiss-01 into partitions with different time limits. You have a quick {{mins}}-minute test to run. Find the partition with the shorter limit and report its name.",
+  "lesson": {
+    "title": "Partitions are queues with time limits",
+    "parts": [
+      {
+        "code": "sinfo",
+        "note": "List the partitions (queues). TIMELIMIT is the longest a job in that queue may run."
+      },
+      {
+        "code": "srun",
+        "note": "Start a job..."
+      },
+      {
+        "code": "--partition=short",
+        "note": "...in the `short` queue (or `-p short`). Without it, jobs go to the default queue, marked `*` in `sinfo`."
+      },
+      {
+        "code": "--gres=gpu:1 --pty bash",
+        "note": "One GPU and an interactive shell, as before."
+      }
+    ],
+    "why": "Short queues are for quick tests. A partition can only take jobs that fit inside its time limit.",
+    "without": "Ask `short` for more than its limit and the job sits pending forever with the reason PartitionTimeLimit."
+  },
   "vars": {
     "mins": [
       10,
