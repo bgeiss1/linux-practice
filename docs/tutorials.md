@@ -1,5 +1,11 @@
 # Writing tutorial lessons
 
+The easiest way to edit lessons is the instructor dashboard: on the Scenarios page, open
+**Lessons** on any track. You can add, delete, duplicate and move lessons, edit each block
+in a form (or as JSON), and try the lesson in a live preview. Lesson changes are drafts
+like scenario edits, and go out with Publish (or Save, when running locally). The rest of
+this page describes the file format underneath.
+
 Each track can have `tutorials/<track>.json`. Students see its lessons in the track,
 between the practice scenarios, and by default must finish a lesson before the practice
 after it (the dashboard can turn that off).

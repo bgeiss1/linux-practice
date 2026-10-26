@@ -4,15 +4,19 @@ import { readFileSync } from 'node:fs';
 import {
   cloneCopy, diffCopies, addScenario, removeScenario, moveScenario, blankScenario,
   makeBundle, mergeImport, makeZip, parseCSV, detectColumns, gradeRows, gradesCSV,
-  addToHistory, emptyHistory, keywordTerms,
+  addToHistory, emptyHistory, keywordTerms, blankLesson, moveLesson, tutorialChanges,
 } from '../js/admin-core.js';
+import { ladder } from '../engine/tutorial.js';
 import { makePassphrase } from '../engine/passphrase.js';
 
 const root = new URL('../scenarios/', import.meta.url);
 const manifest = JSON.parse(readFileSync(new URL('tracks.json', root)));
 const files = {};
 for (const t of manifest.tracks) for (const p of t.scenarios) files[p] = JSON.parse(readFileSync(new URL(`${p}.json`, root)));
-const live = { manifest, files };
+const tutorials = {};
+for (const t of manifest.tracks) tutorials[t.id] = JSON.parse(readFileSync(new URL(`../tutorials/${t.id}.json`, import.meta.url)));
+const live = { manifest, files, tutorials };
+const defsOf = (copy, id) => copy.manifest.tracks.find((t) => t.id === id).scenarios.map((p) => copy.files[p]);
 
 test('edits, additions, removals and reordering show up as changes', () => {
   const work = cloneCopy(live);
@@ -49,6 +53,46 @@ test('bundles round-trip and single scenarios import by id', () => {
   assert.equal(r3.added.length, 1);
   assert.ok(r3.next.manifest.tracks.find((t) => t.id === 'bash').scenarios.includes(r3.added[0]));
   assert.match(mergeImport(work, { hello: 1 }).errors[0], /not a scenario/);
+});
+
+test('lesson edits show up as changes and can be moved around the track', () => {
+  const work = cloneCopy(live);
+  const tut = work.tutorials.navigate;
+  tut.lessons[0].title = 'Changed';
+  assert.deepEqual(diffCopies(live, work).tutorials, ['navigate']);
+  assert.equal(diffCopies(live, work).count, 1);
+  // Emptying a track's lessons counts as removing its tutorial.
+  work.tutorials.read.lessons = [];
+  assert.deepEqual(tutorialChanges(live, work).sort(), ['navigate', 'read']);
+
+  const defs = defsOf(work, 'navigate');
+  const order = () => ladder(defs, tut).map((x) => (x.kind === 'lesson' ? `L:${x.lesson.id}` : `S:${x.def.id}`));
+  tut.lessons.push(blankLesson('extra'));
+  assert.equal(order().at(-1), 'L:extra');
+  // Up past the last scenario: now it comes before that scenario.
+  assert.ok(moveLesson(defs, tut, tut.lessons.length - 1, -1));
+  assert.deepEqual(order().slice(-2), ['L:extra', `S:${defs.at(-1).id}`]);
+  assert.equal(tut.lessons.find((l) => l.id === 'extra').before, defs.at(-1).id);
+  // And back down to the end of the track.
+  moveLesson(defs, tut, tut.lessons.findIndex((l) => l.id === 'extra'), 1);
+  assert.equal(order().at(-1), 'L:extra');
+  assert.equal(tut.lessons.find((l) => l.id === 'extra').before, undefined);
+  // The first step can't move up.
+  const firstLesson = ladder(defs, tut)[0];
+  if (firstLesson.kind === 'lesson') assert.equal(moveLesson(defs, tut, tut.lessons.indexOf(firstLesson.lesson), -1), false);
+});
+
+test('tutorials travel in bundles and import on their own', () => {
+  const work = cloneCopy(live);
+  const bundle = JSON.parse(JSON.stringify(makeBundle(work, 'bash')));
+  assert.ok(bundle.tutorials.bash);
+  bundle.tutorials.bash.lessons[0].title = 'From a TA';
+  assert.deepEqual(mergeImport(work, bundle).changed, ['tutorials/bash']);
+  const single = { ...structuredClone(live.tutorials.find), lessons: live.tutorials.find.lessons.slice(1) };
+  const r = mergeImport(work, single);
+  assert.deepEqual(r.changed, ['tutorials/find']);
+  assert.equal(r.next.tutorials.find.lessons.length, live.tutorials.find.lessons.length - 1);
+  assert.match(mergeImport(work, { track: 'nope', lessons: [] }).errors[0], /Unknown track/);
 });
 
 test('zip files have the right structure', () => {

@@ -4,7 +4,7 @@
 //   PORT=9000 node serve.mjs
 //
 // Serves the repo folder as-is, to this computer only. The dashboard sees it is
-// running here and saves published drafts straight into scenarios/ instead of
+// running here and saves published drafts straight into scenarios/ and tutorials/ instead of
 // committing them to GitHub, and keeps the passphrase history file in
 // records/ (left out of git: it has student names). No packages needed, just
 // Node 18 or newer.
@@ -28,8 +28,8 @@ const TYPES = {
 };
 
 // Only these can be written: scenarios/tracks.json, scenarios/<track>/<name>.json,
-// and the passphrase history file.
-const WRITABLE = /^(scenarios\/(tracks|[a-z0-9_-]+\/[a-z0-9_-]+)|records\/passphrases)\.json$/i;
+// tutorials/<track>.json, and the passphrase history file.
+const WRITABLE = /^(scenarios\/(tracks|[a-z0-9_-]+\/[a-z0-9_-]+)|tutorials\/[a-z0-9_-]+|records\/passphrases)\.json$/i;
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
@@ -93,6 +93,6 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   createServer(root).listen(port, '127.0.0.1', () => {
     console.log(`Practice site:         http://localhost:${port}/`);
     console.log(`Instructor dashboard:  http://localhost:${port}/admin.html`);
-    console.log('Publishing from the dashboard saves into scenarios/ on this computer. Ctrl+C stops the server.');
+    console.log('Publishing from the dashboard saves into scenarios/ and tutorials/ on this computer. Ctrl+C stops the server.');
   });
 }

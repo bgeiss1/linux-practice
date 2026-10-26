@@ -41,6 +41,15 @@ test('saves and removes scenario files', async () => {
   });
 });
 
+test('saves tutorial files', async () => {
+  await withServer(async (base, root) => {
+    const res = await save(base, { write: { 'tutorials/navigate.json': '{"track":"navigate","lessons":[]}\n' } });
+    assert.equal(res.status, 200);
+    assert.match(await readFile(path.join(root, 'tutorials/navigate.json'), 'utf8'), /navigate/);
+    assert.equal((await save(base, { write: { 'tutorials/a/b.json': '{}' } })).status, 400);
+  });
+});
+
 test('refuses anything but scenario JSON', async () => {
   await withServer(async (base, root) => {
     for (const body of [{ write: { 'index.html': 'x' } }, { write: { 'scenarios/../serve.mjs': '{}' } }, { remove: ['scenarios/basics'] }, { write: { 'scenarios/a/b.json': 'not json' } }]) {

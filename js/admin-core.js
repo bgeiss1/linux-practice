@@ -3,18 +3,25 @@
 // writer, and reading Canvas exports. Kept separate so tests can run it.
 
 import { WORDS, readSubmission, fillerKey } from '../engine/passphrase.js';
+import { ladder } from '../engine/tutorial.js';
 
 // ---------- working copy ----------
 
-// A "copy" is { manifest, files } where files maps "track/NN-name" to a scenario.
+// A "copy" is { manifest, files, tutorials } where files maps "track/NN-name"
+// to a scenario and tutorials maps a track id to its tutorials/<track>.json.
 export function cloneCopy(copy) {
-  return { manifest: structuredClone(copy.manifest), files: Object.fromEntries(Object.entries(copy.files).map(([k, v]) => [k, structuredClone(v)])) };
+  return {
+    manifest: structuredClone(copy.manifest),
+    files: Object.fromEntries(Object.entries(copy.files).map(([k, v]) => [k, structuredClone(v)])),
+    tutorials: structuredClone(copy.tutorials ?? {}),
+  };
 }
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
-// What publishing would change: scenario files added, changed, removed, and
-// whether tracks.json changed (order, titles, keywords, term).
+// What publishing would change: scenario files added, changed, removed,
+// tracks whose lessons changed, and whether tracks.json changed (order,
+// titles, keywords, term).
 export function diffCopies(published, work) {
   const added = [];
   const changed = [];
@@ -26,7 +33,50 @@ export function diffCopies(published, work) {
   for (const path of Object.keys(published.files)) if (!(path in work.files)) removed.push(path);
   const strip = (m) => ({ ...m, version: undefined });
   const manifestChanged = !same(strip(published.manifest), strip(work.manifest));
-  return { added, changed, removed, manifestChanged, count: added.length + changed.length + removed.length + (manifestChanged ? 1 : 0) };
+  const tutorials = tutorialChanges(published, work);
+  return { added, changed, removed, tutorials, manifestChanged, count: added.length + changed.length + removed.length + tutorials.length + (manifestChanged ? 1 : 0) };
+}
+
+// Track ids whose tutorial differs. A tutorial with no lessons counts as none.
+export function tutorialChanges(published, work) {
+  const real = (t) => (t?.lessons?.length ? t : null);
+  const ids = new Set([...Object.keys(published.tutorials ?? {}), ...Object.keys(work.tutorials ?? {})]);
+  return [...ids].filter((id) => !same(real(published.tutorials?.[id]), real(work.tutorials?.[id])));
+}
+
+export function tutorialText(tut) {
+  return JSON.stringify(tut, null, 2) + '\n';
+}
+
+// ---------- lessons ----------
+
+export function blankLesson(id) {
+  return {
+    id,
+    title: 'New lesson',
+    summary: 'One line students see in the track list.',
+    blocks: [{ text: 'Explain the idea here. A blank line starts a new paragraph, and `backticks` show code.' }],
+  };
+}
+
+// Moves a lesson one step up or down the track as students see it, past a
+// scenario or another lesson. Rewrites "before" so the lesson lands there.
+export function moveLesson(defs, tut, index, delta) {
+  const seq = ladder(defs, tut);
+  const k = seq.findIndex((x) => x.kind === 'lesson' && x.lesson === tut.lessons[index]);
+  const j = k + delta;
+  if (k < 0 || j < 0 || j >= seq.length) return false;
+  [seq[k], seq[j]] = [seq[j], seq[k]];
+  const lessons = [];
+  seq.forEach((x, i) => {
+    if (x.kind !== 'lesson') return;
+    const next = seq.slice(i + 1).find((y) => y.kind === 'scenario');
+    if (next) x.lesson.before = next.def.id;
+    else delete x.lesson.before;
+    lessons.push(x.lesson);
+  });
+  tut.lessons = lessons;
+  return true;
 }
 
 export function slugify(text) {
@@ -98,12 +148,16 @@ export function blankScenario(track, id) {
 
 export const BUNDLE_FORMAT = 'linux-practice-bundle';
 
-// Everything, or one track: { format, tracks: [...track entries], term, scenarios: { path: def } }.
+// Everything, or one track: { format, tracks: [...track entries], term, scenarios: { path: def }, tutorials: { track: tutorial } }.
 export function makeBundle(work, trackId = null) {
   const tracks = work.manifest.tracks.filter((t) => !trackId || t.id === trackId);
   const scenarios = {};
-  for (const t of tracks) for (const p of t.scenarios) scenarios[p] = work.files[p];
-  return { format: BUNDLE_FORMAT, version: 1, term: trackId ? undefined : work.manifest.term, tracks: structuredClone(tracks), scenarios: structuredClone(scenarios) };
+  const tutorials = {};
+  for (const t of tracks) {
+    for (const p of t.scenarios) scenarios[p] = work.files[p];
+    if (work.tutorials?.[t.id]?.lessons?.length) tutorials[t.id] = work.tutorials[t.id];
+  }
+  return { format: BUNDLE_FORMAT, version: 1, term: trackId ? undefined : work.manifest.term, tracks: structuredClone(tracks), scenarios: structuredClone(scenarios), tutorials: structuredClone(tutorials) };
 }
 
 // Merge an uploaded bundle or single scenario into a copy of the work.
@@ -133,7 +187,21 @@ export function mergeImport(work, data) {
       }
       Object.assign(mine, { title: t.title ?? mine.title, keyword: t.keyword ?? mine.keyword, blurb: t.blurb ?? mine.blurb, commands: t.commands ?? mine.commands, scenarios: t.scenarios.filter((p) => data.scenarios?.[p]) });
     }
+    for (const [id, tut] of Object.entries(data.tutorials ?? {})) {
+      if (!next.manifest.tracks.some((x) => x.id === id)) continue;
+      if (!next.tutorials[id]) added.push(`tutorials/${id}`);
+      else if (!same(next.tutorials[id], tut)) changed.push(`tutorials/${id}`);
+      next.tutorials[id] = tut;
+    }
     if (data.term) next.manifest.term = data.term;
+  } else if (data && typeof data === 'object' && data.track && Array.isArray(data.lessons)) {
+    // One tutorials/<track>.json file.
+    if (!next.manifest.tracks.some((x) => x.id === data.track)) errors.push(`Unknown track "${data.track}".`);
+    else {
+      if (!next.tutorials[data.track]) added.push(`tutorials/${data.track}`);
+      else if (!same(next.tutorials[data.track], data)) changed.push(`tutorials/${data.track}`);
+      next.tutorials[data.track] = data;
+    }
   } else if (data && typeof data === 'object' && data.id && data.track) {
     const t = next.manifest.tracks.find((x) => x.id === data.track);
     if (!t) errors.push(`Unknown track "${data.track}".`);
@@ -148,7 +216,7 @@ export function mergeImport(work, data) {
       }
     }
   } else {
-    errors.push('This file is not a scenario or a Linux Practice bundle.');
+    errors.push('This file is not a scenario, a tutorial, or a Linux Practice bundle.');
   }
   return { next, added, changed, removed, errors };
 }

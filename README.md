@@ -91,8 +91,9 @@ the tests updates the site at `https://bgeiss1.github.io/linux-practice/`.
 Each track has a tutorial in `tutorials/<track>.json`: lessons that explain what each
 command means and what its options do, with small live terminals ("Try it") and quick
 checks. The track page puts each lesson just before the practice it prepares for, so
-students learn, practice, then learn the next thing. `docs/tutorials.md` describes the
-format; the tests replay every Try it.
+students learn, practice, then learn the next thing. Edit lessons in the dashboard
+(**Lessons** on each track on the Scenarios page), or by hand: `docs/tutorials.md`
+describes the format. The tests replay every Try it.
 
 On the dashboard's Scenarios page, **What students can open** sets each track to Open,
 Closed, or Opens on a date, and whether students must finish each lesson before the

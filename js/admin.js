@@ -1,16 +1,19 @@
-// Instructor dashboard: edit and test scenarios, import/export, publish to
-// GitHub (or to this computer), browse history, set the track keywords, and
-// check passphrases from a Canvas export.
+// Instructor dashboard: edit and test scenarios and tutorial lessons,
+// import/export, publish to GitHub (or to this computer), browse history, set
+// the track keywords, and check passphrases from a Canvas export.
 
 import { Session, TIERS } from '../engine/scenario.js';
 import { validate } from '../engine/validate.js';
 import { keywordProblem, SUGGESTED_KEYWORDS, SPARE_KEYWORDS } from '../engine/passphrase.js';
+import { BLOCK_TYPES, blockType, ladder, tryDef, validateTutorial } from '../engine/tutorial.js';
 import { Terminal, esc, fmt, h, lessonHTML } from './terminal.js';
+import { lessonPageHTML, wireLesson } from './lesson.js';
 import {
   cloneCopy, diffCopies, addScenario, removeScenario, moveScenario, blankScenario, renumber,
   makeBundle, mergeImport, makeZip, parseCSV, detectColumns, gradeRows, gradesCSV,
   repoFromLocation, decodeBase64, scenarioText,
   emptyHistory, addToHistory, keywordTerms, HISTORY_FORMAT, HISTORY_PATH,
+  tutorialText, blankLesson, moveLesson,
 } from './admin-core.js';
 
 const app = document.getElementById('app');
@@ -41,8 +44,8 @@ function store(key, value) {
 
 // ---------- data ----------
 
-let published; // what the live site serves: { manifest, files }
-let work; // drafts: { manifest, files }
+let published; // what the live site serves: { manifest, files, tutorials }
+let work; // drafts: { manifest, files, tutorials }
 let settings; // { repo, branch, baseVersion }
 let localMode = false; // served by serve.mjs: publishing saves to this computer
 let history = emptyHistory(); // passphrases handed in before (records/passphrases.json)
@@ -57,7 +60,19 @@ async function fetchCopy(base = 'scenarios/', opts = { cache: 'no-cache' }) {
       }),
     ),
   );
-  return { manifest, files };
+  // Tutorials sit beside scenarios/ in tutorials/<track>.json; a track may have none.
+  const tutorials = {};
+  await Promise.all(
+    manifest.tracks.map(async (t) => {
+      try {
+        const res = await fetch(`${base.replace(/scenarios\/$/, 'tutorials/')}${t.id}.json`, opts);
+        if (res.ok) tutorials[t.id] = await res.json();
+      } catch {
+        // No tutorial for this track.
+      }
+    }),
+  );
+  return { manifest, files, tutorials };
 }
 
 async function loadData() {
@@ -70,6 +85,8 @@ async function loadData() {
   history = await loadHistory();
   const saved = load(DRAFT_KEY);
   work = saved?.work ? saved.work : cloneCopy(published);
+  // Drafts saved before lessons were editable here have no tutorials yet.
+  work.tutorials ??= structuredClone(published.tutorials);
   settings = {
     repo: saved?.repo ?? repoFromLocation(location) ?? DEFAULT_REPO,
     branch: saved?.branch ?? 'main',
@@ -207,7 +224,7 @@ function renderNav() {
     ['progress', '#/progress', 'Class progress'],
   ];
   nav.innerHTML = items
-    .map(([id, href, label]) => `<a href="${href}"${route === id || (id === 'list' && route === 'edit') ? ' aria-current="page"' : ''}>${label}</a>`)
+    .map(([id, href, label]) => `<a href="${href}"${route === id || (id === 'list' && (route === 'edit' || route === 'lessons')) ? ' aria-current="page"' : ''}>${label}</a>`)
     .join('');
 }
 
@@ -369,8 +386,9 @@ function trackBlock(t, q) {
   if (q && !rows.length) return '';
   return `<section class="card track-admin" aria-labelledby="t-${esc(t.id)}">
     <div class="track-head">
-      <div><h2 id="t-${esc(t.id)}">${esc(t.title)}</h2><p class="muted">${esc(t.blurb)} · ${t.scenarios.length} scenarios · keyword <span class="mono">${esc(t.keyword ?? '(none)')}</span> · ${trackState(t) === 'open' ? 'open' : trackState(t) === 'date' ? `opens ${esc(t.opens)}` : '<span class="warn-text">closed</span>'} · <a href="./?preview#/track/${esc(t.id)}" target="_blank" rel="noopener">lessons and practice</a></p></div>
+      <div><h2 id="t-${esc(t.id)}">${esc(t.title)}</h2><p class="muted">${esc(t.blurb)} · ${t.scenarios.length} scenarios · keyword <span class="mono">${esc(t.keyword ?? '(none)')}</span> · ${trackState(t) === 'open' ? 'open' : trackState(t) === 'date' ? `opens ${esc(t.opens)}` : '<span class="warn-text">closed</span>'} · <a href="./?preview#/track/${esc(t.id)}" target="_blank" rel="noopener">preview as a student</a></p></div>
       <div class="row">
+        <a class="btn" href="#/lessons/${esc(t.id)}">Lessons (${work.tutorials[t.id]?.lessons?.length ?? 0})${tutorialBadge(t.id)}</a>
         <button type="button" data-act="new" data-track="${esc(t.id)}">New scenario</button>
         <button type="button" data-act="dl-track" data-track="${esc(t.id)}">Download track</button>
       </div>
@@ -799,6 +817,474 @@ async function runSolution() {
   coach(session.complete ? '<strong>Complete.</strong> The solution finished every task with this draw.' : '<strong>Not complete.</strong> The solution stopped before the last task. See the validator.');
 }
 
+// ---------- tutorial lessons ----------
+
+const hasLessons = (tut) => !!tut?.lessons?.length;
+const trackTitle = (id) => work.manifest.tracks.find((t) => t.id === id)?.title ?? id;
+const trackDefs = (id) => (work.manifest.tracks.find((t) => t.id === id)?.scenarios ?? []).map((p) => work.files[p]).filter(Boolean);
+const lessonHref = (id, i) => `#/lessons/${id}/${i + 1}`;
+
+const BLOCK_LABELS = { text: 'Text', command: 'Command card', flags: 'Options table', example: 'Example', try: 'Try it', quiz: 'Quick check', tip: 'Tip', warn: 'Careful' };
+
+const NEW_BLOCK = {
+  text: () => ({ text: 'Explain the idea here. A blank line starts a new paragraph, and `backticks` show code.' }),
+  command: () => ({ command: { name: 'ls', stands: 'list', syntax: 'ls [OPTIONS] [FOLDER]', what: 'What the command does.' } }),
+  flags: () => ({ flags: [['-l', 'long', 'One file per line, with size and date']] }),
+  example: () => ({ example: { cmd: 'ls', out: 'data  notes.txt' } }),
+  try: () => ({ try: { text: 'Type `pwd` and press Enter.', cwd: '~', files: {}, check: { ran: 'pwd' }, hint: 'Type pwd', solution: ['pwd'] } }),
+  quiz: () => ({ quiz: { q: 'Your question?', options: ['The right answer', 'A wrong answer'], answer: 0, why: 'Why the right answer is right.' } }),
+  tip: () => ({ tip: 'A helpful note.' }),
+  warn: () => ({ warn: 'Something to be careful about.' }),
+};
+
+const checkedTutorials = new Map(); // track -> { key, errors }
+
+function checkTutorial(id) {
+  const tut = work.tutorials[id];
+  const ids = trackDefs(id).map((d) => d.id);
+  const key = JSON.stringify([tut, ids]);
+  const prev = checkedTutorials.get(id);
+  if (prev?.key === key) return prev;
+  let errors;
+  try {
+    errors = hasLessons(tut) ? validateTutorial(structuredClone(tut), ids, { seeds: 5 }) : [];
+  } catch (e) {
+    errors = [`crashed: ${e.message}`];
+  }
+  if (hasLessons(tut) && tut.track !== id) errors.unshift(`"track" says ${tut.track} but these are the lessons for ${id}`);
+  const entry = { key, errors };
+  checkedTutorials.set(id, entry);
+  return entry;
+}
+
+// One lesson's problems, without the "lesson 3 (id)" prefix.
+function lessonProblems(id, index) {
+  const prefix = `lesson ${index + 1} (`;
+  return checkTutorial(id).errors.filter((e) => e.startsWith(prefix))
+    .map((e) => e.slice(e.indexOf(')') + 1).replace(/^:?\s*/, '').replace(/seed \d+: /, '').replace("doesn't finish the scenario", "doesn't finish this Try it"));
+}
+
+function tutorialBadge(id) {
+  return JSON.stringify(work.tutorials[id] ?? null) !== JSON.stringify(published.tutorials[id] ?? null) ? ' <span class="badge changed">Changed</span>' : '';
+}
+
+function uniqueLessonId(tut, base) {
+  const ids = new Set(tut.lessons.map((l) => l.id));
+  let id = base;
+  for (let n = 2; ids.has(id); n++) id = `${base}-${n}`;
+  return id;
+}
+
+function renderLessonList(id) {
+  const t = work.manifest.tracks.find((x) => x.id === id);
+  if (!t) {
+    app.replaceChildren(h(`<section class="admin-page"><p>There's no track called ${esc(id)}. <a href="#/">Back to the list</a></p></section>`));
+    return;
+  }
+  const tut = work.tutorials[id];
+  const defs = trackDefs(id);
+  const errors = checkTutorial(id).errors;
+  let lessonN = 0;
+  const rows = ladder(defs, tut)
+    .map((x) => {
+      if (x.kind === 'scenario') {
+        const path = t.scenarios.find((p) => work.files[p] === x.def);
+        return `<tr class="lz-practice-row"><td class="num muted">${String(x.def.order).padStart(2, '0')}</td>
+          <td colspan="2"><span class="label">Practice</span> <a href="${editHref(esc(path))}">${esc(x.def.title)}</a></td><td></td></tr>`;
+      }
+      lessonN++;
+      const i = tut.lessons.indexOf(x.lesson);
+      const types = x.lesson.blocks?.map(blockType) ?? [];
+      const tries = types.filter((b) => b === 'try').length;
+      const quizzes = types.filter((b) => b === 'quiz').length;
+      const bad = lessonProblems(id, i).length;
+      return `<tr>
+        <td class="num">L${lessonN}</td>
+        <td><a href="${lessonHref(esc(id), i)}">${esc(x.lesson.title || '(no title)')}</a>
+          <div class="muted small">${esc(x.lesson.summary ?? '')}</div>
+          <div class="muted small">${types.length} block${types.length === 1 ? '' : 's'}${tries ? ` · ${tries} Try it` : ''}${quizzes ? ` · ${quizzes} quick check${quizzes === 1 ? '' : 's'}` : ''}</div></td>
+        <td>${bad ? '<span class="badge bad">Errors</span>' : ''}</td>
+        <td class="acts">
+          <button type="button" class="icon" data-lact="up" data-i="${i}" aria-label="Move ${esc(x.lesson.title)} earlier">↑</button>
+          <button type="button" class="icon" data-lact="down" data-i="${i}" aria-label="Move ${esc(x.lesson.title)} later">↓</button>
+          <button type="button" data-lact="dup" data-i="${i}">Duplicate</button>
+          <button type="button" data-lact="delete" data-i="${i}">Delete</button>
+        </td></tr>`;
+    })
+    .join('');
+  app.replaceChildren(
+    h(`
+    <section class="admin-page">
+      <nav class="crumbs"><a href="#/">Scenarios</a> / ${esc(t.title)} / Lessons</nav>
+      <div class="page-head">
+        <div><h1>Lessons in ${esc(t.title)}</h1>
+          <p class="muted">Students walk this list from top to bottom. A lesson comes just before the practice under it${work.manifest.lessonsRequired !== false ? ', and they finish it before that practice opens' : ''}. Use ↑ and ↓ to move a lesson past a practice or another lesson.</p>
+          <p class="muted mono small">tutorials/${esc(id)}.json${tutorialBadge(id)}</p></div>
+        <div class="row">
+          <button type="button" class="primary" data-lact="new">New lesson</button>
+          <button type="button" data-lact="dl">Download JSON</button>
+          ${tutorialBadge(id) && published.tutorials[id] ? '<button type="button" data-lact="revert">Revert to live version</button>' : ''}
+        </div>
+      </div>
+      ${errors.length ? `<div class="notice warn">${errors.length} problem${errors.length === 1 ? '' : 's'} to fix before you can publish. Open a lesson marked Errors to see ${errors.length === 1 ? 'it' : 'them'}.</div>` : ''}
+      <section class="card">
+        ${hasLessons(tut) ? `<div class="table-scroll"><table class="scen-table lz-table"><tbody>${rows}</tbody></table></div>` : `<p class="muted">This track has no lessons yet, only practice. Add one with New lesson.</p>`}
+      </section>
+      <p class="muted small">Changes here are drafts, like scenario edits: students see them after you ${localMode ? 'save them from Publish' : 'publish'}. The preview inside each lesson shows your draft.</p>
+    </section>`),
+  );
+  app.querySelector('.admin-page').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-lact]');
+    if (!b) return;
+    const i = Number(b.dataset.i);
+    const act = b.dataset.lact;
+    if (act === 'new') {
+      const next = (work.tutorials[id] ??= { track: id, lessons: [] });
+      next.lessons.push(blankLesson(uniqueLessonId(next, 'new-lesson')));
+      saveWork();
+      location.hash = lessonHref(id, next.lessons.length - 1);
+    } else if (act === 'up' || act === 'down') {
+      if (moveLesson(defs, tut, i, act === 'up' ? -1 : 1)) {
+        saveWork();
+        renderLessonList(id);
+      }
+    } else if (act === 'dup') {
+      const copy = structuredClone(tut.lessons[i]);
+      copy.id = uniqueLessonId(tut, `${copy.id}-copy`);
+      copy.title = `${copy.title} (copy)`;
+      tut.lessons.splice(i + 1, 0, copy);
+      saveWork();
+      location.hash = lessonHref(id, i + 1);
+    } else if (act === 'delete') {
+      if (!confirm(`Delete the lesson "${tut.lessons[i].title}"? You can undo this from Publish until you publish.`)) return;
+      tut.lessons.splice(i, 1);
+      saveWork();
+      renderLessonList(id);
+    } else if (act === 'dl') {
+      download(`${id}.json`, tutorialText(work.tutorials[id] ?? { track: id, lessons: [] }));
+    } else if (act === 'revert') {
+      if (!confirm(`Throw away your changes to the lessons in ${t.title}?`)) return;
+      work.tutorials[id] = structuredClone(published.tutorials[id]);
+      saveWork();
+      renderLessonList(id);
+    }
+  });
+}
+
+// ---------- lesson editor ----------
+
+let lessonEditing = null; // { track, index, tab }
+let lessonTimer;
+
+const currentLesson = () => work.tutorials[lessonEditing.track]?.lessons?.[lessonEditing.index];
+
+function renderLessonEditor(id, index) {
+  const t = work.manifest.tracks.find((x) => x.id === id);
+  const lesson = work.tutorials[id]?.lessons?.[index];
+  if (!t || !lesson) {
+    app.replaceChildren(h(`<section class="admin-page"><p>That lesson isn't in your drafts. <a href="#/lessons/${esc(id)}">Back to the lessons</a></p></section>`));
+    return;
+  }
+  const same = lessonEditing?.track === id && lessonEditing.index === index;
+  lessonEditing = { track: id, index, tab: same ? lessonEditing.tab : 'form' };
+  const count = work.tutorials[id].lessons.length;
+  app.replaceChildren(
+    h(`
+    <section class="admin-page">
+      <nav class="crumbs"><a href="#/">Scenarios</a> / ${esc(t.title)} / <a href="#/lessons/${esc(id)}">Lessons</a> / ${index + 1} of ${count}</nav>
+      <div class="page-head">
+        <div><h1 id="lz-title">${esc(lesson.title)}</h1><p class="muted mono small">tutorials/${esc(id)}.json${tutorialBadge(id)}</p></div>
+        <div class="row">
+          ${index > 0 ? `<a class="btn" href="${lessonHref(esc(id), index - 1)}">← Previous</a>` : ''}
+          ${index < count - 1 ? `<a class="btn" href="${lessonHref(esc(id), index + 1)}">Next →</a>` : ''}
+          <button type="button" id="lz-delete">Delete lesson</button>
+        </div>
+      </div>
+      <div class="editor">
+        <div class="ed-left">
+          <div class="tabs-row" role="tablist">
+            <button type="button" role="tab" data-tab="form" aria-selected="${lessonEditing.tab === 'form'}">Form</button>
+            <button type="button" role="tab" data-tab="json" aria-selected="${lessonEditing.tab === 'json'}">JSON</button>
+          </div>
+          <div id="lz-body"></div>
+        </div>
+        <div class="ed-right">
+          <section class="card" aria-labelledby="lzv-h"><h2 id="lzv-h">Validator</h2><div id="lz-val"></div></section>
+          <section class="card" aria-labelledby="lzp-h">
+            <div class="track-head"><h2 id="lzp-h">Preview</h2><button type="button" id="lz-restart">Start over</button></div>
+            <p class="muted small">What students see, from your draft. Try the terminals and checks here.</p>
+            <div id="lz-pv" class="lz-preview"></div>
+          </section>
+        </div>
+      </div>
+    </section>`),
+  );
+  app.querySelector('#lz-delete').addEventListener('click', () => {
+    if (!confirm(`Delete the lesson "${currentLesson().title}"? You can undo this from Publish until you publish.`)) return;
+    work.tutorials[id].lessons.splice(index, 1);
+    saveWork();
+    location.hash = `#/lessons/${id}`;
+  });
+  for (const tab of app.querySelectorAll('[data-tab]')) {
+    tab.addEventListener('click', () => {
+      lessonEditing.tab = tab.dataset.tab;
+      for (const x of app.querySelectorAll('[data-tab]')) x.setAttribute('aria-selected', String(x === tab));
+      renderLessonBody();
+    });
+  }
+  app.querySelector('#lz-restart').addEventListener('click', renderLessonPreview);
+  renderLessonBody();
+  renderLessonValidation();
+  renderLessonPreview();
+}
+
+function renderLessonBody() {
+  const body = app.querySelector('#lz-body');
+  const lesson = currentLesson();
+  if (lessonEditing.tab === 'json') {
+    body.replaceChildren(
+      h(`<div class="field"><label for="lz-json" class="label">Whole lesson</label>
+        <textarea id="lz-json" class="code tall" spellcheck="false">${esc(JSON.stringify(lesson, null, 2))}</textarea>
+        <p class="help">The block formats are in <a href="https://github.com/${esc(settings.repo)}/blob/main/docs/tutorials.md" target="_blank" rel="noopener">the tutorial guide</a>.</p>
+        <p class="field-err" id="lz-json-err"></p></div>`),
+    );
+    body.querySelector('#lz-json').addEventListener('input', (e) => {
+      const err = body.querySelector('#lz-json-err');
+      try {
+        const next = JSON.parse(e.target.value);
+        err.textContent = '';
+        updateLesson(() => {
+          work.tutorials[lessonEditing.track].lessons[lessonEditing.index] = next;
+        });
+      } catch (x) {
+        err.textContent = `Not valid JSON yet: ${x.message}`;
+      }
+    });
+    return;
+  }
+  const defs = trackDefs(lessonEditing.track);
+  body.replaceChildren(
+    h(`
+    <div class="form">
+      <div class="grid2">
+        <div class="field"><label for="lz-id" class="label">ID</label><input type="text" id="lz-id" class="mono" value="${esc(lesson.id)}" spellcheck="false">
+          <p class="help">Lowercase letters, digits and dashes. Changing it makes students who finished this lesson do it again.</p></div>
+        <div class="field"><label for="lz-before" class="label">Comes before</label>
+          <select id="lz-before">${defs.map((d) => `<option value="${esc(d.id)}"${lesson.before === d.id ? ' selected' : ''}>Practice ${d.order}: ${esc(d.title)}</option>`).join('')}
+            <option value=""${!lesson.before || !defs.some((d) => d.id === lesson.before) ? ' selected' : ''}>End of the track</option></select></div>
+      </div>
+      <div class="field"><label for="lz-ttl" class="label">Title</label><input type="text" id="lz-ttl" value="${esc(lesson.title ?? '')}"></div>
+      <div class="field"><label for="lz-sum" class="label">Summary</label><textarea id="lz-sum" rows="2">${esc(lesson.summary ?? '')}</textarea>
+        <p class="help">One or two sentences, shown under the title and in the track list.</p></div>
+      <fieldset><legend class="label">Blocks, top to bottom</legend>
+        <div id="lz-blocks" class="lz-blocks">${(lesson.blocks ?? []).map(blockCard).join('')}</div>
+        <div class="row lz-add"><span class="label">Add</span>${BLOCK_TYPES.map((b) => `<button type="button" data-add="${b}">${BLOCK_LABELS[b]}</button>`).join('')}</div>
+        <p class="help">In any text, \`backticks\` show code.</p>
+      </fieldset>
+    </div>`),
+  );
+  const on = (sel, fn) => body.querySelector(sel).addEventListener('input', fn);
+  on('#lz-id', (e) => updateLesson((l) => { l.id = e.target.value.trim(); }));
+  on('#lz-ttl', (e) => {
+    app.querySelector('#lz-title').textContent = e.target.value;
+    updateLesson((l) => { l.title = e.target.value; });
+  });
+  on('#lz-sum', (e) => updateLesson((l) => {
+    if (e.target.value.trim()) l.summary = e.target.value;
+    else delete l.summary;
+  }));
+  body.querySelector('#lz-before').addEventListener('change', (e) => updateLesson((l) => {
+    if (e.target.value) l.before = e.target.value;
+    else delete l.before;
+  }));
+  const blocks = body.querySelector('#lz-blocks');
+  blocks.addEventListener('input', (e) => {
+    const card = e.target.closest('.blk');
+    if (e.target.dataset.k === 'options') refreshAnswers(card);
+    readCard(card);
+  });
+  blocks.addEventListener('click', (e) => {
+    const b = e.target.closest('button');
+    const card = b?.closest('.blk');
+    if (!card) return;
+    const bi = Number(card.dataset.bi);
+    const list = currentLesson().blocks;
+    if (b.dataset.del !== undefined) {
+      if (!confirm(`Delete this ${BLOCK_LABELS[blockType(list[bi])]} block?`)) return;
+      updateLesson(() => list.splice(bi, 1));
+    } else if (b.dataset.move) {
+      const j = bi + Number(b.dataset.move);
+      if (j < 0 || j >= list.length) return;
+      updateLesson(() => { [list[bi], list[j]] = [list[j], list[bi]]; });
+    } else if (b.dataset.fadd !== undefined || b.dataset.fdel !== undefined) {
+      if (!readCard(card)) return;
+      const rows = list[bi].flags;
+      updateLesson(() => {
+        if (b.dataset.fadd !== undefined) rows.push(['', '', '']);
+        else rows.splice(Number(b.dataset.fdel), 1);
+      });
+    } else return;
+    renderLessonBody();
+  });
+  for (const b of body.querySelectorAll('[data-add]')) {
+    b.addEventListener('click', () => {
+      updateLesson((l) => { (l.blocks ??= []).push(NEW_BLOCK[b.dataset.add]()); });
+      renderLessonBody();
+      const cards = app.querySelectorAll('.blk');
+      cards[cards.length - 1]?.scrollIntoView({ block: 'center' });
+      cards[cards.length - 1]?.querySelector('input, textarea')?.focus();
+    });
+  }
+}
+
+function blockCard(block, bi) {
+  const type = blockType(block);
+  const v = block[type];
+  const f = (k, label, value, { area = false, rows = 3, code = false, help = '' } = {}) => {
+    const fid = `b${bi}-${k}`;
+    const input = area
+      ? `<textarea id="${fid}" data-k="${k}" rows="${rows}"${code ? ' class="code" spellcheck="false"' : ''}>${esc(value ?? '')}</textarea>`
+      : `<input type="text" id="${fid}" data-k="${k}" value="${esc(value ?? '')}"${code ? ' class="mono" spellcheck="false"' : ''}>`;
+    return `<div class="field"><label for="${fid}" class="label">${label}</label>${input}${help ? `<p class="help">${help}</p>` : ''}</div>`;
+  };
+  let fields = '';
+  if (type === 'text' || type === 'tip' || type === 'warn') {
+    fields = f('body', type === 'text' ? 'Paragraphs' : 'Note', v, { area: true, rows: type === 'text' ? 5 : 3, help: type === 'text' ? 'A blank line starts a new paragraph.' : '' });
+  } else if (type === 'command') {
+    fields = `<div class="grid2">${f('name', 'Command', v.name, { code: true })}${f('stands', 'Short for', v.stands)}</div>
+      ${f('syntax', 'Form', v.syntax, { code: true, help: 'How it is written, e.g. ls [OPTIONS] [FOLDER]' })}
+      ${f('what', 'What it does', v.what, { area: true })}`;
+  } else if (type === 'flags') {
+    fields = `<div class="lz-flag-rows">
+        <div class="lz-flag-row lz-flag-head" aria-hidden="true"><span class="label">Write</span><span class="label">Short for</span><span class="label">What it does</span><span></span></div>
+        ${(Array.isArray(v) ? v : []).map((r, ri) => `<div class="lz-flag-row">
+          <input type="text" class="mono" data-f="0" value="${esc(r[0] ?? '')}" aria-label="Option ${ri + 1}" spellcheck="false">
+          <input type="text" data-f="1" value="${esc(r[1] ?? '')}" aria-label="Option ${ri + 1} is short for">
+          <input type="text" data-f="2" value="${esc(r[2] ?? '')}" aria-label="What option ${ri + 1} does">
+          <button type="button" class="icon" data-fdel="${ri}" aria-label="Delete option ${ri + 1}">×</button></div>`).join('')}
+      </div>
+      <div><button type="button" data-fadd>Add option</button></div>`;
+  } else if (type === 'example') {
+    fields = `${f('cmd', 'Command typed', v.cmd, { code: true, help: 'Leave empty to show only the output, for a diagram.' })}
+      ${f('out', 'Output', v.out, { area: true, rows: 4, code: true })}
+      ${f('note', 'Caption', v.note)}`;
+  } else if (type === 'quiz') {
+    fields = `${f('q', 'Question', v.q)}
+      ${f('options', 'Answers, one per line', (v.options ?? []).join('\n'), { area: true, rows: Math.max(3, (v.options ?? []).length) })}
+      <div class="field"><label for="b${bi}-answer" class="label">Right answer</label><select id="b${bi}-answer" data-k="answer">${answerOptions(v.options ?? [], v.answer)}</select></div>
+      ${f('why', 'Why it is right (shown once they pick it)', v.why, { area: true, rows: 2 })}`;
+  } else if (type === 'try') {
+    const { text, hint, solution, on, ...setup } = v ?? {};
+    const steps = (solution ?? []).map((s) => (typeof s === 'string' ? s : JSON.stringify(s))).join('\n');
+    fields = `${f('text', 'What to do', text, { area: true, rows: 2 })}
+      ${f('hint', 'Hint', hint)}
+      ${f('solution', 'Solution, one command per line', steps, { area: true, rows: 3, code: true, help: 'Used to test that the step can be finished. Lines starting with { are JSON steps, as in scenarios.' })}
+      <div class="field"><label for="b${bi}-on" class="label">Terminal</label><select id="b${bi}-on" data-k="on"><option value="">Geiss-01</option><option value="laptop"${on === 'laptop' ? ' selected' : ''}>The student's laptop</option></select></div>
+      ${f('setup', 'Starting folder, files and check (JSON)', JSON.stringify(setup, null, 2), { area: true, rows: 8, code: true, help: '<code>cwd</code>, <code>files</code> and <code>check</code> work as in scenarios. Use <code>tasks</code> for several steps, or <code>machines</code> for Slurm jobs.' })}`;
+  }
+  return `<div class="item blk" data-bi="${bi}" data-type="${type ?? ''}">
+    <div class="item-head"><span class="label">${bi + 1} · ${BLOCK_LABELS[type] ?? 'Unknown block'}</span>${itemButtons(bi)}</div>
+    ${type ? fields : `<p class="bad-text small">This block isn't a known type. Edit it in the JSON tab.</p>`}
+    <p class="field-err"></p>
+  </div>`;
+}
+
+function answerOptions(options, answer) {
+  return options.map((o, i) => `<option value="${i}"${i === answer ? ' selected' : ''}>${i + 1}. ${esc(o.length > 60 ? `${o.slice(0, 60)}…` : o)}</option>`).join('');
+}
+
+function refreshAnswers(card) {
+  const sel = card.querySelector('[data-k="answer"]');
+  const options = card.querySelector('[data-k="options"]').value.split('\n').map((x) => x.trim()).filter(Boolean);
+  const keep = Math.min(Number(sel.value) || 0, Math.max(options.length - 1, 0));
+  sel.innerHTML = answerOptions(options, keep);
+}
+
+// Reads one block card back into the lesson. Returns false when a field
+// isn't valid yet (the card shows why).
+function readCard(card) {
+  const bi = Number(card.dataset.bi);
+  const type = card.dataset.type;
+  const err = card.querySelector(':scope > .field-err');
+  const val = (k) => card.querySelector(`[data-k="${k}"]`)?.value ?? '';
+  const clean = (o) => Object.fromEntries(Object.entries(o).filter(([, x]) => x !== '' && x !== undefined));
+  let v;
+  try {
+    if (type === 'text' || type === 'tip' || type === 'warn') v = val('body');
+    else if (type === 'command') v = clean({ name: val('name').trim(), stands: val('stands').trim(), syntax: val('syntax'), what: val('what') });
+    else if (type === 'flags') v = [...card.querySelectorAll('.lz-flag-row:not(.lz-flag-head)')].map((r) => [0, 1, 2].map((n) => r.querySelector(`[data-f="${n}"]`).value));
+    else if (type === 'example') v = clean({ cmd: val('cmd'), out: val('out'), note: val('note') });
+    else if (type === 'quiz') v = clean({ q: val('q'), options: val('options').split('\n').map((x) => x.trim()).filter(Boolean), answer: Number(val('answer')), why: val('why') });
+    else if (type === 'try') {
+      let setup;
+      try {
+        setup = JSON.parse(val('setup') || '{}');
+      } catch (x) {
+        throw new Error(`Starting folder, files and check isn't valid JSON yet: ${x.message}`);
+      }
+      let solution;
+      try {
+        solution = val('solution').split('\n').filter((l) => l.trim()).map((l) => (l.trim().startsWith('{') ? JSON.parse(l) : l));
+      } catch (x) {
+        throw new Error(`A JSON solution step isn't valid yet: ${x.message}`);
+      }
+      v = clean({ text: val('text'), ...setup, hint: val('hint'), solution, on: val('on') });
+    } else return false;
+  } catch (x) {
+    err.textContent = x.message;
+    return false;
+  }
+  err.textContent = '';
+  updateLesson((l) => { l.blocks[bi] = { [type]: v }; });
+  return true;
+}
+
+// Apply an edit to the lesson being edited, save the draft, re-check soon.
+function updateLesson(fn) {
+  fn(currentLesson());
+  saveWork();
+  clearTimeout(lessonTimer);
+  lessonTimer = setTimeout(() => {
+    renderLessonValidation();
+    renderLessonPreview();
+  }, 700);
+}
+
+function renderLessonValidation() {
+  const box = app.querySelector('#lz-val');
+  if (!box || !lessonEditing || !currentLesson()) return;
+  const { track, index } = lessonEditing;
+  const mine = lessonProblems(track, index);
+  const others = checkTutorial(track).errors.length - mine.length;
+  const tries = (currentLesson().blocks ?? []).filter((b) => blockType(b) === 'try').length;
+  box.innerHTML = (mine.length
+    ? `<p class="bad-text"><strong>${mine.length} problem${mine.length === 1 ? '' : 's'}.</strong> Fix ${mine.length === 1 ? 'it' : 'them'} before publishing.</p><ul class="issues">${mine.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
+    : `<p class="good-text"><strong>Ready.</strong> ${tries ? `Every Try it can be finished, checked with its solution.` : 'Nothing in this lesson needs testing.'}</p>`)
+    + (others > 0 ? `<p class="warn-text small">${others} problem${others === 1 ? '' : 's'} in other lessons of this track. <a href="#/lessons/${esc(track)}">See the lessons</a></p>` : '');
+}
+
+function renderLessonPreview() {
+  const box = app.querySelector('#lz-pv');
+  if (!box || !lessonEditing || !currentLesson()) return;
+  const { track } = lessonEditing;
+  const t = work.manifest.tracks.find((x) => x.id === track);
+  const lesson = structuredClone(currentLesson());
+  const seq = ladder(trackDefs(track), work.tutorials[track]);
+  const n = seq.slice(0, seq.findIndex((x) => x.kind === 'lesson' && x.lesson.id === lesson.id) + 1).filter((x) => x.kind === 'lesson').length;
+  try {
+    box.innerHTML = lessonPageHTML(t, lesson, n || lessonEditing.index + 1);
+    box.querySelector('.crumbs')?.remove();
+    wireLesson(box, lesson, {
+      makeDef: (bi, v) => tryDef(track, lesson, bi, v),
+      onComplete: () => {
+        box.querySelector('#lesson-end').innerHTML = '<p class="good-text"><strong>Lesson finished.</strong> A student would go on to the next step from here.</p>';
+      },
+    });
+  } catch (e) {
+    box.innerHTML = `<p class="bad-text">Can't show this lesson yet: ${esc(e.message)}</p>`;
+  }
+}
+
 // ---------- import and export ----------
 
 let pendingImport = null;
@@ -820,7 +1306,7 @@ function renderImport() {
         <h2>Upload</h2>
         <label class="drop" id="drop">
           <input type="file" id="file" accept=".json,application/json" multiple>
-          <span><strong>Choose files</strong> or drop them here: a bundle, a track, or single scenario JSON files.</span>
+          <span><strong>Choose files</strong> or drop them here: a bundle, a track, single scenario JSON files, or a tutorial file.</span>
         </label>
         <div id="imp"></div>
       </section>
@@ -840,9 +1326,13 @@ function renderImport() {
   });
 }
 
+// only: scenario paths and "tutorials/<track>" entries to include.
 function allFiles(copy, only = null) {
   const out = [{ path: 'scenarios/tracks.json', text: JSON.stringify(copy.manifest, null, 2) + '\n' }];
   for (const [p, def] of Object.entries(copy.files)) if (!only || only.includes(p)) out.push({ path: `scenarios/${p}.json`, text: scenarioText(def) });
+  for (const [id, tut] of Object.entries(copy.tutorials ?? {})) {
+    if (hasLessons(tut) && (!only || only.includes(`tutorials/${id}`))) out.push({ path: `tutorials/${id}.json`, text: tutorialText(tut) });
+  }
   return out;
 }
 
@@ -920,12 +1410,16 @@ function renderPublish() {
     ...d.removed.map((p) => ({ p, kind: 'Removed' })),
   ];
   const results = items.filter((x) => x.kind !== 'Removed').map((x) => ({ ...x, r: check(x.p, 20) }));
-  const broken = results.filter((x) => x.r.errors.length);
+  const lessonItems = d.tutorials.map((id) => {
+    const kind = !hasLessons(published.tutorials[id]) ? 'New' : !hasLessons(work.tutorials[id]) ? 'Removed' : 'Changed';
+    return { id, kind, errors: kind === 'Removed' ? [] : checkTutorial(id).errors };
+  });
+  const broken = [...results.filter((x) => x.r.errors.length), ...lessonItems.filter((x) => x.errors.length)];
   const tk = token();
   app.replaceChildren(
     h(`
     <section class="admin-page">
-      <div class="page-head"><div><h1>Publish</h1><p class="muted">${localMode ? 'Publishing saves your drafts into the scenarios folder on this computer. Reload the practice site to see them.' : 'Publishing commits your drafts to GitHub. The site updates in about two minutes, after the tests pass.'}</p></div></div>
+      <div class="page-head"><div><h1>Publish</h1><p class="muted">${localMode ? 'Publishing saves your drafts into the scenarios and tutorials folders on this computer. Reload the practice site to see them.' : 'Publishing commits your drafts to GitHub. The site updates in about two minutes, after the tests pass.'}</p></div></div>
       <section class="card">
         <h2>Your changes</h2>
         ${
@@ -941,11 +1435,17 @@ function renderPublish() {
                     <td class="acts"><button type="button" data-undo="${esc(x.p)}">Undo</button></td></tr>`;
                 })
                 .join('')}
+              ${lessonItems
+                .map(({ id, kind, errors }) => `<tr><td><span class="badge ${kind === 'Removed' ? 'bad' : kind === 'New' ? 'new' : 'changed'}">${kind}</span></td>
+                    <td><a href="#/lessons/${esc(id)}">Lessons in ${esc(trackTitle(id))}</a><div class="muted small mono">tutorials/${esc(id)}.json</div></td>
+                    <td>${kind === 'Removed' ? '' : errors.length ? `<span class="bad-text">${errors.length} problem${errors.length === 1 ? '' : 's'}</span>` : '<span class="good-text">Ready</span>'}</td>
+                    <td class="acts"><button type="button" data-undo="__tutorial:${esc(id)}">Undo</button></td></tr>`)
+                .join('')}
               ${d.manifestChanged ? `<tr><td><span class="badge changed">Changed</span></td><td>Track order, titles, keywords, the term, or which tracks are open<div class="muted small mono">tracks.json</div></td><td></td><td class="acts"><button type="button" data-undo="__manifest">Undo</button></td></tr>` : ''}
               </tbody></table>`
             : '<p class="muted">No changes. Edit a scenario or import some, and they\'ll show up here.</p>'
         }
-        ${broken.length ? `<p class="bad-text">Fix the scenarios with problems before publishing. Open one to see what the validator found.</p>` : ''}
+        ${broken.length ? `<p class="bad-text">Fix the scenarios or lessons with problems before publishing. Open one to see what the validator found.</p>` : ''}
       </section>
 
       ${localMode ? localPublishCard(d, broken) : `<section class="card">
@@ -973,7 +1473,7 @@ function renderPublish() {
 
       <section class="card">
         <h2>No token?</h2>
-        <p class="muted">Download your changed files, unzip them, and drag the <code>scenarios</code> folder onto the repo's <a href="https://github.com/${esc(settings.repo)}/upload/${esc(settings.branch)}" target="_blank" rel="noopener">Upload files</a> page. Removed scenarios still need deleting on GitHub by hand.</p>
+        <p class="muted">Download your changed files, unzip them, and drag the <code>scenarios</code> and <code>tutorials</code> folders onto the repo's <a href="https://github.com/${esc(settings.repo)}/upload/${esc(settings.branch)}" target="_blank" rel="noopener">Upload files</a> page. Removed scenarios and lessons still need deleting on GitHub by hand.</p>
         <button type="button" id="p-zip" ${d.count ? '' : 'disabled'}>Download changes (.zip)</button>
       </section>
 
@@ -995,7 +1495,7 @@ function renderPublish() {
     renderPublish();
   });
   app.querySelector('#p-zip').addEventListener('click', () => {
-    const files = allFiles(work, [...d.added, ...d.changed]);
+    const files = allFiles(work, [...d.added, ...d.changed, ...d.tutorials.filter((id) => hasLessons(work.tutorials[id])).map((id) => `tutorials/${id}`)]);
     download('linux-practice-changes.zip', makeZip(files), 'application/zip');
   });
   for (const b of app.querySelectorAll('[data-undo]')) {
@@ -1006,7 +1506,11 @@ function renderPublish() {
 }
 
 function undoChange(path) {
-  if (path === '__manifest') {
+  if (path.startsWith('__tutorial:')) {
+    const id = path.slice(11);
+    if (published.tutorials[id]) work.tutorials[id] = structuredClone(published.tutorials[id]);
+    else delete work.tutorials[id];
+  } else if (path === '__manifest') {
     const lists = Object.fromEntries(work.manifest.tracks.map((t) => [t.id, t.scenarios]));
     work.manifest = structuredClone(published.manifest);
     // Keep scenario lists that include drafts; only titles, keywords and the term revert.
@@ -1056,15 +1560,17 @@ async function publish(note) {
 
     // Refuse to overwrite edits someone else published after this page loaded.
     const touched = [...d.changed, ...d.removed].map((p) => `scenarios/${p}.json`);
+    const tutPaths = d.tutorials.map((id) => `tutorials/${id}.json`);
     const conflicts = [];
-    for (const path of ['scenarios/tracks.json', ...touched]) {
+    for (const path of ['scenarios/tracks.json', ...touched, ...tutPaths]) {
+      const mine = path === 'scenarios/tracks.json' ? published.manifest : path.startsWith('tutorials/') ? published.tutorials[path.slice(10, -5)] : published.files[path.slice(10, -5)];
       try {
         const file = await gh(`${base}/contents/${path}?ref=${head}`);
         const remote = JSON.parse(decodeBase64(file.content));
-        const mine = path === 'scenarios/tracks.json' ? published.manifest : published.files[path.slice(10, -5)];
         if (JSON.stringify(remote) !== JSON.stringify(mine)) conflicts.push(path);
       } catch (e) {
         if (e.status !== 404) throw e;
+        if (mine && path.startsWith('tutorials/')) conflicts.push(path);
       }
     }
     if (conflicts.length) {
@@ -1079,10 +1585,15 @@ async function publish(note) {
       { path: 'scenarios/tracks.json', mode: '100644', type: 'blob', content: JSON.stringify(manifest, null, 2) + '\n' },
       ...[...d.added, ...d.changed].map((p) => ({ path: `scenarios/${p}.json`, mode: '100644', type: 'blob', content: scenarioText(work.files[p]) })),
       ...d.removed.map((p) => ({ path: `scenarios/${p}.json`, mode: '100644', type: 'blob', sha: null })),
+      ...d.tutorials.map((id) =>
+        hasLessons(work.tutorials[id])
+          ? { path: `tutorials/${id}.json`, mode: '100644', type: 'blob', content: tutorialText(work.tutorials[id]) }
+          : { path: `tutorials/${id}.json`, mode: '100644', type: 'blob', sha: null },
+      ),
     ];
     say(`Uploading ${tree.length} file${tree.length === 1 ? '' : 's'}…`);
     const newTree = await gh(`${base}/git/trees`, { method: 'POST', body: { base_tree: headCommit.tree.sha, tree } });
-    const summary = [d.added.length && `${d.added.length} new`, d.changed.length && `${d.changed.length} changed`, d.removed.length && `${d.removed.length} removed`].filter(Boolean).join(', ');
+    const summary = [d.added.length && `${d.added.length} new`, d.changed.length && `${d.changed.length} changed`, d.removed.length && `${d.removed.length} removed`, d.tutorials.length && `lessons in ${d.tutorials.length} track${d.tutorials.length === 1 ? '' : 's'}`].filter(Boolean).join(', ');
     const message = `${note || 'Update scenarios'}\n\n${summary || 'Track settings'} (scenario version ${manifest.version}). Published from the instructor dashboard.`;
     const commit = await gh(`${base}/git/commits`, { method: 'POST', body: { message, tree: newTree.sha, parents: [head] } });
     await gh(`${base}/git/refs/heads/${encodeURIComponent(settings.branch)}`, { method: 'PATCH', body: { sha: commit.sha } });
@@ -1102,7 +1613,7 @@ async function publish(note) {
 function localPublishCard(d, broken) {
   return `<section class="card">
         <h2>Save to this computer</h2>
-        <p class="muted">This dashboard is running from the local server, so nothing goes to GitHub. Saved files land in <code>scenarios/</code> in this copy of the repo.</p>
+        <p class="muted">This dashboard is running from the local server, so nothing goes to GitHub. Saved files land in <code>scenarios/</code> and <code>tutorials/</code> in this copy of the repo.</p>
         <div class="row"><button type="button" id="p-go" class="primary" ${!d.count || broken.length ? 'disabled' : ''}>Save ${d.count} change${d.count === 1 ? '' : 's'}</button></div>
         <ol class="log-lines" id="p-log"></ol>
       </section>`;
@@ -1121,6 +1632,7 @@ async function saveLocal() {
     const conflicts = [
       ...(JSON.stringify(disk.manifest) !== JSON.stringify(published.manifest) ? ['tracks.json'] : []),
       ...[...d.changed, ...d.removed].filter((p) => p in disk.files && JSON.stringify(disk.files[p]) !== JSON.stringify(published.files[p])).map((p) => `${p}.json`),
+      ...d.tutorials.filter((id) => JSON.stringify(disk.tutorials[id]) !== JSON.stringify(published.tutorials[id])).map((id) => `tutorials/${id}.json`),
     ];
     if (conflicts.length) {
       say(`${conflicts.map(esc).join(', ')} changed on disk after you opened this page. Reload the dashboard to get the new version (your drafts stay), check your edits, and save again.`, 'bad-text');
@@ -1131,10 +1643,15 @@ async function saveLocal() {
     manifest.version = (Number(published.manifest.version) || 0) + 1;
     const write = { 'scenarios/tracks.json': JSON.stringify(manifest, null, 2) + '\n' };
     for (const p of [...d.added, ...d.changed]) write[`scenarios/${p}.json`] = scenarioText(work.files[p]);
+    const remove = d.removed.map((p) => `scenarios/${p}.json`);
+    for (const id of d.tutorials) {
+      if (hasLessons(work.tutorials[id])) write[`tutorials/${id}.json`] = tutorialText(work.tutorials[id]);
+      else remove.push(`tutorials/${id}.json`);
+    }
     const res = await fetch('__local/save', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ write, remove: d.removed.map((p) => `scenarios/${p}.json`) }),
+      body: JSON.stringify({ write, remove }),
     });
     const out = await res.json();
     if (!res.ok) throw new Error(out.error ?? res.status);
@@ -1189,6 +1706,7 @@ async function renderHistory() {
         try {
           const old = await fetchCopy(`https://raw.githubusercontent.com/${o}/${r}/${b.dataset.sha}/scenarios/`, {});
           old.manifest.version = published.manifest.version;
+          old.tutorials = work.tutorials; // this list is scenario versions; lessons stay as they are
           work = old;
           saveWork();
           flash('Loaded. Review it, then publish to roll the site back.');
@@ -1348,12 +1866,15 @@ function route() {
   const [kind, ...rest] = hash.split('/');
   renderNav();
   if (kind === 'edit') renderEditor(decodeURIComponent(rest.join('/')));
+  else if (kind === 'lessons' && rest[1]) renderLessonEditor(rest[0], Number(rest[1]) - 1);
+  else if (kind === 'lessons') renderLessonList(rest[0]);
   else if (kind === 'import') renderImport();
   else if (kind === 'publish') renderPublish();
   else if (kind === 'history') renderHistory();
   else if (kind === 'progress') renderProgress();
   else renderList();
   if (kind !== 'edit') editing = null;
+  if (kind !== 'lessons' || !rest[1]) lessonEditing = null;
   window.scrollTo(0, 0);
 }
 
