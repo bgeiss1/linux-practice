@@ -7,6 +7,7 @@ import { guideHTML } from './guide.js';
 import { makePassphrase } from '../engine/passphrase.js';
 import { ladder, tryDef, trackOpen } from '../engine/tutorial.js';
 import { lessonPageHTML, wireLesson } from './lesson.js';
+import { emptyProgress, progressFile, readProgressFile, mergeProgress, progressCounts } from './progress.js';
 
 const app = document.getElementById('app');
 const STORE_KEY = 'linux-practice:v1';
@@ -16,11 +17,11 @@ const STORE_KEY = 'linux-practice:v1';
 function loadProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (saved && typeof saved === 'object') return { done: {}, phrases: {}, lessons: {}, ...saved };
+    if (saved && typeof saved === 'object') return { ...emptyProgress(), ...saved };
   } catch {
     // Private windows and blocked storage land here; start fresh.
   }
-  return { done: {}, phrases: {}, lessons: {} };
+  return emptyProgress();
 }
 
 const progress = loadProgress();
@@ -31,6 +32,29 @@ function saveProgress() {
   } catch {
     // Nothing to do: progress just won't survive a reload.
   }
+  askToKeep();
+}
+
+// Asks the browser not to clear this site's storage when space runs low or
+// the site goes unused. Chrome and Firefox honor it; Safari may still clear
+// it after a week away, which is what the progress file is for.
+let askedToKeep = false;
+function askToKeep() {
+  if (askedToKeep) return;
+  askedToKeep = true;
+  navigator.storage?.persist?.().catch(() => {});
+}
+
+function downloadProgress() {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([progressFile(progress)], { type: 'application/json' }));
+  a.download = `linux-practice-progress-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    URL.revokeObjectURL(a.href);
+    a.remove();
+  }, 1000);
 }
 
 // ---------- data ----------
@@ -163,7 +187,16 @@ function renderHome() {
             }</div>`;
           })
           .join('')}</div>
-        <p class="muted">${done.length ? 'Paste each passphrase into its track\'s question in the Linux Practice quiz in Canvas.' : 'Finish every scenario in a track to earn its passphrase.'} Your progress and passphrases are saved in this browser only, so keep using the same browser.</p>
+        <p class="muted">${done.length ? 'Paste each passphrase into its track\'s question in the Linux Practice quiz in Canvas.' : 'Finish every scenario in a track to earn its passphrase.'}</p>
+        <div class="backup">
+          <p class="muted small">Your progress and passphrases are saved in this browser, and stay until you clear its history. Other browsers can't see them, and Safari clears them if you don't visit for about a week. Save a progress file now and then, and restore it here if your progress goes missing or you switch computers.</p>
+          <div class="row">
+            <button type="button" id="pg-save">Save my progress</button>
+            <button type="button" id="pg-restore">Restore from a file</button>
+            <input type="file" id="pg-file" accept=".json,application/json" hidden>
+            <span class="small" id="pg-msg" role="status"></span>
+          </div>
+        </div>
       </section>
 
       ${GUIDE_LINK}
@@ -184,6 +217,27 @@ function renderHome() {
       </section>` : ''}
     </section>`),
   );
+
+  app.querySelector('#pg-save').addEventListener('click', downloadProgress);
+  const file = app.querySelector('#pg-file');
+  app.querySelector('#pg-restore').addEventListener('click', () => file.click());
+  file.addEventListener('change', async () => {
+    const f = file.files[0];
+    if (!f) return;
+    try {
+      Object.assign(progress, mergeProgress(progress, readProgressFile(await f.text())));
+      saveProgress();
+      const c = progressCounts(progress);
+      renderHome();
+      const msg = app.querySelector('#pg-msg');
+      msg.className = 'small good-text';
+      msg.textContent = `Restored. You've finished ${c.scenarios} practice scenario${c.scenarios === 1 ? '' : 's'} and ${c.lessons} lesson${c.lessons === 1 ? '' : 's'}.`;
+    } catch (e) {
+      const msg = app.querySelector('#pg-msg');
+      msg.className = 'small warn-text';
+      msg.textContent = e.message;
+    }
+  });
 
   for (const b of app.querySelectorAll('[data-copy]')) {
     b.addEventListener('click', async () => {
