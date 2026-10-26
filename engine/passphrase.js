@@ -1,8 +1,10 @@
-// Each finished track earns one word. A student's words depend on their
-// CSU ID, the track, and the course salt, so classmates get different words.
-// The instructor dashboard uses the same functions to check submissions.
+// Each finished track gives the student a passphrase: the track's keyword
+// (the same for every student, set in the dashboard) plus three random words,
+// in random order, e.g. "comet-otter-maple-ribbon". The keyword shows the track
+// was finished; the random words differ per student, so two students handing in
+// the same words means one copied the other. No student ID is involved.
 //
-// This is a speed bump, not security: the code is public, as agreed.
+// This is a speed bump, not security: the code and keywords are public, as agreed.
 
 const WORD_LIST = `
 alanine amide amino anchor angstrom apex arginine aspartate assay atom
@@ -32,50 +34,95 @@ vector velvet vertex vessel violet vortex wave willow zenith zinc
   .split(/\s+/);
 
 export const WORDS = [...new Set(WORD_LIST)];
+const WORD_SET = new Set(WORDS);
 
-function fnv1a(text) {
-  let h = 0x811c9dc5;
-  for (const ch of new TextEncoder().encode(text)) {
-    h ^= ch;
-    h = Math.imul(h, 0x01000193) >>> 0;
+export const FILLERS = 3;
+
+// Starting keywords, and spares the dashboard suggests when rotating them.
+export const SUGGESTED_KEYWORDS = {
+  session: 'heron', navigate: 'otter', find: 'badger', read: 'owl', manage: 'beaver', bash: 'lynx',
+  slurm: 'walrus', transfer: 'pelican', colabfold: 'octopus', chai: 'panda', mpnn: 'gecko', gromacs: 'narwhal',
+};
+export const SPARE_KEYWORDS = `
+alpaca antelope armadillo bison bobcat buffalo camel caribou cheetah chipmunk cougar coyote crane
+dingo dolphin donkey eagle egret ferret flamingo fox gazelle gerbil gibbon giraffe gopher gorilla
+hamster hedgehog hippo hyena ibis iguana impala jackal jaguar kangaroo koala lemur leopard llama
+lobster magpie manatee marmot meerkat mink mongoose moose mule newt ocelot opossum ostrich panther
+parrot penguin platypus porcupine puffin puma quail rabbit raccoon raven reindeer rhino salmon
+seal sloth squirrel stork swan tapir tiger toad toucan turkey turtle vulture weasel whale wolf
+wombat yak zebra
+`.trim().split(/\s+/);
+
+export const words = (text) => String(text ?? '').toLowerCase().split(/[^a-z]+/).filter(Boolean);
+
+// What's wrong with a keyword, or '' if it's fine. others: the other tracks' keywords.
+export function keywordProblem(keyword, others = []) {
+  if (!/^[a-z]{3,20}$/.test(keyword)) return 'Use one word, 3 to 20 lowercase letters.';
+  if (WORD_SET.has(keyword)) return `"${keyword}" is also one of the random words, so it can't mark a track.`;
+  if (others.includes(keyword)) return `"${keyword}" is already another track's keyword.`;
+  return '';
+}
+
+// A new passphrase for a finished track. random() returns a float in [0, 1).
+export function makePassphrase(keyword, random = cryptoRandom) {
+  const picked = new Set();
+  while (picked.size < FILLERS) picked.add(WORDS[Math.floor(random() * WORDS.length)]);
+  const all = [keyword, ...picked];
+  for (let i = all.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [all[i], all[j]] = [all[j], all[i]];
   }
-  return h;
+  return all.join('-');
 }
 
-export function normalizeId(id) {
-  return String(id ?? '').trim().toLowerCase();
+function cryptoRandom() {
+  const a = new Uint32Array(1);
+  globalThis.crypto.getRandomValues(a);
+  return a[0] / 2 ** 32;
 }
 
-// Words for every track, in track order, with no word used twice.
-export function wordsFor(studentId, trackIds, salt) {
-  const id = normalizeId(studentId);
-  const used = new Set();
-  const out = {};
-  for (const track of trackIds) {
-    let n = 0;
-    let word;
-    do {
-      word = WORDS[fnv1a(`${salt}|${id}|${track}|${n++}`) % WORDS.length];
-    } while (used.has(word));
-    used.add(word);
-    out[track] = word;
+// Splits what a student pasted into passphrases and says which track each one
+// proves. keywords: { trackId: keyword }. Students may paste several
+// passphrases into one answer, separated by spaces, commas or new lines; a
+// passphrase whose words were typed with spaces is split at its keywords.
+// Returns [{ track, keyword, fillers, odd }], where odd lists words that aren't
+// from the site's word list (typos or made-up words).
+export function readSubmission(text, keywords) {
+  const byWord = Object.fromEntries(Object.entries(keywords).map(([t, k]) => [k.toLowerCase(), t]));
+  const chunks = String(text ?? '').toLowerCase().split(/[^a-z-]+/).filter((c) => /[a-z]/.test(c));
+  // Hyphenated chunks are whole passphrases; loose words are regrouped below.
+  const groups = [];
+  let loose = [];
+  for (const c of chunks) {
+    if (c.includes('-')) groups.push(words(c));
+    else loose.push(c);
+  }
+  // Loose words: start a new group whenever a group already holds a keyword
+  // and FILLERS other words, or a second keyword shows up.
+  let cur = [];
+  for (const w of loose) {
+    const kws = cur.filter((x) => byWord[x]).length;
+    if ((byWord[w] && kws) || (kws && cur.length > FILLERS)) {
+      groups.push(cur);
+      cur = [];
+    }
+    cur.push(w);
+  }
+  if (cur.length) groups.push(cur);
+  const out = [];
+  for (const g of groups) {
+    const kws = g.filter((w) => byWord[w]);
+    if (!kws.length) {
+      out.push({ track: null, keyword: null, fillers: g, odd: g.filter((w) => !WORD_SET.has(w)) });
+      continue;
+    }
+    for (const k of new Set(kws)) {
+      const fillers = kws.length === 1 ? g.filter((w) => w !== k) : [];
+      out.push({ track: byWord[k], keyword: k, fillers, odd: fillers.filter((w) => !WORD_SET.has(w)) });
+    }
   }
   return out;
 }
 
-// The passphrase a student submits: the words of the tracks they finished,
-// in track order, joined with hyphens.
-export function passphrase(studentId, trackIds, salt, finishedTracks) {
-  const words = wordsFor(studentId, trackIds, salt);
-  return trackIds.filter((t) => finishedTracks.includes(t)).map((t) => words[t]).join('-');
-}
-
-// Which tracks a submitted passphrase proves. Order and case don't matter,
-// so a student who types the words with spaces still gets credit.
-export function verify(studentId, trackIds, salt, submitted) {
-  const words = wordsFor(studentId, trackIds, salt);
-  const given = new Set(String(submitted ?? '').toLowerCase().split(/[^a-z]+/).filter(Boolean));
-  const tracks = trackIds.filter((t) => given.has(words[t]));
-  const unknown = [...given].filter((w) => !Object.values(words).includes(w));
-  return { tracks, unknown };
-}
+// The random words of a passphrase as one comparable string.
+export const fillerKey = (fillers) => [...fillers].sort().join('-');

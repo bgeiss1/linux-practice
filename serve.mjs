@@ -5,7 +5,9 @@
 //
 // Serves the repo folder as-is, to this computer only. The dashboard sees it is
 // running here and saves published drafts straight into scenarios/ instead of
-// committing them to GitHub. No packages needed, just Node 18 or newer.
+// committing them to GitHub, and keeps the passphrase history file in
+// records/ (left out of git: it has student names). No packages needed, just
+// Node 18 or newer.
 
 import http from 'node:http';
 import { promises as fs } from 'node:fs';
@@ -25,8 +27,9 @@ const TYPES = {
   '.woff2': 'font/woff2',
 };
 
-// Only scenario files can be written: scenarios/tracks.json and scenarios/<track>/<name>.json.
-const SCENARIO_PATH = /^scenarios\/(tracks|[a-z0-9_-]+\/[a-z0-9_-]+)\.json$/i;
+// Only these can be written: scenarios/tracks.json, scenarios/<track>/<name>.json,
+// and the passphrase history file.
+const WRITABLE = /^(scenarios\/(tracks|[a-z0-9_-]+\/[a-z0-9_-]+)|records\/passphrases)\.json$/i;
 
 function send(res, status, body, type = 'application/json; charset=utf-8') {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
@@ -48,8 +51,8 @@ async function readBody(req, limit = 20 * 1024 * 1024) {
 // checked before anything is touched, so a bad request changes nothing.
 export async function saveScenarios(root, { write = {}, remove = [] }) {
   const all = [...Object.keys(write), ...remove];
-  const bad = all.filter((p) => !SCENARIO_PATH.test(p));
-  if (bad.length) throw new Error(`not a scenario file: ${bad.join(', ')}`);
+  const bad = all.filter((p) => !WRITABLE.test(p));
+  if (bad.length) throw new Error(`not a file the dashboard may write: ${bad.join(', ')}`);
   for (const [p, text] of Object.entries(write)) {
     if (p.endsWith('.json')) JSON.parse(text); // refuse to save broken JSON
     const abs = path.join(root, p);

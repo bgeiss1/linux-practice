@@ -1,20 +1,23 @@
 // Instructor dashboard: edit and test scenarios, import/export, publish to
-// GitHub, browse history, and check passphrases from a Canvas export.
+// GitHub (or to this computer), browse history, set the track keywords, and
+// check passphrases from a Canvas export.
 
 import { Session, TIERS } from '../engine/scenario.js';
 import { validate } from '../engine/validate.js';
-import { wordsFor } from '../engine/passphrase.js';
+import { keywordProblem, SUGGESTED_KEYWORDS, SPARE_KEYWORDS } from '../engine/passphrase.js';
 import { Terminal, esc, fmt, h, lessonHTML } from './terminal.js';
 import {
   cloneCopy, diffCopies, addScenario, removeScenario, moveScenario, blankScenario, renumber,
   makeBundle, mergeImport, makeZip, parseCSV, detectColumns, gradeRows, gradesCSV,
   repoFromLocation, decodeBase64, scenarioText,
+  emptyHistory, addToHistory, keywordTerms, HISTORY_FORMAT, HISTORY_PATH,
 } from './admin-core.js';
 
 const app = document.getElementById('app');
 const nav = document.getElementById('nav');
 const DRAFT_KEY = 'linux-practice:admin:v1';
 const TOKEN_KEY = 'linux-practice:admin:token';
+const HISTORY_KEY = 'linux-practice:admin:history';
 const DEFAULT_REPO = 'bgeiss1/linux-practice';
 
 // ---------- storage ----------
@@ -42,6 +45,7 @@ let published; // what the live site serves: { manifest, files }
 let work; // drafts: { manifest, files }
 let settings; // { repo, branch, baseVersion }
 let localMode = false; // served by serve.mjs: publishing saves to this computer
+let history = emptyHistory(); // passphrases handed in before (records/passphrases.json)
 
 async function fetchCopy(base = 'scenarios/', opts = { cache: 'no-cache' }) {
   const manifest = await (await fetch(`${base}tracks.json`, opts)).json();
@@ -63,6 +67,7 @@ async function loadData() {
     localMode = false;
   }
   published = await fetchCopy();
+  history = await loadHistory();
   const saved = load(DRAFT_KEY);
   work = saved?.work ? saved.work : cloneCopy(published);
   settings = {
@@ -70,6 +75,35 @@ async function loadData() {
     branch: saved?.branch ?? 'main',
     baseVersion: saved?.baseVersion ?? published.manifest.version,
   };
+}
+
+// The passphrase history file: read from disk when running locally, otherwise
+// from this browser (loaded from a downloaded copy).
+async function loadHistory() {
+  if (localMode) {
+    try {
+      const res = await fetch(HISTORY_PATH, { cache: 'no-cache' });
+      if (res.ok) return await res.json();
+    } catch {
+      // No file yet.
+    }
+    return emptyHistory();
+  }
+  return load(HISTORY_KEY) ?? emptyHistory();
+}
+
+async function saveHistory(next) {
+  if (localMode) {
+    const res = await fetch('__local/save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ write: { [HISTORY_PATH]: JSON.stringify(next, null, 2) + '\n' } }),
+    });
+    if (!res.ok) throw new Error((await res.json()).error ?? res.status);
+  } else {
+    store(HISTORY_KEY, next);
+  }
+  history = next;
 }
 
 function saveWork() {
@@ -188,19 +222,13 @@ function renderList() {
       <div class="page-head">
         <div>
           <h1>Scenarios</h1>
-          <p class="muted">Each track needs its scenarios finished in order to earn the student a passphrase word.</p>
+          <p class="muted">A student who finishes every scenario in a track earns that track's passphrase.</p>
         </div>
         <input type="search" id="q" placeholder="Search titles and stories" value="${esc(q)}" aria-label="Search scenarios">
       </div>
       ${n ? `<div class="notice">You have ${n} unpublished change${n === 1 ? '' : 's'}. Students won't see ${n === 1 ? 'it' : 'them'} until you publish. <a class="btn primary" href="#/publish">Review and publish</a></div>` : ''}
       ${settings.baseVersion !== published.manifest.version && n ? `<div class="notice warn">The live site was updated (version ${esc(published.manifest.version)}) after you started these drafts. Publishing checks for conflicts first.</div>` : ''}
-      <section class="card course">
-        <div>
-          <h2>Passphrase salt</h2>
-          <p class="muted">Every student's words come from their CSU ID plus this text. Change it each semester so last term's passphrases stop working.</p>
-        </div>
-        <div class="row"><input type="text" id="salt" value="${esc(work.manifest.passphraseSalt)}" aria-label="Passphrase salt"><button type="button" id="salt-save">Save</button></div>
-      </section>
+      ${keywordCard()}
       ${work.manifest.tracks.map((t) => trackBlock(t, q)).join('')}
     </section>`),
   );
@@ -212,14 +240,72 @@ function renderList() {
     q2.focus();
     q2.setSelectionRange(pos, pos);
   });
-  app.querySelector('#salt-save').addEventListener('click', () => {
-    const v = app.querySelector('#salt').value.trim();
-    if (!v) return flash('The salt can\'t be empty.', 'bad');
-    work.manifest.passphraseSalt = v;
-    saveWork();
-    flash('Salt saved as a draft. Publish to use it.');
-  });
+  wireKeywordCard();
   checkAllSoon();
+}
+
+// ---------- term and keywords ----------
+
+function keywordCard() {
+  return `<section class="card" aria-labelledby="kw-title">
+    <div>
+      <h2 id="kw-title">Term and keywords</h2>
+      <p class="muted">Every student's passphrase for a track contains that track's keyword, mixed with three random words of their own. Look for the keyword in Canvas to see who finished. Use new keywords each term so old passphrases stand out.</p>
+    </div>
+    <div class="field"><label for="kw-term" class="label">Term</label><input type="text" id="kw-term" value="${esc(work.manifest.term ?? '')}" placeholder="e.g. Fall 2026"><p class="help">Labels this term's passphrases in the history file.</p></div>
+    <div class="table-scroll"><table class="scen-table kw-table">
+      <thead><tr><th scope="col">Track</th><th scope="col">Keyword</th><th scope="col"><span class="sr">Notes</span></th></tr></thead>
+      <tbody>${work.manifest.tracks
+        .map((t) => `<tr><td>${esc(t.title)}</td><td><input type="text" class="mono" data-kw="${esc(t.id)}" value="${esc(t.keyword ?? '')}" aria-label="Keyword for ${esc(t.title)}" autocomplete="off" spellcheck="false"></td><td class="small" id="kw-note-${esc(t.id)}"></td></tr>`)
+        .join('')}</tbody>
+    </table></div>
+    <div class="row"><button type="button" id="kw-save" class="primary">Save</button><button type="button" id="kw-suggest">Suggest new keywords</button><span class="muted small">Saved as a draft. Publish to use them.</span></div>
+  </section>`;
+}
+
+// Fills in each keyword's note: a problem that blocks saving, or a warning.
+function checkKeywords() {
+  const inputs = [...app.querySelectorAll('[data-kw]')];
+  const term = app.querySelector('#kw-term').value.trim();
+  let ok = true;
+  for (const el of inputs) {
+    const kw = el.value.trim().toLowerCase();
+    const problem = keywordProblem(kw, inputs.filter((x) => x !== el).map((x) => x.value.trim().toLowerCase()));
+    const used = problem ? [] : keywordTerms(history, kw, term);
+    const note = app.querySelector(`#kw-note-${CSS.escape(el.dataset.kw)}`);
+    note.className = `small ${problem ? 'bad-text' : used.length ? 'warn-text' : ''}`;
+    note.textContent = problem || (used.length ? `Used before, in ${used.join(', ')}` : '');
+    if (problem) ok = false;
+  }
+  return ok;
+}
+
+function wireKeywordCard() {
+  for (const el of app.querySelectorAll('[data-kw]')) el.addEventListener('input', checkKeywords);
+  checkKeywords();
+  app.querySelector('#kw-suggest').addEventListener('click', () => {
+    // Fresh keywords: not used this term or any earlier one.
+    const used = new Set([...work.manifest.tracks.map((t) => t.keyword), ...Object.values(history.terms ?? {}).flatMap((t) => Object.values(t.keywords ?? {}))]);
+    const pool = [...new Set([...Object.values(SUGGESTED_KEYWORDS), ...SPARE_KEYWORDS])].filter((w) => !used.has(w));
+    for (const el of app.querySelectorAll('[data-kw]')) {
+      if (!pool.length) break;
+      el.value = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    }
+    checkKeywords();
+    flash('New keywords filled in. Change any you like, then Save.');
+  });
+  app.querySelector('#kw-save').addEventListener('click', () => {
+    const term = app.querySelector('#kw-term').value.trim();
+    if (!term) return flash('Give the term a name, like Fall 2026.', 'bad');
+    if (!checkKeywords()) return flash('Fix the keywords marked in red first.', 'bad');
+    work.manifest.term = term;
+    for (const el of app.querySelectorAll('[data-kw]')) {
+      work.manifest.tracks.find((t) => t.id === el.dataset.kw).keyword = el.value.trim().toLowerCase();
+    }
+    delete work.manifest.passphraseSalt;
+    saveWork();
+    flash('Keywords saved as a draft. Publish to use them.');
+  });
 }
 
 function trackBlock(t, q) {
@@ -229,7 +315,7 @@ function trackBlock(t, q) {
   if (q && !rows.length) return '';
   return `<section class="card track-admin" aria-labelledby="t-${esc(t.id)}">
     <div class="track-head">
-      <div><h2 id="t-${esc(t.id)}">${esc(t.title)}</h2><p class="muted">${esc(t.blurb)} · ${t.scenarios.length} scenarios</p></div>
+      <div><h2 id="t-${esc(t.id)}">${esc(t.title)}</h2><p class="muted">${esc(t.blurb)} · ${t.scenarios.length} scenarios · keyword <span class="mono">${esc(t.keyword ?? '(none)')}</span></p></div>
       <div class="row">
         <button type="button" data-act="new" data-track="${esc(t.id)}">New scenario</button>
         <button type="button" data-act="dl-track" data-track="${esc(t.id)}">Download track</button>
@@ -801,7 +887,7 @@ function renderPublish() {
                     <td class="acts"><button type="button" data-undo="${esc(x.p)}">Undo</button></td></tr>`;
                 })
                 .join('')}
-              ${d.manifestChanged ? `<tr><td><span class="badge changed">Changed</span></td><td>Track order, titles, or the passphrase salt<div class="muted small mono">tracks.json</div></td><td></td><td class="acts"><button type="button" data-undo="__manifest">Undo</button></td></tr>` : ''}
+              ${d.manifestChanged ? `<tr><td><span class="badge changed">Changed</span></td><td>Track order, titles, keywords, or the term<div class="muted small mono">tracks.json</div></td><td></td><td class="acts"><button type="button" data-undo="__manifest">Undo</button></td></tr>` : ''}
               </tbody></table>`
             : '<p class="muted">No changes. Edit a scenario or import some, and they\'ll show up here.</p>'
         }
@@ -869,7 +955,7 @@ function undoChange(path) {
   if (path === '__manifest') {
     const lists = Object.fromEntries(work.manifest.tracks.map((t) => [t.id, t.scenarios]));
     work.manifest = structuredClone(published.manifest);
-    // Keep scenario lists that include drafts; only titles and salt revert.
+    // Keep scenario lists that include drafts; only titles, keywords and the term revert.
     for (const t of work.manifest.tracks) t.scenarios = lists[t.id] ?? t.scenarios;
   } else if (path in published.files) {
     work.files[path] = structuredClone(published.files[path]);
@@ -1067,48 +1153,55 @@ async function renderHistory() {
 
 // ---------- class progress ----------
 
-let grading = null; // { header, rows, cols, salt }
+let grading = null; // { header, rows, cols }
+let graded = null; // the last results, for saving to the history file
 
 function renderProgress() {
-  const ids = trackIds();
+  const tracks = work.manifest.tracks;
+  const ids = tracks.map((t) => t.id);
+  const term = work.manifest.term ?? '';
   app.replaceChildren(
     h(`
     <section class="admin-page">
-      <div class="page-head"><div><h1>Class progress</h1><p class="muted">Check the passphrases students submitted in Canvas. Files you load here never leave this browser.</p></div></div>
+      <div class="page-head"><div><h1>Class progress</h1><p class="muted">Check the passphrases students handed in on Canvas. Files you load here stay on this computer.</p></div></div>
       <section class="card">
         <h2>Load submissions</h2>
-        <details class="howto"><summary>Getting a CSV from Canvas</summary>
+        <details class="howto"><summary>Setting up Canvas and getting the CSV</summary>
           <ol>
-            <li>Collect passphrases with a Canvas quiz that has one essay or fill-in question, "Paste your Linux Practice passphrase". Students can retake it as they earn words.</li>
+            <li>Make one Canvas quiz with a text question per track, like "Paste your Navigate passphrase". Students can retake it as they finish more tracks.</li>
             <li>After the deadline: Quiz → <strong>Quiz Statistics</strong> → <strong>Student Analysis</strong>, and download the CSV. (In New Quizzes: Build → Reports → Student Analysis.)</li>
-            <li>Load that file here. It has each student's SIS ID, which should be the CSU ID they typed on the site.</li>
+            <li>Load that file here. Every column with passphrases in it is read, so it doesn't matter which question a student pasted into.</li>
           </ol>
-          <p class="muted small">Any CSV with an ID column and a passphrase column works. You can also paste lines like <code>830123456, helix-ribbon-zinc</code>.</p>
+          <p class="muted small">You can also paste lines like <code>Ada Lovelace, comet-otter-maple-ribbon</code>.</p>
         </details>
         <div class="row"><input type="file" id="g-file" accept=".csv,text/csv"><span class="muted">or</span></div>
-        <textarea id="g-paste" rows="4" placeholder="ID, passphrase (one student per line)" aria-label="Paste IDs and passphrases"></textarea>
-        <div class="grid2">
-          <div class="field"><label for="g-salt" class="label">Salt</label><input type="text" id="g-salt" class="mono" value="${esc(work.manifest.passphraseSalt)}"><p class="help">The current one, unless you're checking an older semester.</p></div>
-          <div class="field" id="g-cols"></div>
-        </div>
+        <textarea id="g-paste" rows="4" placeholder="Name, passphrase (one student per line)" aria-label="Paste names and passphrases"></textarea>
+        <div class="field" id="g-cols"></div>
         <button type="button" id="g-run" class="primary">Check passphrases</button>
       </section>
       <section class="card" id="g-out" hidden></section>
       <section class="card">
-        <h2>Look up one student</h2>
-        <p class="muted">Shows the word each track gives this ID, for answering "what was my word?"</p>
-        <div class="row"><input type="text" id="l-id" placeholder="CSU ID" aria-label="CSU ID"><button type="button" id="l-go">Show words</button></div>
-        <div id="l-out"></div>
+        <h2>Passphrase history</h2>
+        <p class="muted">${
+          localMode
+            ? `Kept in <code>${HISTORY_PATH}</code> in your copy of the site. It holds student names, so it is never published to GitHub.`
+            : 'Kept in this browser. Download it to keep a copy, and load it again on another computer. It holds student names, so keep it private.'
+        }</p>
+        <p>${historySummary()}</p>
+        <div class="row">
+          <button type="button" id="hist-dl" ${history.entries.length ? '' : 'disabled'}>Download history file</button>
+          ${localMode ? '' : '<label class="btn">Load history file<input type="file" id="hist-load" accept=".json,application/json" hidden></label>'}
+        </div>
       </section>
     </section>`),
   );
   const loadRows = (text) => {
     const all = parseCSV(text);
-    const looksHeaderless = all[0] && all[0].length >= 2 && /^\s*[\w.-]+\s*$/.test(all[0][0]) && !/[a-z]{3,}.*id|name|sis/i.test(all[0].join(' ')) && /[a-z]+[-\s][a-z]+/i.test(all[0][1] ?? '');
-    const header = looksHeaderless ? all[0].map((_, i) => (i === 0 ? 'ID' : i === 1 ? 'Passphrase' : `Column ${i + 1}`)) : all[0] ?? [];
+    const looksHeaderless = all[0] && all[0].length >= 2 && !/name|id|sis|student|question|\d+:/i.test(all[0].join(' '));
+    const header = looksHeaderless ? all[0].map((_, i) => (i === 0 ? 'Name' : `Passphrase ${i}`)) : all[0] ?? [];
     const rows = looksHeaderless ? all : all.slice(1);
-    const cols = detectColumns(header, rows);
-    if (looksHeaderless) Object.assign(cols, { id: 0, phrase: 1, name: -1 });
+    const cols = detectColumns(header, rows, tracks.map((t) => t.keyword));
+    if (looksHeaderless) Object.assign(cols, { id: -1, name: 0, phrases: header.map((_, i) => i).slice(1) });
     grading = { header, rows, cols };
     renderColumnPickers();
   };
@@ -1119,49 +1212,79 @@ function renderProgress() {
   app.querySelector('#g-paste').addEventListener('input', (e) => loadRows(e.target.value));
   app.querySelector('#g-run').addEventListener('click', () => {
     if (!grading?.rows.length) return flash('Load a CSV or paste some lines first.', 'bad');
-    const salt = app.querySelector('#g-salt').value.trim();
-    for (const k of ['id', 'name', 'phrase']) {
-      const sel = app.querySelector(`#c-${k}`);
-      if (sel) grading.cols[k] = Number(sel.value);
+    for (const k of ['id', 'name']) grading.cols[k] = Number(app.querySelector(`#c-${k}`).value);
+    grading.cols.phrases = [...app.querySelectorAll('[data-pcol]:checked')].map((el) => Number(el.dataset.pcol));
+    if (!grading.cols.phrases.length) return flash('Tick at least one passphrase column.', 'bad');
+    graded = gradeRows(grading.rows, grading.cols, tracks, { term, history: history.entries });
+    showGrades(graded, ids);
+  });
+  app.querySelector('#hist-dl').addEventListener('click', () => download('passphrases.json', JSON.stringify(history, null, 2) + '\n'));
+  app.querySelector('#hist-load')?.addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      if (data.format !== HISTORY_FORMAT) throw new Error('not a passphrase history file');
+      await saveHistory(data);
+      flash('History file loaded.');
+      renderProgress();
+    } catch (err) {
+      flash(`Couldn't load it: ${esc(err.message)}`, 'bad');
     }
-    if (grading.cols.id < 0 || grading.cols.phrase < 0) return flash('Pick the ID and passphrase columns.', 'bad');
-    showGrades(gradeRows(grading.rows, grading.cols, ids, salt), ids);
   });
-  app.querySelector('#l-go').addEventListener('click', () => {
-    const id = app.querySelector('#l-id').value.trim();
-    if (!id) return;
-    const words = wordsFor(id, ids, app.querySelector('#g-salt').value.trim());
-    app.querySelector('#l-out').innerHTML = `<table class="scen-table"><tbody>${work.manifest.tracks.map((t) => `<tr><td>${esc(t.title)}</td><td class="mono">${esc(words[t.id])}</td></tr>`).join('')}</tbody></table>`;
-  });
+}
+
+function historySummary() {
+  const terms = Object.keys(history.terms ?? {});
+  if (!history.entries.length) return 'No passphrases saved yet. After checking a class, use <strong>Save to history</strong> under the results.';
+  return `${history.entries.length} passphrase${history.entries.length === 1 ? '' : 's'} from ${terms.length} term${terms.length === 1 ? '' : 's'}: ${terms.map(esc).join(', ')}.`;
 }
 
 function renderColumnPickers() {
   const box = app.querySelector('#g-cols');
   const { header, cols, rows } = grading;
-  const pick = (k, label, allowNone) => `<label class="label" for="c-${k}">${label}</label><select id="c-${k}">${allowNone ? '<option value="-1">(none)</option>' : ''}${header.map((hd, i) => `<option value="${i}"${cols[k] === i ? ' selected' : ''}>${esc(hd || `Column ${i + 1}`)}</option>`).join('')}</select>`;
-  box.innerHTML = `<div class="pickers">${pick('id', 'ID column', false)}${pick('name', 'Name column', true)}${pick('phrase', 'Passphrase column', false)}</div><p class="help">${rows.length} row${rows.length === 1 ? '' : 's'} loaded.</p>`;
+  const pick = (k, label) => `<label class="label" for="c-${k}">${label}</label><select id="c-${k}"><option value="-1">(none)</option>${header.map((hd, i) => `<option value="${i}"${cols[k] === i ? ' selected' : ''}>${esc(hd || `Column ${i + 1}`)}</option>`).join('')}</select>`;
+  box.innerHTML = `<div class="pickers">${pick('name', 'Name column')}${pick('id', 'ID column')}</div>
+    <fieldset class="pcols"><legend class="label">Passphrase columns</legend>${header
+      .map((hd, i) => `<label><input type="checkbox" data-pcol="${i}"${cols.phrases.includes(i) ? ' checked' : ''}> ${esc(hd || `Column ${i + 1}`)}</label>`)
+      .join('')}</fieldset>
+    <p class="help">${rows.length} row${rows.length === 1 ? '' : 's'} loaded. The ID column is optional; it's copied into the results for the gradebook.</p>`;
 }
 
 function showGrades(results, ids) {
   const out = app.querySelector('#g-out');
   out.hidden = false;
-  const titles = Object.fromEntries(work.manifest.tracks.map((t) => [t.id, t.title]));
+  const tracks = work.manifest.tracks;
   const perTrack = ids.map((t) => results.filter((r) => r.tracks.includes(t)).length);
+  const flagged = results.filter((r) => r.note).length;
   out.innerHTML = `
-    <div class="track-head"><h2>Results</h2><button type="button" id="g-csv" class="primary">Download CSV for the gradebook</button></div>
-    <p class="muted">${results.length} students. All ${ids.length} tracks: ${results.filter((r) => r.tracks.length === ids.length).length}. Notes: ${results.filter((r) => r.note).length}.</p>
+    <div class="track-head"><h2>Results</h2><div class="row"><button type="button" id="g-save">Save to history</button><button type="button" id="g-csv" class="primary">Download CSV for the gradebook</button></div></div>
+    <p class="muted">${results.length} students. All ${ids.length} tracks: ${results.filter((r) => r.tracks.length === ids.length).length}. Flagged: ${flagged}.</p>
     <div class="table-scroll"><table class="scen-table grades">
-      <thead><tr><th scope="col">Student</th>${ids.map((t) => `<th scope="col" title="${esc(titles[t])}">${esc(t)}</th>`).join('')}<th scope="col">Total</th><th scope="col">Note</th></tr></thead>
+      <thead><tr><th scope="col">Student</th>${tracks.map((t) => `<th scope="col" title="${esc(t.title)}">${esc(t.keyword ?? t.id)}</th>`).join('')}<th scope="col">Total</th><th scope="col">Notes</th></tr></thead>
       <tbody>${results
         .map(
-          (r) => `<tr><td>${esc(r.name || r.id)}${r.name ? `<div class="muted small mono">${esc(r.id)}</div>` : ''}</td>
-          ${ids.map((t) => `<td class="mark">${r.tracks.includes(t) ? '<span class="good-text" aria-label="earned">✓</span>' : '<span class="muted" aria-label="not earned">·</span>'}</td>`).join('')}
-          <td class="num">${r.tracks.length}</td><td class="small ${r.note ? 'warn-text' : ''}">${esc(r.note)}</td></tr>`,
+          (r) => `<tr><td>${esc(r.name || r.id || '(no name)')}${r.name && r.id ? `<div class="muted small mono">${esc(r.id)}</div>` : ''}</td>
+          ${ids.map((t) => `<td class="mark">${r.tracks.includes(t) ? `<span class="good-text" aria-label="earned" title="${esc(r.phrases[t])}">✓</span>` : '<span class="muted" aria-label="not earned">·</span>'}</td>`).join('')}
+          <td class="num">${r.tracks.length}</td><td class="small ${r.note ? 'warn-text' : ''}">${r.notes.map(esc).join('<br>')}</td></tr>`,
         )
         .join('')}</tbody>
-      <tfoot><tr><td class="muted">Earned</td>${perTrack.map((n) => `<td class="num">${n}</td>`).join('')}<td></td><td></td></tr></tfoot>
-    </table></div>`;
+      <tfoot><tr><td class="muted">Finished</td>${perTrack.map((n) => `<td class="num">${n}</td>`).join('')}<td></td><td></td></tr></tfoot>
+    </table></div>
+    <p class="muted small">"Same words as" means two students handed in the same random words for a track, so one copied the other. "Not site words" means a word the site never gives out, usually a typo or a made-up passphrase.</p>`;
   out.querySelector('#g-csv').addEventListener('click', () => download('linux-practice-progress.csv', gradesCSV(results, ids), 'text/csv'));
+  out.querySelector('#g-save').addEventListener('click', async (e) => {
+    const term = work.manifest.term;
+    if (!term) return flash('Name the term on the Scenarios page first.', 'bad');
+    const { history: next, added } = addToHistory(history, results, { term, tracks: work.manifest.tracks, date: new Date().toISOString().slice(0, 10) });
+    try {
+      await saveHistory(next);
+      e.target.textContent = 'Saved';
+      flash(added ? `Added ${added} passphrase${added === 1 ? '' : 's'} to the ${esc(term)} history.` : 'Already in the history; nothing new to add.');
+    } catch (err) {
+      flash(`Couldn't save the history: ${esc(err.message)}`, 'bad');
+    }
+  });
 }
 
 // ---------- routing ----------

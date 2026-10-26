@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { Shell } from '../engine/shell.js';
 import { fromLibrary } from '../engine/library.js';
 import { parse } from '../engine/parser.js';
-import { WORDS, wordsFor, passphrase, verify } from '../engine/passphrase.js';
+import { WORDS, makePassphrase, readSubmission, keywordProblem, SUGGESTED_KEYWORDS } from '../engine/passphrase.js';
 
 function shell() {
   const sh = new Shell();
@@ -96,17 +96,33 @@ test('jobs asking for more than Geiss-01 has are rejected', () => {
   assert.match(errors(sh.run('sbatch mem.sh')), /Memory specification/);
 });
 
-test('passphrase words are stable, distinct, and verifiable', () => {
-  const tracks = ['session', 'navigate', 'find', 'read', 'manage', 'bash', 'slurm', 'transfer'];
+test('passphrases mix the track keyword with three random words', () => {
   assert.ok(WORDS.length >= 200);
-  const a = wordsFor('ABC123', tracks, 'salt');
-  assert.deepEqual(a, wordsFor(' abc123 ', tracks, 'salt'));
-  assert.equal(new Set(Object.values(a)).size, tracks.length);
-  assert.notDeepEqual(a, wordsFor('xyz789', tracks, 'salt'));
-  const phrase = passphrase('abc123', tracks, 'salt', ['navigate', 'read']);
-  assert.equal(phrase, `${a.navigate}-${a.read}`);
-  assert.deepEqual(verify('abc123', tracks, 'salt', phrase.toUpperCase().replace('-', ' ')).tracks, ['navigate', 'read']);
-  assert.deepEqual(verify('xyz789', tracks, 'salt', phrase).tracks.length < 2, true);
+  const kws = Object.values(SUGGESTED_KEYWORDS);
+  for (const k of kws) assert.equal(keywordProblem(k, kws.filter((x) => x !== k)), '');
+  assert.match(keywordProblem('helix', []), /random words/);
+  assert.match(keywordProblem('otter', ['otter']), /already/);
+  assert.match(keywordProblem('two words', []), /one word/);
+  const seen = new Set();
+  for (let i = 0; i < 50; i++) {
+    const p = makePassphrase('otter');
+    const w = p.split('-');
+    assert.equal(w.length, 4);
+    assert.equal(w.filter((x) => x === 'otter').length, 1);
+    assert.equal(new Set(w).size, 4);
+    seen.add(w.indexOf('otter'));
+  }
+  assert.equal(seen.size, 4, 'the keyword lands in every position');
+  const keywords = { navigate: 'otter', read: 'owl' };
+  const a = makePassphrase('otter');
+  const b = makePassphrase('owl');
+  const parts = readSubmission(`${a.toUpperCase()}, ${b}`, keywords);
+  assert.deepEqual(parts.map((x) => x.track), ['navigate', 'read']);
+  assert.deepEqual(parts[0].fillers, a.split('-').filter((x) => x !== 'otter'));
+  // Typed with spaces, two passphrases in a row still split at the keywords.
+  const spaced = readSubmission('comet otter maple ribbon zinc owl helix fiber', keywords);
+  assert.deepEqual(spaced.map((x) => [x.track, x.fillers.length]), [['navigate', 3], ['read', 3]]);
+  assert.deepEqual(readSubmission('otter-foo-maple-ribbon', keywords)[0].odd, ['foo']);
 });
 
 test('tar, gzip and du', () => {

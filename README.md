@@ -48,8 +48,8 @@ every push, and only publishes the site when they pass.
 | `index.html`, `css/app.css`, `js/app.js` | The student site |
 | `admin.html`, `css/admin.css`, `js/admin.js`, `js/admin-core.js` | The instructor dashboard |
 | `js/terminal.js` | The terminal and nano editor, shared by both pages |
-| `engine/` | The pretend shell: file system, parser, commands, Slurm and module simulation, scenario runner, passphrase words |
-| `scenarios/tracks.json` | Track list, order, and the passphrase salt |
+| `engine/` | The pretend shell: file system, parser, commands, Slurm and module simulation, scenario runner, passphrases |
+| `scenarios/tracks.json` | Track list, order, the term, and each track's passphrase keyword |
 | `scenarios/<track>/NN-name.json` | One scenario per file |
 | `tests/` | Engine tests and the scenario solution check |
 | `docs/scenarios.md` | How to write a scenario |
@@ -60,7 +60,7 @@ Open `admin.html` on the site (https://bgeiss1.github.io/linux-practice/admin.ht
 linked from the student pages. The instructor and TAs can:
 
 - **Scenarios:** browse every track, reorder, duplicate, remove, or add scenarios, and
-  change the passphrase salt.
+  set the term and each track's passphrase keyword.
 - **Edit:** a form (or raw JSON) for each scenario, with a validator that replays the
   solution for 20 random draws and a preview terminal where you can play as a student or
   watch the solution run.
@@ -71,9 +71,11 @@ linked from the student pages. The instructor and TAs can:
   browser. It refuses to overwrite scenarios someone else published after you opened the
   page. Without a token you can download the changed files and upload them on GitHub.
 - **History:** recent scenario commits; load any of them as drafts to roll back.
-- **Class progress:** load a Canvas CSV (or paste `ID, passphrase` lines) to see which
-  tracks each student finished, then download a CSV for the gradebook. Nothing you load
-  leaves the browser.
+- **Class progress:** load a Canvas CSV (or paste `name, passphrase` lines) to see which
+  tracks each student finished and who handed in the same words as someone else, then
+  download a CSV for the gradebook. **Save to history** adds the passphrases to the
+  history file, so words reused in a later term are flagged. Nothing you load leaves
+  your computer.
 
 Drafts are saved in your browser as you type. Students only see changes after you publish
 and the tests pass (about two minutes).
@@ -84,7 +86,19 @@ The site deploys from `main` through GitHub Actions. In the repo's **Settings â†
 set **Source** to **GitHub Actions** once. After that, every merge to `main` that passes
 the tests updates the site at `https://bgeiss1.github.io/linux-practice/`.
 
-## Passphrase salt
+## Passphrases
 
-`passphraseSalt` in `scenarios/tracks.json` changes every student's words. Change it at
-the start of each semester so last year's passphrases don't work.
+Finishing a track gives the student a passphrase: the track's keyword plus three random
+words, in random order, like `comet-otter-maple-ribbon`. Every Navigate passphrase
+contains `otter`, so finding the keyword in Canvas shows the track is done. The random
+words are picked in the student's browser and kept there, so two students with the same
+words means one copied the other. Students don't enter an ID.
+
+Set the keywords and the term on the dashboard's Scenarios page, and change them at the
+start of each term (**Suggest new keywords** picks ones not used before). Keywords can't
+be one of the random words, so a keyword always means its track.
+
+The history file, `records/passphrases.json`, keeps every passphrase you save from Class
+progress, with the term and that term's keywords. It has student names, so `records/` is
+left out of git and never published. On the live site the dashboard keeps the history in
+the browser instead; download it to keep a copy.

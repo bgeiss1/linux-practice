@@ -28,6 +28,13 @@ test('track ids are unique', () => {
   assert.equal(new Set(ids).size, ids.length);
 });
 
+test('every track has its own usable passphrase keyword', async () => {
+  const { keywordProblem } = await import('../engine/passphrase.js');
+  const kws = manifest.tracks.map((t) => t.keyword);
+  manifest.tracks.forEach((t, i) => assert.equal(keywordProblem(t.keyword, kws.filter((_, j) => j !== i)), '', t.id));
+  assert.ok(manifest.term, 'tracks.json names the term');
+});
+
 test('answers go in the answer box, not the terminal', async () => {
   const { Session } = await import('../engine/scenario.js');
   const def = JSON.parse(readFileSync(new URL('find/02-wildcard.json', root)));

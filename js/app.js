@@ -3,7 +3,7 @@
 import { Session, TIERS } from '../engine/scenario.js';
 import { Terminal, esc, fmt, h, lessonHTML } from './terminal.js';
 import { guideHTML } from './guide.js';
-import { wordsFor, passphrase } from '../engine/passphrase.js';
+import { makePassphrase } from '../engine/passphrase.js';
 
 const app = document.getElementById('app');
 const STORE_KEY = 'linux-practice:v1';
@@ -13,11 +13,11 @@ const STORE_KEY = 'linux-practice:v1';
 function loadProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (saved && typeof saved === 'object') return { studentId: '', done: {}, ...saved };
+    if (saved && typeof saved === 'object') return { done: {}, phrases: {}, ...saved };
   } catch {
     // Private windows and blocked storage land here; start fresh.
   }
-  return { studentId: '', done: {} };
+  return { done: {}, phrases: {} };
 }
 
 const progress = loadProgress();
@@ -51,10 +51,21 @@ async function loadData() {
   for (const t of manifest.tracks) (t.defs ??= []).sort((a, b) => a.order - b.order);
 }
 
-const trackIds = () => manifest.tracks.map((t) => t.id);
 const isDone = (id) => !!progress.done[id];
 const trackDone = (t) => t.defs.length > 0 && t.defs.every((d) => isDone(d.id));
 const finishedTracks = () => manifest.tracks.filter(trackDone).map((t) => t.id);
+
+// A finished track's passphrase. It's made once and kept, so the student sees
+// the same one every time; a new keyword (next semester) gets a new passphrase.
+function phraseFor(t) {
+  if (!t.keyword || !trackDone(t)) return null;
+  const kept = progress.phrases[t.id];
+  if (kept?.keyword === t.keyword) return kept.phrase;
+  const phrase = makePassphrase(t.keyword);
+  progress.phrases[t.id] = { keyword: t.keyword, phrase };
+  saveProgress();
+  return phrase;
+}
 
 // ---------- helpers ----------
 
@@ -81,45 +92,31 @@ async function copyText(text, fallbackEl) {
 
 function renderHome() {
   const done = finishedTracks();
-  const words = progress.studentId ? wordsFor(progress.studentId, trackIds(), manifest.passphraseSalt) : null;
-  const phrase = progress.studentId ? passphrase(progress.studentId, trackIds(), manifest.passphraseSalt, done) : '';
+  const phrases = Object.fromEntries(manifest.tracks.map((t) => [t.id, phraseFor(t)]));
 
   app.replaceChildren(
     h(`
     <section class="home">
       <div class="intro">
         <h1>Practice the command line without breaking anything</h1>
-        <p class="lede">Each track is a ladder of short scenarios on a pretend copy of Geiss-01. Early ones walk you through every step. Later ones give you a goal and get out of the way. Finish a track to earn a word for your passphrase.</p>
+        <p class="lede">Each track is a ladder of short scenarios on a pretend copy of Geiss-01. Early ones walk you through every step. Later ones give you a goal and get out of the way. Finish a track to earn its passphrase.</p>
         <div class="row"><a class="btn" href="#/sandbox">Free play terminal</a></div>
       </div>
 
       <section class="pass" aria-labelledby="pass-title">
         <div class="pass-head">
-          <h2 id="pass-title">Your passphrase</h2>
-          <span class="muted">${done.length} of ${manifest.tracks.length} words earned</span>
+          <h2 id="pass-title">Your passphrases</h2>
+          <span class="muted">${done.length} of ${manifest.tracks.length} tracks finished</span>
         </div>
-        ${
-          progress.studentId
-            ? `<div class="slots">${manifest.tracks
-                .map((t) => {
-                  const got = done.includes(t.id);
-                  return `<div class="slot ${got ? 'earned' : ''}"><span class="label">${esc(t.title)}</span><span class="word">${got ? esc(words[t.id]) : '———'}</span></div>`;
-                })
-                .join('')}</div>
-              ${
-                phrase
-                  ? `<div class="row"><code class="phrase" id="phrase">${esc(phrase)}</code><button type="button" id="copy-phrase">Copy</button></div>
-                     <p class="muted">Paste this into the Linux Practice assignment in Canvas. You can resubmit as you earn more words.</p>`
-                  : `<p class="muted">Finish every scenario in a track to earn its word.</p>`
-              }
-              <p class="muted">Words for CSU ID <strong>${esc(progress.studentId)}</strong>. <button type="button" id="change-id">Change ID</button></p>`
-            : `<p>Your words are tied to your CSU ID, so enter it before you start. It stays in this browser.</p>
-               <form class="id-form" id="id-form">
-                 <label for="student-id" class="label">CSU ID</label>
-                 <input type="text" id="student-id" autocomplete="off" inputmode="text" placeholder="e.g. 830123456" required>
-                 <button type="submit" class="primary">Save</button>
-               </form>`
-        }
+        <div class="slots">${manifest.tracks
+          .map((t) => {
+            const p = phrases[t.id];
+            return `<div class="slot ${p ? 'earned' : ''}"><span class="label">${esc(t.title)}</span>${
+              p ? `<code class="word" id="ph-${esc(t.id)}">${esc(p)}</code><button type="button" data-copy="${esc(t.id)}">Copy</button>` : '<span class="word">———</span>'
+            }</div>`;
+          })
+          .join('')}</div>
+        <p class="muted">${done.length ? 'Paste each passphrase into its track\'s question in the Linux Practice quiz in Canvas.' : 'Finish every scenario in a track to earn its passphrase.'} Your progress and passphrases are saved in this browser only, so keep using the same browser.</p>
       </section>
 
       ${GUIDE_LINK}
@@ -141,23 +138,12 @@ function renderHome() {
     </section>`),
   );
 
-  document.getElementById('id-form')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const v = document.getElementById('student-id').value.trim();
-    if (!v) return;
-    progress.studentId = v;
-    saveProgress();
-    renderHome();
-  });
-  document.getElementById('change-id')?.addEventListener('click', () => {
-    progress.studentId = '';
-    saveProgress();
-    renderHome();
-  });
-  document.getElementById('copy-phrase')?.addEventListener('click', async (e) => {
-    const ok = await copyText(phrase, document.getElementById('phrase'));
-    e.target.textContent = ok ? 'Copied' : 'Press Ctrl+C';
-  });
+  for (const b of app.querySelectorAll('[data-copy]')) {
+    b.addEventListener('click', async () => {
+      const ok = await copyText(phrases[b.dataset.copy], document.getElementById(`ph-${b.dataset.copy}`));
+      b.textContent = ok ? 'Copied' : 'Press Ctrl+C';
+    });
+  }
 }
 
 function trackCard(t) {
@@ -309,10 +295,10 @@ function renderPanel(coach = null) {
   let doneCard = '';
   if (session.complete && track) {
     const finishedTrack = trackDone(track);
-    const word = finishedTrack && progress.studentId ? wordsFor(progress.studentId, trackIds(), manifest.passphraseSalt)[track.id] : null;
+    const phrase = finishedTrack ? phraseFor(track) : null;
     doneCard = `<div class="done-card" role="status">
       <strong>Scenario complete</strong> ${starsHTML(session.stars)}
-      ${finishedTrack ? (word ? `<p>Track finished. Your word: <span class="word">${esc(word)}</span></p><a class="btn" href="#/">See your passphrase</a>` : `<p>Track finished. <a href="#/">Enter your CSU ID</a> to see your word.</p>`) : ''}
+      ${phrase ? `<p>Track finished. Your passphrase: <span class="word">${esc(phrase)}</span></p><a class="btn" href="#/">See all your passphrases</a>` : ''}
       ${next ? `<a class="btn primary" href="#/s/${esc(next.id)}">Next: ${esc(next.title)}</a>` : track ? `<a class="btn" href="#/track/${esc(track.id)}">Back to ${esc(track.title)}</a>` : ''}
     </div>`;
   }

@@ -2,7 +2,7 @@
 // comparing drafts with the live site, import/export bundles, a tiny zip
 // writer, and reading Canvas exports. Kept separate so tests can run it.
 
-import { verify, WORDS } from '../engine/passphrase.js';
+import { WORDS, readSubmission, fillerKey } from '../engine/passphrase.js';
 
 // ---------- working copy ----------
 
@@ -14,7 +14,7 @@ export function cloneCopy(copy) {
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
 // What publishing would change: scenario files added, changed, removed, and
-// whether tracks.json changed (order, titles, salt).
+// whether tracks.json changed (order, titles, keywords, term).
 export function diffCopies(published, work) {
   const added = [];
   const changed = [];
@@ -98,12 +98,12 @@ export function blankScenario(track, id) {
 
 export const BUNDLE_FORMAT = 'linux-practice-bundle';
 
-// Everything, or one track: { format, tracks: [...track entries], salt, scenarios: { path: def } }.
+// Everything, or one track: { format, tracks: [...track entries], term, scenarios: { path: def } }.
 export function makeBundle(work, trackId = null) {
   const tracks = work.manifest.tracks.filter((t) => !trackId || t.id === trackId);
   const scenarios = {};
   for (const t of tracks) for (const p of t.scenarios) scenarios[p] = work.files[p];
-  return { format: BUNDLE_FORMAT, version: 1, salt: trackId ? undefined : work.manifest.passphraseSalt, tracks: structuredClone(tracks), scenarios: structuredClone(scenarios) };
+  return { format: BUNDLE_FORMAT, version: 1, term: trackId ? undefined : work.manifest.term, tracks: structuredClone(tracks), scenarios: structuredClone(scenarios) };
 }
 
 // Merge an uploaded bundle or single scenario into a copy of the work.
@@ -123,7 +123,7 @@ export function mergeImport(work, data) {
     for (const t of data.tracks ?? []) {
       const mine = next.manifest.tracks.find((x) => x.id === t.id);
       if (!mine) {
-        errors.push(`Unknown track "${t.id}" skipped. Tracks are fixed because each one earns a passphrase word.`);
+        errors.push(`Unknown track "${t.id}" skipped. Tracks are fixed because each one earns a passphrase.`);
         continue;
       }
       for (const p of mine.scenarios) if (!t.scenarios.includes(p)) { removed.push(p); delete next.files[p]; }
@@ -131,9 +131,9 @@ export function mergeImport(work, data) {
         if (!data.scenarios?.[p]) { errors.push(`${p} is listed but missing from the file`); continue; }
         put(p, data.scenarios[p]);
       }
-      Object.assign(mine, { title: t.title ?? mine.title, blurb: t.blurb ?? mine.blurb, commands: t.commands ?? mine.commands, scenarios: t.scenarios.filter((p) => data.scenarios?.[p]) });
+      Object.assign(mine, { title: t.title ?? mine.title, keyword: t.keyword ?? mine.keyword, blurb: t.blurb ?? mine.blurb, commands: t.commands ?? mine.commands, scenarios: t.scenarios.filter((p) => data.scenarios?.[p]) });
     }
-    if (data.salt) next.manifest.passphraseSalt = data.salt;
+    if (data.term) next.manifest.term = data.term;
   } else if (data && typeof data === 'object' && data.id && data.track) {
     const t = next.manifest.tracks.find((x) => x.id === data.track);
     if (!t) errors.push(`Unknown track "${data.track}".`);
@@ -248,48 +248,119 @@ export function toCSV(rows) {
 
 const WORD_SET = new Set(WORDS);
 
-function looksLikePhrase(cell) {
+// A cell that looks like a passphrase answer: it has a keyword, or is mostly site words.
+function looksLikePhrase(cell, keywords) {
   const words = String(cell).toLowerCase().split(/[^a-z]+/).filter(Boolean);
-  return words.length > 0 && words.filter((w) => WORD_SET.has(w)).length / words.length >= 0.5;
+  if (!words.length) return false;
+  return words.some((w) => keywords.has(w)) || words.filter((w) => WORD_SET.has(w)).length / words.length >= 0.5;
 }
 
-// Guess which columns hold the ID, the name, and the passphrase.
-export function detectColumns(header, rows) {
+// Guess which columns hold the ID, the name, and the passphrases. A Canvas
+// quiz with one question per track has one passphrase column per question.
+export function detectColumns(header, rows, keywords = []) {
+  const kw = new Set(keywords);
   const find = (re) => header.findIndex((h) => re.test(h.trim()));
   let id = find(/^(sis[ _]?(user[ _]?)?id|csu[ _]?id|student[ _]?id)$/i);
   if (id < 0) id = find(/sis|csu.?id|student.?id|^id$/i);
   let name = find(/^(name|student|student name)$/i);
   if (name < 0) name = find(/name/i);
-  let phrase = -1;
-  let best = 0;
-  header.forEach((_, c) => {
-    const hits = rows.filter((r) => looksLikePhrase(r[c] ?? '')).length;
-    if (hits > best) { best = hits; phrase = c; }
-  });
-  return { id, name, phrase };
+  const phrases = header.map((_, c) => c).filter((c) => c !== id && c !== name && rows.some((r) => looksLikePhrase(r[c] ?? '', kw)));
+  return { id, name, phrases };
 }
 
-// One result per student row: which tracks their passphrase proves.
-export function gradeRows(rows, cols, trackIds, salt) {
-  return rows
-    .filter((r) => String(r[cols.id] ?? '').trim())
+// One result per student row: the tracks their passphrases prove, plus notes
+// for anything to look at. tracks: [{ id, title, keyword }]. history: entries
+// from the passphrase history file; matches from earlier terms are flagged.
+export function gradeRows(rows, cols, tracks, { term = '', history = [] } = {}) {
+  const keywords = Object.fromEntries(tracks.map((t) => [t.id, t.keyword]));
+  const title = Object.fromEntries(tracks.map((t) => [t.id, t.title]));
+  const results = rows
     .map((r) => {
-      const id = String(r[cols.id]).trim();
-      const given = String(r[cols.phrase] ?? '').trim();
-      const { tracks, unknown } = verify(id, trackIds, salt, given);
-      let note = '';
-      if (!given) note = 'No passphrase';
-      else if (!tracks.length && unknown.some((w) => WORD_SET.has(w))) note = 'Words are real but not this ID\'s. Check which ID the student typed.';
-      else if (unknown.length) note = `Not recognized: ${unknown.join(', ')}`;
-      return { name: cols.name >= 0 ? String(r[cols.name] ?? '') : '', id, given, tracks, note };
-    });
+      const cell = (c) => (c >= 0 ? String(r[c] ?? '').trim() : '');
+      const given = cols.phrases.map(cell).filter(Boolean).join('\n');
+      const notes = [];
+      const found = {};
+      for (const part of readSubmission(given, keywords)) {
+        if (!part.track) {
+          notes.push(`No keyword in "${part.fillers.join(' ')}"`);
+          continue;
+        }
+        if (found[part.track]) continue; // the same track pasted twice
+        found[part.track] = part;
+        if (part.fillers.length !== 3) notes.push(`${title[part.track]}: ${part.fillers.length} other word${part.fillers.length === 1 ? '' : 's'} instead of 3`);
+        if (part.odd.length) notes.push(`${title[part.track]}: not site words (${part.odd.join(', ')})`);
+      }
+      if (!given) notes.push('No passphrase');
+      return { name: cell(cols.name), id: cell(cols.id), given, tracks: tracks.map((t) => t.id).filter((t) => found[t]), found, notes };
+    })
+    .filter((r) => r.name || r.id || r.given);
+  const who = (r) => r.name || r.id || 'another row';
+  // Same random words for the same track: one student copied another.
+  for (const t of tracks) {
+    const groups = {};
+    for (const r of results) {
+      const f = r.found[t.id];
+      if (f?.fillers.length) (groups[fillerKey(f.fillers)] ??= []).push(r);
+    }
+    for (const same of Object.values(groups)) {
+      if (same.length < 2) continue;
+      for (const r of same) r.notes.push(`${t.title}: same words as ${same.filter((x) => x !== r).map(who).join(', ')}`);
+    }
+  }
+  // Random words seen in an earlier term.
+  const earlier = history.filter((e) => e.term !== term);
+  for (const r of results) {
+    for (const [track, f] of Object.entries(r.found)) {
+      if (!f.fillers.length) continue;
+      const hit = earlier.find((e) => e.track === track && fillerKey(e.fillers ?? []) === fillerKey(f.fillers));
+      if (hit) r.notes.push(`${title[track]}: words already used in ${hit.term}${hit.name ? ` by ${hit.name}` : ''}`);
+    }
+  }
+  return results.map(({ found, ...r }) => ({ ...r, phrases: Object.fromEntries(Object.entries(found).map(([t, f]) => [t, [...f.fillers, f.keyword].join('-')])), note: r.notes.join('; ') }));
 }
 
 export function gradesCSV(results, trackIds) {
   return toCSV([
-    ['name', 'id', 'tracks_completed', ...trackIds, 'passphrase', 'note'],
+    ['name', 'id', 'tracks_completed', ...trackIds, 'passphrases', 'note'],
     ...results.map((r) => [r.name, r.id, r.tracks.length, ...trackIds.map((t) => (r.tracks.includes(t) ? 1 : 0)), r.given, r.note]),
   ]);
+}
+
+// ---------- passphrase history ----------
+
+export const HISTORY_FORMAT = 'linux-practice-passphrases';
+export const HISTORY_PATH = 'records/passphrases.json';
+
+export function emptyHistory() {
+  return { format: HISTORY_FORMAT, terms: {}, entries: [] };
+}
+
+// Adds graded results to the history file: every passphrase handed in, and the
+// keywords used that term. Saving the same submissions again adds nothing.
+export function addToHistory(history, results, { term, tracks, date }) {
+  const next = structuredClone(history?.format === HISTORY_FORMAT ? history : emptyHistory());
+  next.terms[term] = { keywords: Object.fromEntries(tracks.map((t) => [t.id, t.keyword])) };
+  const seen = new Set(next.entries.map((e) => `${e.term}|${e.track}|${e.name}|${e.id}|${fillerKey(e.fillers)}`));
+  let added = 0;
+  for (const r of results) {
+    for (const [track, phrase] of Object.entries(r.phrases)) {
+      const words = phrase.split('-');
+      const fillers = words.slice(0, -1);
+      const key = `${term}|${track}|${r.name}|${r.id}|${fillerKey(fillers)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      next.entries.push({ term, track, keyword: words.at(-1), fillers, name: r.name, id: r.id, saved: date });
+      added++;
+    }
+  }
+  return { history: next, added };
+}
+
+// Terms in which a keyword was used before, for warning when one is reused.
+export function keywordTerms(history, keyword, exceptTerm = '') {
+  return Object.entries(history?.terms ?? {})
+    .filter(([term, t]) => term !== exceptTerm && Object.values(t.keywords ?? {}).includes(keyword))
+    .map(([term]) => term);
 }
 
 // ---------- GitHub ----------

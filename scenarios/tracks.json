@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "passphraseSalt": "mip662-2026",
+  "term": "Fall 2026",
   "tracks": [
     {
       "id": "session",
       "title": "Start a session",
+      "keyword": "heron",
       "blurb": "Log in, check the GPUs, ask Slurm for them, and load your software.",
       "commands": [
         "whoami",
@@ -35,6 +36,7 @@
     {
       "id": "navigate",
       "title": "Navigate",
+      "keyword": "otter",
       "blurb": "Know where you are and move anywhere with relative and absolute paths.",
       "commands": [
         "pwd",
@@ -60,6 +62,7 @@
     {
       "id": "find",
       "title": "Find files",
+      "keyword": "badger",
       "blurb": "Track down files by name, pattern, size, date, or what's inside them.",
       "commands": [
         "find",
@@ -85,6 +88,7 @@
     {
       "id": "read",
       "title": "Read files",
+      "keyword": "owl",
       "blurb": "Look inside PDB, FASTA, log, and score files without an editor.",
       "commands": [
         "cat",
@@ -114,6 +118,7 @@
     {
       "id": "manage",
       "title": "Manage files",
+      "keyword": "beaver",
       "blurb": "Create, copy, rename, delete, archive, and set permissions.",
       "commands": [
         "mkdir",
@@ -141,6 +146,7 @@
     {
       "id": "bash",
       "title": "Run bash jobs",
+      "keyword": "lynx",
       "blurb": "Run scripts, pass arguments, save output, and fix common errors.",
       "commands": [
         "bash",
@@ -169,6 +175,7 @@
     {
       "id": "slurm",
       "title": "Run Slurm jobs",
+      "keyword": "walrus",
       "blurb": "Submit, watch, cancel, and fix jobs on Geiss-01's 8 GPUs.",
       "commands": [
         "sbatch",
@@ -195,6 +202,7 @@
     {
       "id": "transfer",
       "title": "Transfer files",
+      "keyword": "pelican",
       "blurb": "Move files between Geiss-01 and your own computer with scp.",
       "commands": [
         "scp",
@@ -219,6 +227,7 @@
     {
       "id": "colabfold",
       "title": "Fold with ColabFold",
+      "keyword": "octopus",
       "group": "tools",
       "blurb": "Predict structures with AlphaFold2: single chains, complexes, whole folders, and batch jobs.",
       "commands": [
@@ -243,6 +252,7 @@
     {
       "id": "chai",
       "title": "Predict complexes with Chai-1",
+      "keyword": "panda",
       "group": "tools",
       "blurb": "Fold proteins with ligands, fix FASTA headers, use MSAs, and run array jobs.",
       "commands": [
@@ -267,6 +277,7 @@
     {
       "id": "mpnn",
       "title": "Design sequences with ProteinMPNN",
+      "keyword": "gecko",
       "group": "tools",
       "blurb": "Run the ProteinMPNN scripts, choose chains and temperatures, fix residues, and pick designs.",
       "commands": [
@@ -291,6 +302,7 @@
     {
       "id": "gromacs",
       "title": "Simulate with GROMACS",
+      "keyword": "narwhal",
       "group": "tools",
       "blurb": "Take lysozyme from PDB file to a finished simulation: topology, box, water, ions, minimization, dynamics.",
       "commands": [
