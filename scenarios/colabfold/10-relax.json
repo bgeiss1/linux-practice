@@ -1,0 +1,89 @@
+{
+  "id": "colabfold-10-relax",
+  "track": "colabfold",
+  "order": 10,
+  "tier": 4,
+  "title": "Relax the winner",
+  "story": "{{r.0}} is your best design. Write a job script that folds {{r.0}}.fasta into {{r.0}}_af with all 5 models and relaxes the models with Amber (`--amber`), and submit it. When it's done, copy the relaxed rank 1 structure into a folder called final in your home folder.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "r": [
+      [
+        "binder_01",
+        "MKKAILLPKAAGKAEEDKLPRLAEERELPEIKIEADIEAALRRKAALEKLLLPALKLAALALIALLPPRRLKARLA",
+        "3"
+      ],
+      [
+        "des_4471",
+        "MGEKPKALIAERELAEKEEALAKDDKPPLAPELLLEKAEKEAKLRERAAKIAGAALIEREEALEADDAEKRAKGKE",
+        "4"
+      ],
+      [
+        "il7r_min",
+        "MAVEELKRARLLELEEERIEALEKDRLALELKRELEELIKLAEKAEELEEIKIEKKALEELKEELAEELEARGKKL",
+        "2"
+      ],
+      [
+        "pdl1_b3",
+        "MALGEEALLEVLKEAELALLAAARAAEIERKLKKPPEEAGAAEEKLIDKLEKLEEEALLALAEKELIKKLLRLKVI",
+        "2"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{r.0}}.fasta": ">{{r.0}}\n{{r.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Fold and relax {{r.0}} in a batch job",
+      "check": {
+        "all": [
+          {
+            "jobSubmitted": {
+              "gpus": 1
+            }
+          },
+          {
+            "isFile": "~/{{project}}/{{r.0}}_af/{{r.0}}_relaxed_rank_001_alphafold2_ptm_model_{{r.2}}_seed_000.pdb"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Copy the relaxed rank 1 structure into ~/final",
+      "check": {
+        "isFile": "~/final/{{r.0}}_relaxed_rank_001_alphafold2_ptm_model_{{r.2}}_seed_000.pdb"
+      }
+    }
+  ],
+  "hints": [
+    "The script needs `#SBATCH --gres=gpu:1` and `--mem=32G`, then `module load colabfold` and `colabfold_batch --amber {{r.0}}.fasta {{r.0}}_af`. Relaxed files have `relaxed` instead of `unrelaxed` in their names."
+  ],
+  "solution": [
+    {
+      "nano": "relax.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=relax\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=02:00:00\n\nmodule load colabfold\ncolabfold_batch --amber {{r.0}}.fasta {{r.0}}_af\n"
+    },
+    "sbatch relax.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "mkdir ~/final",
+    "cp {{r.0}}_af/*_relaxed_rank_001_*.pdb ~/final/"
+  ]
+}

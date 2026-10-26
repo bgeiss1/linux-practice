@@ -1,0 +1,121 @@
+{
+  "id": "colabfold-05-quick-test",
+  "track": "colabfold",
+  "order": 5,
+  "tier": 2,
+  "title": "A quick test run",
+  "story": "Before folding 200 designs, check that everything works with a fast run: just 1 model and 1 recycle. Fold {{seq.0}}.fasta that way into a folder called quick.",
+  "lesson": {
+    "title": "Making ColabFold faster",
+    "parts": [
+      {
+        "code": "colabfold_batch",
+        "note": "Fold, as before."
+      },
+      {
+        "code": "--num-models 1",
+        "note": "Run 1 of the 5 AlphaFold2 models instead of all 5. About 5 times faster, but you lose the ranking."
+      },
+      {
+        "code": "--num-recycle 1",
+        "note": "Recycles feed a prediction back in to refine it. The default is 3; fewer is faster and a bit rougher."
+      },
+      {
+        "code": "{{seq.0}}.fasta quick",
+        "note": "Input and results folder, as before."
+      }
+    ],
+    "why": "A short test catches mistakes (a wrong path, a missing module) in a minute instead of after an hour in the queue."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDIRKAEVLEKLEKLKKLA"
+      ],
+      [
+        "des_4471",
+        "MKIDIALPEALKKALGKEKAGLEEALPRKKKIDLPERKEADELDKLKLLKPELPARKEVRKEKLGKEIGLLLIALKERED"
+      ],
+      [
+        "il7r_min",
+        "MAVEIAEEKKKLGELEDKRKEALLRAKLLAALAAAAAAEILLELPVAAAKRKEKEERVKDRVDKEEAALELKLVLEAPRK"
+      ],
+      [
+        "pdl1_b3",
+        "MLEPIKDADEAEKRLAEVEELLRAAAEKREPAKELPAKEEPALAKKAEALEAEIEAEGKAIEEVLAVELELLAIRAEKAR"
+      ],
+      [
+        "her2_mb7",
+        "MKKEKEALLAELELKKRVELGEKEPAEDEEKAAIEEDVLLKGLEERAKRKAKAEEAKGEIEELPRKKPGLAKEPERREEK"
+      ],
+      [
+        "tnf_c12",
+        "MEEKERGAKLREKKGLEAEERLLEREEARIELKKGELDLLLERDGERLLAEGLKRKLAVKERKAERKELKEELLALLDEK"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">{{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Get a GPU and load colabfold",
+      "check": {
+        "all": [
+          {
+            "inInteractiveJob": {
+              "gpus": 1,
+              "memGB": 16
+            }
+          },
+          {
+            "moduleLoaded": "colabfold"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Fold with 1 model and 1 recycle into quick",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/quick/config.json",
+              "text": "\"num_models\": 1,"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/quick/config.json",
+              "text": "\"num_recycles\": 1,"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`srun --gres=gpu:1 --mem=32G --pty bash`, then `module load colabfold`.",
+    "`colabfold_batch --num-models 1 --num-recycle 1 {{seq.0}}.fasta quick`"
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load colabfold",
+    "colabfold_batch --num-models 1 --num-recycle 1 {{seq.0}}.fasta quick"
+  ]
+}

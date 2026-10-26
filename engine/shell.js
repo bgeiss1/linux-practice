@@ -6,6 +6,7 @@ import { parse, tokenize, globToRegExp, splitStatements } from './parser.js';
 import { Cluster, REPO_SCRIPTS, repoScriptNamed } from './cluster.js';
 import { COMMANDS } from './commands/index.js';
 import { toolFor, runTool } from './commands/tools.js';
+import { JobKill } from './tools/common.js';
 
 export const HOST = 'geiss-01';
 
@@ -226,6 +227,53 @@ export class Shell {
     return result.output.filter((seg) => seg.cls !== 'err').map((seg) => seg.text).join('');
   }
 
+  // Run a batch job's script the way Slurm would when the job starts: in the
+  // folder it was submitted from, with the modules and conda environment that
+  // were active then, and only the GPUs, memory and time the job asked for.
+  // Returns how the job ended. What the script does isn't the student's own
+  // typing, so it leaves no events for task checks.
+  runJob(job) {
+    const { cluster } = this;
+    const saved = { cwd: this.cwd, prevCwd: this.prevCwd, modules: cluster.modules, conda: cluster.condaEnv, vars: this.vars, interactive: cluster.interactive, lastCode: this.lastCode, events: this.events.length, pending: this.pendingErrors };
+    const env = job.env ?? { modules: [], conda: null, vars: {} };
+    this.cwd = this.vfs.get(job.cwd)?.type === 'dir' ? job.cwd : this.home;
+    cluster.modules = [...env.modules];
+    cluster.condaEnv = env.conda;
+    this.vars = { ...env.vars, SLURM_JOB_ID: String(job.id).split('_')[0], SLURM_JOB_NAME: job.name, SLURM_SUBMIT_DIR: job.cwd ?? this.home, SLURM_MEM_PER_NODE: String(Math.round(job.memGB * 1024)), SLURM_CPUS_PER_TASK: String(job.cpus ?? 1), SLURM_NTASKS: '1' };
+    if (String(job.id).includes('_')) Object.assign(this.vars, { SLURM_ARRAY_JOB_ID: String(job.id).split('_')[0], SLURM_ARRAY_TASK_ID: String(job.id).split('_')[1] });
+    if (job.gpus) this.vars.CUDA_VISIBLE_DEVICES = Array.from({ length: job.gpus }, (_, i) => i).join(',');
+    cluster.interactive = { jobId: job.id, gpus: job.gpus, memGB: job.memGB, timeMin: job.timeMin, cpus: job.cpus ?? 1, batch: true };
+    this.jobUsage = { memGB: 0.2, minutes: 0 };
+    this.pendingErrors = [];
+    const result = { output: [], coach: [], clear: false };
+    let outcome = 'COMPLETED';
+    let code = 0;
+    this.scriptDepth = (this.scriptDepth ?? 0) + 1;
+    try {
+      const text = job.script ?? job.command ?? '';
+      const stmts = splitStatements(text).filter((t) => !/^set\s/.test(t));
+      code = this.execStatements(stmts, result, { extraEnv: { 0: job.name }, stopOnError: /^set -e/m.test(text) });
+      if (code) outcome = 'FAILED';
+    } catch (e) {
+      if (!(e instanceof JobKill)) throw e;
+      outcome = e.result;
+    } finally {
+      this.scriptDepth--;
+      Object.assign(this, { cwd: saved.cwd, prevCwd: saved.prevCwd, vars: saved.vars, lastCode: saved.lastCode, pendingErrors: saved.pending });
+      cluster.modules = saved.modules;
+      cluster.condaEnv = saved.conda;
+      cluster.interactive = saved.interactive;
+      this.events.length = saved.events;
+    }
+    return {
+      result: outcome,
+      exitCode: outcome === 'FAILED' ? code : 0,
+      log: result.output.map((seg) => seg.text).join(''),
+      memUsedGB: Number(this.jobUsage.memGB.toFixed(2)),
+      elapsedMin: Math.max(0.2, this.jobUsage.minutes),
+    };
+  }
+
   // The editor (nano) hands its buffer back here when the student saves.
   saveEdit(path, text) {
     this.vfs.writeFile(path, text, { mtime: this.cluster.clock() });
@@ -266,7 +314,13 @@ export class Shell {
         this.pendingErrors = [];
       }
       const cwdBefore = this.cwd;
-      code = this.exec(name, ctx);
+      try {
+        code = this.exec(name, ctx);
+      } catch (e) {
+        // Slurm stopped the job mid-command: what it printed so far still lands in the log.
+        result.output.push(...both);
+        throw e;
+      }
       // cwd is where the command was typed, so "ran cd X inDir Y" checks work.
       this.events.push({ cmd: name, args, flags: flagsOf(args), code, cwd: cwdBefore, line });
 

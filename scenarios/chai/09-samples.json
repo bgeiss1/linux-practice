@@ -1,0 +1,93 @@
+{
+  "id": "chai-09-samples",
+  "track": "chai",
+  "order": 9,
+  "tier": 3,
+  "title": "More samples, same seed",
+  "story": "To compare runs fairly, fix the random seed. Fold {{seq.0}}.fasta into {{seq.0}}_s{{seed}} with 10 diffusion samples instead of 5, using seed {{seed}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLELAREK"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEARKLAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAARRAKR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRLPKGE"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEKKREL"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEKLLEP"
+      ]
+    ],
+    "seed": [
+      "42",
+      "7",
+      "1234",
+      "2026"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">protein|name={{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make 10 samples with seed {{seed}}",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{project}}/{{seq.0}}_s{{seed}}/pred.model_idx_9.cif"
+          },
+          {
+            "any": [
+              {
+                "ran": "chai-lab",
+                "lineHas": "--seed {{seed}}"
+              },
+              {
+                "ran": "chai-lab",
+                "lineHas": "--seed={{seed}}"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`chai-lab fold --num-diffn-samples 10 --seed {{seed}} {{seq.0}}.fasta {{seq.0}}_s{{seed}}`, in a GPU job with the chai environment."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load anaconda",
+    "conda activate chai",
+    "chai-lab fold --num-diffn-samples 10 --seed {{seed}} {{seq.0}}.fasta {{seq.0}}_s{{seed}}",
+    "exit"
+  ]
+}

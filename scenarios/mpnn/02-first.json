@@ -1,0 +1,84 @@
+{
+  "id": "mpnn-02-first",
+  "track": "mpnn",
+  "order": 2,
+  "tier": 1,
+  "title": "Design your first sequence",
+  "story": "ProteinMPNN reads a backbone and designs sequences that should fold into it. Design one sequence for inputs/{{target}}.pdb, writing results to outputs. ProteinMPNN needs the proteinmpnn conda environment. A small run like this is fine without a GPU.",
+  "lesson": {
+    "title": "Running ProteinMPNN",
+    "parts": [
+      {
+        "code": "python",
+        "note": "Run a Python script with the python of the active environment (proteinmpnn), which has PyTorch installed."
+      },
+      {
+        "code": "/opt/ProteinMPNN/protein_mpnn_run.py",
+        "note": "The script, by its full path, since it isn't on your PATH."
+      },
+      {
+        "code": "--pdb_path inputs/{{target}}.pdb",
+        "note": "The backbone to design sequences for."
+      },
+      {
+        "code": "--out_folder outputs",
+        "note": "Where to write. The sequences go in outputs/seqs/{{target}}.fa."
+      }
+    ],
+    "why": "ProteinMPNN is small and fast, so one structure takes seconds even on a CPU. Hundreds of structures belong in a Slurm job.",
+    "without": "With the base environment or none, Python can't find PyTorch: \"No module named 'torch'\"."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:chains A:62"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Activate the proteinmpnn environment",
+      "check": {
+        "condaEnv": "proteinmpnn"
+      }
+    },
+    {
+      "text": "Design a sequence for inputs/{{target}}.pdb into outputs",
+      "check": {
+        "isFile": "~/{{project}}/outputs/seqs/{{target}}.fa"
+      }
+    }
+  ],
+  "hints": [
+    "`module load anaconda`, then `conda activate proteinmpnn`.",
+    "`python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}.pdb --out_folder outputs`",
+    "Then `cat outputs/seqs/{{target}}.fa` to see the result. The first record is the original sequence."
+  ],
+  "solution": [
+    "module load anaconda",
+    "conda activate proteinmpnn",
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}.pdb --out_folder outputs"
+  ]
+}

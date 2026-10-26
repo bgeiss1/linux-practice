@@ -1,0 +1,108 @@
+{
+  "id": "mpnn-07-many",
+  "track": "mpnn",
+  "order": 7,
+  "tier": 3,
+  "title": "Many backbones in one run",
+  "story": "backbones has three structures. ProteinMPNN can design for all of them in one run if you first collect them into one .jsonl file with its helper script, parse_multiple_chains.py. Parse the folder into parsed.jsonl, then design 2 sequences per backbone into outputs.",
+  "lesson": {
+    "title": "Parsing a folder of structures",
+    "parts": [
+      {
+        "code": "python /opt/ProteinMPNN/helper_scripts/parse_multiple_chains.py",
+        "note": "A helper script that ships with ProteinMPNN."
+      },
+      {
+        "code": "--input_path=backbones/",
+        "note": "A folder of .pdb files."
+      },
+      {
+        "code": "--output_path=parsed.jsonl",
+        "note": "One line per structure, with its chains and coordinates."
+      }
+    ],
+    "why": "Then `--jsonl_path parsed.jsonl` replaces `--pdb_path` and ProteinMPNN designs for every structure in one go, writing one .fa file each."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "modules": [
+        "anaconda"
+      ],
+      "conda": "proteinmpnn",
+      "files": {
+        "~/{{project}}/backbones/{{target}}_bb1.pdb": {
+          "lib": "pdb:chains A:56"
+        },
+        "~/{{project}}/backbones/{{target}}_bb2.pdb": {
+          "lib": "pdb:chains A:62"
+        },
+        "~/{{project}}/backbones/{{target}}_bb3.pdb": {
+          "lib": "pdb:chains A:68"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Parse backbones into parsed.jsonl",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/parsed.jsonl",
+          "text": "\"name\":\"{{target}}_bb3\""
+        }
+      }
+    },
+    {
+      "text": "Design 2 sequences for every backbone into outputs",
+      "check": {
+        "all": [
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}_bb1.fa",
+              "text": "sample=2,"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}_bb2.fa",
+              "text": "sample=2,"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}_bb3.fa",
+              "text": "sample=2,"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`python /opt/ProteinMPNN/helper_scripts/parse_multiple_chains.py --input_path=backbones/ --output_path=parsed.jsonl`, then `python /opt/ProteinMPNN/protein_mpnn_run.py --jsonl_path parsed.jsonl --out_folder outputs --num_seq_per_target 2`."
+  ],
+  "solution": [
+    "python /opt/ProteinMPNN/helper_scripts/parse_multiple_chains.py --input_path=backbones/ --output_path=parsed.jsonl",
+    "python /opt/ProteinMPNN/protein_mpnn_run.py --jsonl_path parsed.jsonl --out_folder outputs --num_seq_per_target 2"
+  ]
+}

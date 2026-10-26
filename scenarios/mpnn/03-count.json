@@ -1,0 +1,70 @@
+{
+  "id": "mpnn-03-count",
+  "track": "mpnn",
+  "order": 3,
+  "tier": 2,
+  "title": "Count the designs",
+  "story": "A classmate ran ProteinMPNN on {{c.0}} and left outputs/seqs/{{c.0}}.fa. How many designed sequences are in it? Careful: the first record isn't a design. Type the number in the answer box.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "c": [
+      [
+        "pdl1",
+        "5",
+        ">pdl1, score=1.7304, global_score=1.8235, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=11\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=1.1298, global_score=1.1511, seq_recovery=0.0161\nQATNGSVAEIIRKKKLEESGAATNGSVKELKKITEALDKVTSQAEELLAEIRKKLTEAEQDL\n>T=0.1, sample=2, score=1.0090, global_score=1.0303, seq_recovery=0.0645\nQATNLSVKRIIRKKELEESEQAANGSVKDLRKIREALDGVTNQAAELLAEIRKKLDELAQDL\n>T=0.1, sample=3, score=1.0493, global_score=1.0706, seq_recovery=0.0161\nGATNGAVKRIIREKLLEVSGQATNGSVEDLNKIREALDEVTNQAEELLAEILKKLDNAAGDL\n>T=0.1, sample=4, score=1.0707, global_score=1.0920, seq_recovery=0.0000\nQATNGSVRRIQRKKLLEEDGLATNGQVKDLKKIREADDKETNQQKELLAEIIKKDDEAASDR\n>T=0.1, sample=5, score=1.1110, global_score=1.1323, seq_recovery=0.0161\nQETNKSVKRIIRKKLLLESGQATNVSVKDLKKIREALAKVTNQAELELAEIRLKLDEAAEDL\n"
+      ],
+      [
+        "il7r",
+        "7",
+        ">il7r, score=1.8552, global_score=1.6905, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=12\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=1.2836, global_score=1.3049, seq_recovery=0.1452\nIRKKLDEVAQEELLKKDIAEEELLNTARKVGIKKDLAERALLEEIQNTSGVKGSAEDLKKEE\n>T=0.1, sample=2, score=1.3428, global_score=1.3641, seq_recovery=0.1613\nERKKLDEAAQEEILKKRRAEEELLNTQQKVLIKKDLAEAALLEKAQNTSGVKGRAEDLKKEE\n>T=0.1, sample=3, score=1.2031, global_score=1.2244, seq_recovery=0.1129\nIRKQLDEAEQEELKKKRIAEEELENTAQKVRIKSDLAEAALLEEAQLTSGDKGSAEDKKKEE\n>T=0.1, sample=4, score=1.2622, global_score=1.2835, seq_recovery=0.1290\nIREKLDEAAQEELKKKRIAEEELKNTAQKVRIKKKLAEQKLLEEAQNTSGVKGSAEDTKKEA\n>T=0.1, sample=5, score=1.3025, global_score=1.3238, seq_recovery=0.0968\nIRKKLDEVLQEELLKKRLAEEELLNTLQKVRIVKDLAEQALLEEARNTLGVKGSAEDLKKEE\n>T=0.1, sample=6, score=1.1816, global_score=1.2029, seq_recovery=0.1613\nIRKKLDLAAQEELLKKRIEEEELLNTLQKKRIKKDDAEQALLENGQNTSGVKGSAEALKKKE\n>T=0.1, sample=7, score=1.2219, global_score=1.2432, seq_recovery=0.0968\nNRKKLEEAKQGELLKKRILEEEELNGAQKVREKKDLAEQKLLEDKQNTSGVKGEAEDLKKED\n"
+      ],
+      [
+        "her2",
+        "9",
+        ">her2, score=1.7524, global_score=1.8426, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=13\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=0.9355, global_score=0.9568, seq_recovery=0.0968\nGLVKDLAERLIRKKLLKEAGDIAERIKKGSKKIGEALDNTAEDLVKGSTNAQNTLLEEILDL\n>T=0.1, sample=2, score=0.9758, global_score=0.9971, seq_recovery=0.0968\nGSVKDLSERTIRKKLLEEAIDGAERINKGRKKIREELDNTAEDLVKGQTNAQNTLLEELLDL\n>T=0.1, sample=3, score=1.0161, global_score=1.0374, seq_recovery=0.1290\nGSVKDLDERIIRKRELEEAQDIAERKKKTSKQIREALDNRAEDLVKGKTNAQNTLLERKLDL\n>T=0.1, sample=4, score=1.0563, global_score=1.0776, seq_recovery=0.1290\nGLEKDLAERDIRKALLGEAQDILERIKKGSLKIREALDNTAEDLVKKSTNAQGTLLEALLDL\n>T=0.1, sample=5, score=0.9166, global_score=0.9379, seq_recovery=0.0806\nGSVKGLAERIIREKLLEKAQDIAERIKKGSKKIREALRKTAEDLVEGSVNAQNTLLEELLDS\n>T=0.1, sample=6, score=0.9569, global_score=0.9782, seq_recovery=0.0968\nGSVKELAERIIRKNGLEEAQDIAERIEKGSKKIREALDNTAEDLVKGSTNAQNTLLEEDLDL\n>T=0.1, sample=7, score=0.9972, global_score=1.0185, seq_recovery=0.0645\nGSVKVLAERIIKKKLLEEAVDIQERKKKGSKDIREALDNQAEVLVKGNTNKQNTLLELKLDL\n>T=0.1, sample=8, score=0.9329, global_score=0.9542, seq_recovery=0.0484\nGSVKLLAERIIRKKLLEAAQEIAERIKKESRKIREALDNTALDLVKGSTDAQGTLEEELLDL\n>T=0.1, sample=9, score=0.9732, global_score=0.9945, seq_recovery=0.0645\nGSVKDLAERIIRKTLLEEAQDIAERIVKGSKEIREALDNVANDLVKGSTEAQKTLLEELLDL\n"
+      ],
+      [
+        "tnfa",
+        "11",
+        ">tnfa, score=1.4104, global_score=1.6966, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, git_hash=8907e6671bfbfc92303b5f79c4b5e6ce47cdef57, seed=14\nMLEEEIIKAALEGAEAIGEEIEAAAKGRLDLVKKAEIEAAKELRRAAKGAAAELELRDELKK\n>T=0.1, sample=1, score=0.8839, global_score=0.9052, seq_recovery=0.0323\nKSVKQATNEIIRKKLDEASSQATNLLEEDQEADDKKISEEKKAIEELLTNQGKVLSEADRQA\n>T=0.1, sample=2, score=1.0236, global_score=1.0449, seq_recovery=0.0645\nGSEKQATKRIIRNKLLEASGRATNLLEEGLNALDKKIGEEKKDIEELLTNSLKVLDEAIRQA\n>T=0.1, sample=3, score=0.9833, global_score=1.0046, seq_recovery=0.0323\nGSKKQATNRITRKKLEEAKGQATDLLIEDLEALDLKIREESKRIEELLINSGKILDEAIRKA\n>T=0.1, sample=4, score=0.9431, global_score=0.9644, seq_recovery=0.0323\nGSVKQAGNRIIRLKLDEASGEATNLLEEALEALAKKIREEKKVIEELLTLSGKVLDIAIRQA\n>T=0.1, sample=5, score=0.9028, global_score=0.9241, seq_recovery=0.0645\nGSVKQTTNRIIRKKLDEESGIATNLLEEALEALAKKIREEKKRLEEALTNSGKELDEAIRQA\n>T=0.1, sample=6, score=1.0425, global_score=1.0638, seq_recovery=0.0323\nRSVKQLTNRIIRKKLQEASGQATNLLEKDLEALDKKIREEKKRIEKLLTNLGKVLDEAIRQA\n>T=0.1, sample=7, score=1.0022, global_score=1.0235, seq_recovery=0.0645\nSSVKQATNLIIRKSLDEAEGQATNKLEEDLLALDKKIRGEKKRIEELLTGSGGVLDEAIRQA\n>T=0.1, sample=8, score=0.8865, global_score=0.9078, seq_recovery=0.0645\nGSVIQATNRIIRKKLDAAEGQKTNLLEEDLEAEDKKIREEKARIEELLTNSGKVEDEAIRQA\n>T=0.1, sample=9, score=1.0262, global_score=1.0475, seq_recovery=0.0484\nGSVGQATNRIIRAKLDEASGQATNLLETDLEALDAKIREEKKRIEELLTNSGKVLDEAIRQR\n>T=0.1, sample=10, score=0.9331, global_score=0.9544, seq_recovery=0.0323\nGSKKQATTRIIRKKLDQASGQATNLLAEDLDALDKKIRQEIKRIEELESNSGKVLDELERQA\n>T=0.1, sample=11, score=0.9734, global_score=0.9947, seq_recovery=0.0484\nGSVKQATNRIIRKKLDEASGQAVNLAEEDLEALDKKIREEKKRIEEQLTNSGEVLDEAIRQA\n"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/inputs/{{c.0}}.pdb": {
+          "lib": "pdb:chains A:62"
+        },
+        "~/{{project}}/outputs/seqs/{{c.0}}.fa": "{{c.2}}"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "How many designed sequences?",
+      "check": {
+        "answer": "{{c.1}}"
+      }
+    }
+  ],
+  "hints": [
+    "The first record is the original (native) sequence. Each design has a header starting `>T=`.",
+    "`grep -c \"^>T=\" outputs/seqs/{{c.0}}.fa` counts only the designs."
+  ],
+  "solution": [
+    "grep -c \"^>T=\" outputs/seqs/{{c.0}}.fa",
+    {
+      "answer": "{{c.1}}"
+    }
+  ]
+}

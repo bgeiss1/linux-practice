@@ -101,6 +101,9 @@ export function readInputs(ctx, files) {
       ctx.failed = true;
       continue;
     }
+    if (node.binary) {
+      ctx.coach('binary', `\`${f}\` isn't text, so it prints as gibberish. ${node.binary.includes(' ') ? node.binary : `It's a binary ${node.binary} file.`}`);
+    }
     if (node.archive || node.gz) {
       ctx.coach('binary', node.archive
         ? `\`${f}\` is an archive, not text. \`tar -tzf ${f}\` lists what's inside.`

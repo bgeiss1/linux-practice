@@ -1,0 +1,92 @@
+{
+  "id": "gromacs-07-minimize",
+  "track": "gromacs",
+  "order": 7,
+  "tier": 2,
+  "title": "Energy minimization",
+  "story": "Before simulating, relax any atoms that sit too close together. Make em.tpr from minim.mdp, 1AKI_solv_ions.gro and topol.top, then run it with mdrun so every output file is named em. Run it inside an interactive job with a GPU, and leave the job afterwards.",
+  "lesson": {
+    "title": "mdrun: run the simulation",
+    "parts": [
+      {
+        "code": "gmx mdrun",
+        "note": "The program that actually runs minimization or dynamics."
+      },
+      {
+        "code": "-v",
+        "note": "Verbose: print progress as it goes."
+      },
+      {
+        "code": "-deffnm em",
+        "note": "Default file name: read em.tpr and write em.log, em.edr, em.trr and em.gro."
+      }
+    ],
+    "why": "Minimization moves atoms downhill in energy until the largest force is below `emtol` in minim.mdp (1000 kJ/mol/nm)."
+  },
+  "vars": {
+    "dir": [
+      "lysozyme_md",
+      "md_practice",
+      "lyz_water",
+      "mip662_md"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{dir}}",
+      "liveJobs": true,
+      "modules": [
+        "gromacs"
+      ],
+      "files": {
+        "~/{{dir}}/1AKI_solv_ions.gro": "Protein in water\n34304\n    1LYS      N    1   3.536   2.234   1.981\n    1LYS     H1    2   3.612   2.296   1.958\n    1LYS     H2    3   3.497   2.257   2.071\n  130SOL     OW 1960   0.569   1.275   1.165\n  130SOL    HW1 1961   0.476   1.268   1.128\n 9000CL      CL34297   2.100   4.400   3.100\n 9001CL      CL34298   2.500   4.400   3.100\n 9002CL      CL34299   2.900   4.400   3.100\n 9003CL      CL34300   3.300   4.400   3.100\n 9004CL      CL34301   3.700   4.400   3.100\n 9005CL      CL34302   4.100   4.400   3.100\n 9006CL      CL34303   4.500   4.400   3.100\n 9007CL      CL34304   4.900   4.400   3.100\n   7.07069   7.07069   7.07069\n",
+        "~/{{dir}}/minim.mdp": "; minim.mdp - used as input into grompp to generate em.tpr\nintegrator  = steep         ; Algorithm (steep = steepest descent minimization)\nemtol       = 1000.0        ; Stop minimization when the maximum force < 1000.0 kJ/mol/nm\nemstep      = 0.01          ; Minimization step size\nnsteps      = 50000         ; Maximum number of (minimization) steps to perform\nnstlist         = 1\ncutoff-scheme   = Verlet\ncoulombtype     = PME\nrcoulomb        = 1.0\nrvdw            = 1.0\npbc             = xyz\n",
+        "~/{{dir}}/posre.itp": "; In this topology include file, you will find position restraint\n; entries for all the heavy atoms in your original pdb file.\n; This means that all the protons which were added by pdb2gmx are\n; not restrained.\n\n[ position_restraints ]\n; atom  type      fx      fy      fz\n     1     1  1000  1000  1000\n     5     1  1000  1000  1000\n",
+        "~/{{dir}}/topol.top": ";\n;\tFile 'topol.top' was generated\n;\tBy user: student (5012)\n;\tOn host: geiss-01\n;\tAt date: Sat Oct 24 15:00:00 2026\n;\n;\tThis is a standalone topology file\n;\n;\tCreated by:\n;\t          :-) GROMACS - gmx pdb2gmx, 2024.4 (-:\n;\n;\tCommand line:\n;\t  gmx pdb2gmx -f 1AKI_clean.pdb -water spce -ff amber99sb-ildn\n;\tForce field was read from the standard GROMACS share directory.\n;\n\n; Include forcefield parameters\n#include \"amber99sb-ildn.ff/forcefield.itp\"\n\n[ moleculetype ]\n; Name            nrexcl\nProtein_chain_A     3\n\n[ atoms ]\n;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB\n; residue   1 LYS rtp NLYS q +2.0\n     1         N3      1    LYS      N      1     0.0966      14.01\n     2          H      1    LYS     H1      2     0.2165      1.008\n     3          H      1    LYS     H2      3     0.2165      1.008   ; qtot 0.5296\n; (practice copy: atoms 4 to 1958 are left out of this listing)\n  1959         O2    129    LEU    OC2   1959    -0.8188         16   ; qtot 8\n\n[ bonds ]\n;  ai    aj funct            c0            c1            c2            c3\n    1     2     1\n\n; Include Position restraint file\n#ifdef POSRES\n#include \"posre.itp\"\n#endif\n\n; Include water topology\n#include \"amber99sb-ildn.ff/spce.itp\"\n\n#ifdef POSRES_WATER\n; Position restraint for each water oxygen\n[ position_restraints ]\n;  i funct       fcx        fcy        fcz\n   1    1       1000       1000       1000\n#endif\n\n; Include topology for ions\n#include \"amber99sb-ildn.ff/ions.itp\"\n\n[ system ]\n; Name\n1AKI_CLEAN\n\n[ molecules ]\n; Compound        #mols\nProtein_chain_A   1\nSOL               10779\nCL                8\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make em.tpr with grompp",
+      "check": {
+        "isFile": "~/{{dir}}/em.tpr"
+      }
+    },
+    {
+      "text": "Run the minimization in a GPU job",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{dir}}/em.gro"
+          },
+          {
+            "isFile": "~/{{dir}}/em.edr"
+          },
+          {
+            "ran": "gmx",
+            "arg": "mdrun",
+            "lineHas": "-deffnm em"
+          }
+        ]
+      }
+    },
+    {
+      "text": "Leave the interactive job",
+      "check": {
+        "notInInteractiveJob": true
+      }
+    }
+  ],
+  "hints": [
+    "`gmx grompp -f minim.mdp -c 1AKI_solv_ions.gro -p topol.top -o em.tpr`",
+    "`srun --gres=gpu:1 --pty bash`, `module load gromacs`, then `gmx mdrun -v -deffnm em`. Then `exit`."
+  ],
+  "solution": [
+    "gmx grompp -f minim.mdp -c 1AKI_solv_ions.gro -p topol.top -o em.tpr",
+    "srun --gres=gpu:1 --pty bash",
+    "module load gromacs",
+    "gmx mdrun -v -deffnm em",
+    "exit"
+  ]
+}

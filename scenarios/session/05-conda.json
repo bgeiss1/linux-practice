@@ -4,11 +4,12 @@
   "order": 5,
   "tier": 2,
   "title": "Switch on a conda environment",
-  "story": "ProteinMPNN and RFdiffusion live in conda environments, and conda itself comes from a module. Activate the {{env}} environment.",
+  "story": "Some design tools live in conda environments: ProteinMPNN in proteinmpnn, Chai-1 in chai, RFD4-Proteina in rfd4. conda itself comes from a module. Activate the {{env}} environment.",
   "vars": {
     "env": [
       "proteinmpnn",
-      "rfdiffusion"
+      "chai",
+      "rfd4"
     ]
   },
   "machines": {

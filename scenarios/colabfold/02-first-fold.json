@@ -1,0 +1,115 @@
+{
+  "id": "colabfold-02-first-fold",
+  "track": "colabfold",
+  "order": 2,
+  "tier": 1,
+  "title": "Your first fold",
+  "story": "Fold {{seq.0}}.fasta with ColabFold and put the results in a folder called {{seq.0}}_af. ColabFold needs a GPU and more memory than Slurm gives by default, so start an interactive job that asks for both. Leave the job when you're done.",
+  "lesson": {
+    "title": "Folding in an interactive job",
+    "intro": "Two commands: one to get a GPU from Slurm, one to fold.",
+    "parts": [
+      {
+        "code": "srun --gres=gpu:1 --mem=32G --pty bash",
+        "note": "An interactive job with 1 GPU and 32 GB of memory. ColabFold runs AlphaFold2 on the GPU; the memory holds the sequence search and the model."
+      },
+      {
+        "code": "module load colabfold",
+        "note": "Put `colabfold_batch` on your PATH."
+      },
+      {
+        "code": "colabfold_batch",
+        "note": "ColabFold's command for folding one or many sequences."
+      },
+      {
+        "code": "{{seq.0}}.fasta",
+        "note": "The input: a FASTA file. Each sequence is named by its header line."
+      },
+      {
+        "code": "{{seq.0}}_af",
+        "note": "The folder for results. ColabFold makes it if it doesn't exist."
+      }
+    ],
+    "why": "ColabFold first searches for related sequences (an MSA) on the ColabFold server, then runs 5 AlphaFold2 models and ranks them.",
+    "without": "Without `--gres=gpu:1` ColabFold warns \"no GPU detected\" and would take hours on the CPU. Without `--mem`, the job gets 4 GB and the run is killed."
+  },
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDI"
+      ],
+      [
+        "des_4471",
+        "MKIDIALPEALKKALGKEKAGLEEALPRKKKIDLPERKEADELDKLKLLKPELPARKEVRKEKL"
+      ],
+      [
+        "il7r_min",
+        "MAVEIAEEKKKLGELEDKRKEALLRAKLLAALAAAAAAEILLELPVAAAKRKEKEERVKDRVDK"
+      ],
+      [
+        "pdl1_b3",
+        "MLEPIKDADEAEKRLAEVEELLRAAAEKREPAKELPAKEEPALAKKAEALEAEIEAEGKAIEEV"
+      ],
+      [
+        "her2_mb7",
+        "MKKEKEALLAELELKKRVELGEKEPAEDEEKAAIEEDVLLKGLEERAKRKAKAEEAKGEIEELP"
+      ],
+      [
+        "tnf_c12",
+        "MEEKERGAKLREKKGLEAEERLLEREEARIELKKGELDLLLERDGERLLAEGLKRKLAVKERKA"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">{{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Start an interactive job with 1 GPU and at least 16 GB of memory",
+      "check": {
+        "inInteractiveJob": {
+          "gpus": 1,
+          "memGB": 16
+        }
+      }
+    },
+    {
+      "text": "Fold {{seq.0}}.fasta into {{seq.0}}_af",
+      "check": {
+        "isFile": "~/{{project}}/{{seq.0}}_af/{{seq.0}}.done.txt"
+      }
+    },
+    {
+      "text": "Leave the interactive job",
+      "check": {
+        "notInInteractiveJob": true
+      }
+    }
+  ],
+  "hints": [
+    "Start with `srun --gres=gpu:1 --mem=32G --pty bash`.",
+    "Inside the job: `module load colabfold`, then `colabfold_batch {{seq.0}}.fasta {{seq.0}}_af`.",
+    "When it says Done, type `exit`."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load colabfold",
+    "colabfold_batch {{seq.0}}.fasta {{seq.0}}_af",
+    "exit"
+  ]
+}

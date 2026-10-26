@@ -1,0 +1,90 @@
+{
+  "id": "chai-04-count",
+  "track": "chai",
+  "order": 4,
+  "tier": 2,
+  "title": "What did Chai-1 make?",
+  "story": "A classmate ran Chai-1 for {{seq.0}} with a different number of samples than the default, and the results are in {{seq.0}}_chai. How many predicted structures (.cif files) are there? Type the number in the answer box.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLELAREK"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEARKLAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAARRAKR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRLPKGE"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEKKREL"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEKLLEP"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">protein|name={{seq.0}}\n{{seq.1}}\n",
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_0.cif": "data_pred.model_idx_0\n#\n_entry.id pred.model_idx_0\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_0.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_1.cif": "data_pred.model_idx_1\n#\n_entry.id pred.model_idx_1\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_1.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/pred.model_idx_2.cif": "data_pred.model_idx_2\n#\n_entry.id pred.model_idx_2\n#\n",
+        "~/{{project}}/{{seq.0}}_chai/scores.model_idx_2.npz": {
+          "binary": "npz",
+          "size": "3K"
+        },
+        "~/{{project}}/{{seq.0}}_chai/msas/{{seq.0}}.aligned.pqt": {
+          "binary": "parquet",
+          "size": "96K"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Count the predicted structures",
+      "check": {
+        "answer": "3"
+      }
+    }
+  ],
+  "hints": [
+    "`ls {{seq.0}}_chai` shows everything. The structures end in .cif; the .npz files hold scores.",
+    "`ls {{seq.0}}_chai/*.cif | wc -l` counts them."
+  ],
+  "solution": [
+    "ls {{seq.0}}_chai/*.cif",
+    {
+      "answer": "3"
+    }
+  ]
+}

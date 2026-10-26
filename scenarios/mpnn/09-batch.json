@@ -1,0 +1,88 @@
+{
+  "id": "mpnn-09-batch",
+  "track": "mpnn",
+  "order": 9,
+  "tier": 3,
+  "title": "A big run in a batch job",
+  "story": "For the real design round you want 64 sequences for inputs/{{target}}.pdb at temperature 0.1, with seed 37 so the run can be repeated. Write mpnn.sh, a job named mpnn with 1 GPU, 16 GB and 1 hour, that does this into outputs, submit it and wait for it to finish.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "target": [
+      "pdl1",
+      "il7r",
+      "her2",
+      "tnfa",
+      "egfr",
+      "vegfa"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/inputs/{{target}}.pdb": {
+          "lib": "pdb:chains A:84"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit mpnn.sh",
+      "check": {
+        "jobSubmitted": {
+          "name": "mpnn",
+          "gpus": 1
+        }
+      }
+    },
+    {
+      "text": "Let it make 64 sequences with seed 37",
+      "check": {
+        "all": [
+          {
+            "jobState": {
+              "name": "mpnn",
+              "state": "CD"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}.fa",
+              "text": "seed=37"
+            }
+          },
+          {
+            "fileContains": {
+              "path": "~/{{project}}/outputs/seqs/{{target}}.fa",
+              "text": "sample=64,"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "Inside the script, after the #SBATCH lines: `module load anaconda`, `conda activate proteinmpnn`, then the ProteinMPNN line with `--num_seq_per_target 64 --sampling_temp 0.1 --seed 37`."
+  ],
+  "solution": [
+    {
+      "nano": "mpnn.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=mpnn-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/{{target}}.pdb --out_folder outputs --num_seq_per_target 64 --sampling_temp 0.1 --seed 37\n"
+    },
+    "sbatch mpnn.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

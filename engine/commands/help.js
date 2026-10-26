@@ -13,8 +13,11 @@ export const HELP = `Commands on this practice server (try "man NAME" for detail
                     conda env list | activate NAME | deactivate
   GPUs and jobs     sinfo  nvidia-smi  sbatch SCRIPT  squeue --me  scancel ID
                     sacct  seff ID  srun --gres=gpu:1 --pty bash  exit
-  Design tools      python /opt/ProteinMPNN/protein_mpnn_run.py   colabfold_batch
-                    python /opt/RFdiffusion/scripts/run_inference.py
+  Design tools      colabfold_batch IN OUT        (module load colabfold)
+                    chai-lab fold IN.fasta OUT    (conda activate chai)
+                    python /opt/ProteinMPNN/protein_mpnn_run.py   (conda activate proteinmpnn)
+                    rfd4-generate inputs=X.yaml out_dir=DIR       (conda activate rfd4)
+                    gmx pdb2gmx | editconf | solvate | grompp | genion | mdrun | energy
                     run_alphafold.py   relax.linuxgccrelease   rosetta_scripts.linuxgccrelease
   Your laptop       scp [-r] student@geiss-01:PATH LOCAL   scp LOCAL student@geiss-01:PATH
   Also              clear   history

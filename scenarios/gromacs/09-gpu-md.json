@@ -1,0 +1,78 @@
+{
+  "id": "gromacs-09-gpu-md",
+  "track": "gromacs",
+  "order": 9,
+  "tier": 3,
+  "title": "The run that dies in seconds",
+  "story": "md.sh should run 10 ns of dynamics on a GPU, but every time it ends within seconds. Submit it, find out what went wrong from its log, fix the script, and get a run that completes.",
+  "vars": {
+    "dir": [
+      "lysozyme_md",
+      "md_practice",
+      "lyz_water",
+      "mip662_md"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{dir}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{dir}}/em.gro": "Protein in water\n34304\n    1LYS      N    1   3.536   2.234   1.981\n    1LYS     H1    2   3.612   2.296   1.958\n    1LYS     H2    3   3.497   2.257   2.071\n   7.10000   7.10000   7.10000\n",
+        "~/{{dir}}/md.mdp": "; md.mdp - 10 ns production run\nintegrator              = md        ; leap-frog integrator\nnsteps                  = 5000000   ; 2 * 5000000 = 10000 ps (10 ns)\ndt                      = 0.002     ; 2 fs\nnstxout-compressed      = 5000      ; save coordinates every 10.0 ps\nnstenergy               = 5000\nnstlog                  = 5000\ncontinuation            = no\nconstraints             = h-bonds\ncutoff-scheme           = Verlet\ncoulombtype             = PME\nrcoulomb                = 1.0\nrvdw                    = 1.0\ntcoupl                  = V-rescale\ntc-grps                 = Protein Non-Protein\ntau_t                   = 0.1     0.1\nref_t                   = 300     300\npcoupl                  = Parrinello-Rahman\ntau_p                   = 2.0\nref_p                   = 1.0\ncompressibility         = 4.5e-5\npbc                     = xyz\n",
+        "~/{{dir}}/posre.itp": "; In this topology include file, you will find position restraint\n; entries for all the heavy atoms in your original pdb file.\n; This means that all the protons which were added by pdb2gmx are\n; not restrained.\n\n[ position_restraints ]\n; atom  type      fx      fy      fz\n     1     1  1000  1000  1000\n     5     1  1000  1000  1000\n",
+        "~/{{dir}}/topol.top": ";\n;\tFile 'topol.top' was generated\n;\tBy user: student (5012)\n;\tOn host: geiss-01\n;\tAt date: Sat Oct 24 15:00:00 2026\n;\n;\tThis is a standalone topology file\n;\n;\tCreated by:\n;\t          :-) GROMACS - gmx pdb2gmx, 2024.4 (-:\n;\n;\tCommand line:\n;\t  gmx pdb2gmx -f 1AKI_clean.pdb -water spce -ff amber99sb-ildn\n;\tForce field was read from the standard GROMACS share directory.\n;\n\n; Include forcefield parameters\n#include \"amber99sb-ildn.ff/forcefield.itp\"\n\n[ moleculetype ]\n; Name            nrexcl\nProtein_chain_A     3\n\n[ atoms ]\n;   nr       type  resnr residue  atom   cgnr     charge       mass  typeB    chargeB      massB\n; residue   1 LYS rtp NLYS q +2.0\n     1         N3      1    LYS      N      1     0.0966      14.01\n     2          H      1    LYS     H1      2     0.2165      1.008\n     3          H      1    LYS     H2      3     0.2165      1.008   ; qtot 0.5296\n; (practice copy: atoms 4 to 1958 are left out of this listing)\n  1959         O2    129    LEU    OC2   1959    -0.8188         16   ; qtot 8\n\n[ bonds ]\n;  ai    aj funct            c0            c1            c2            c3\n    1     2     1\n\n; Include Position restraint file\n#ifdef POSRES\n#include \"posre.itp\"\n#endif\n\n; Include water topology\n#include \"amber99sb-ildn.ff/spce.itp\"\n\n#ifdef POSRES_WATER\n; Position restraint for each water oxygen\n[ position_restraints ]\n;  i funct       fcx        fcy        fcz\n   1    1       1000       1000       1000\n#endif\n\n; Include topology for ions\n#include \"amber99sb-ildn.ff/ions.itp\"\n\n[ system ]\n; Name\n1AKI_CLEAN\n\n[ molecules ]\n; Compound        #mols\nProtein_chain_A   1\nSOL               10779\nCL                8\n",
+        "~/{{dir}}/md.sh": "#!/bin/bash\n#SBATCH --job-name=md\n#SBATCH --partition=gpu\n#SBATCH --mem=8G\n#SBATCH --time=02:00:00\n#SBATCH --output=md-%j.out\n\nmodule load gromacs\ngmx grompp -f md.mdp -c em.gro -p topol.top -o md.tpr\ngmx mdrun -deffnm md -nb gpu\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit md.sh and read how it ended",
+      "check": {
+        "jobState": {
+          "name": "md",
+          "state": "F"
+        }
+      }
+    },
+    {
+      "text": "Fix it and finish the 10 ns run",
+      "check": {
+        "all": [
+          {
+            "jobState": {
+              "name": "md",
+              "state": "CD"
+            }
+          },
+          {
+            "isFile": "~/{{dir}}/md.gro"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "The log (md-JOBID.out) says no GPU was detected: mdrun asks for one with `-nb gpu`, but the script never asks Slurm for one. Add `#SBATCH --gres=gpu:1`."
+  ],
+  "solution": [
+    "sbatch md.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "cat md-48215.out",
+    {
+      "nano": "md.sh",
+      "text": "#!/bin/bash\n#SBATCH --job-name=md\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=8G\n#SBATCH --time=02:00:00\n#SBATCH --output=md-%j.out\n\nmodule load gromacs\ngmx grompp -f md.mdp -c em.gro -p topol.top -o md.tpr\ngmx mdrun -deffnm md -nb gpu\n"
+    },
+    "sbatch md.sh",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me"
+  ]
+}

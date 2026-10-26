@@ -1,0 +1,57 @@
+{
+  "id": "colabfold-01-help",
+  "track": "colabfold",
+  "order": 1,
+  "tier": 1,
+  "title": "Read the manual first",
+  "story": "ColabFold predicts protein structures with AlphaFold2. On Geiss-01 it comes from a module, and its command is `colabfold_batch`. Load the module and read its help to find out how many models it runs by default. Type the number in the answer box.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "liveJobs": true,
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "Load the colabfold module",
+      "check": {
+        "moduleLoaded": "colabfold"
+      }
+    },
+    {
+      "text": "Show the help for colabfold_batch",
+      "check": {
+        "any": [
+          {
+            "ran": "colabfold_batch",
+            "argHas": "--help"
+          },
+          {
+            "ran": "colabfold_batch",
+            "arg": "-h"
+          }
+        ]
+      }
+    },
+    {
+      "text": "How many models does it use by default?",
+      "check": {
+        "answer": "5"
+      }
+    }
+  ],
+  "hints": [
+    "`module load colabfold` puts `colabfold_batch` on your PATH.",
+    "Almost every program prints its options with `--help`: `colabfold_batch --help`.",
+    "Look for `--num-models` in the help. The default is in brackets."
+  ],
+  "solution": [
+    "module load colabfold",
+    "colabfold_batch --help",
+    {
+      "answer": "5"
+    }
+  ]
+}

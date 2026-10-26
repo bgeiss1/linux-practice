@@ -57,14 +57,14 @@ const CHECKS = {
 
   moduleLoaded: (sh, v) => sh.cluster.modules.includes(v),
   condaEnv: (sh, v) => sh.cluster.condaEnv === v,
-  // true, a GPU count, or { "gpus": 2, "memGB": 64 } (at least that many of each).
+  // true, a GPU count, or { "gpus": 2, "memGB": 64, "timeMin": 180 } (at least that much of each).
   inInteractiveJob: (sh, v) => {
     const session = sh.cluster.interactive;
     if (!session) return false;
     if (v === true) return true;
     if (typeof v !== 'object') return session.gpus >= Number(v);
     const job = sh.cluster.jobs.find((j) => j.id === session.jobId);
-    return session.gpus >= Number(v.gpus ?? 0) && (job?.memGB ?? 0) >= Number(v.memGB ?? 0);
+    return session.gpus >= Number(v.gpus ?? 0) && (job?.memGB ?? 0) >= Number(v.memGB ?? 0) && (job?.timeMin ?? 0) >= Number(v.timeMin ?? 0);
   },
   notInInteractiveJob: (sh) => !sh.cluster.interactive,
 

@@ -99,7 +99,7 @@ export function buildFiles(vfs, files, home, now) {
     for (const [key, i] of keys) {
       const path = vfs.resolve(key, home, home);
       const mtime = now - parseAge(val.age);
-      if (key.endsWith('/') || (val.content === undefined && !val.lib && !val.repeat && !val.archive && typeof rawVal !== 'string')) {
+      if (key.endsWith('/') || (val.content === undefined && !val.lib && !val.repeat && !val.archive && !val.binary && typeof rawVal !== 'string')) {
         vfs.mkdir(path, { parents: true, mtime });
         continue;
       }
@@ -116,6 +116,13 @@ export function buildFiles(vfs, files, home, now) {
       if (i !== null) content = content.replace(/\{\{i\}\}/g, String(i).padStart(2, '0'));
       const node = vfs.writeFile(path, content, { mtime, mode: val.exec ? 0o755 : 0o644 });
       if (val.size) node.size = parseSize(val.size);
+      // { "binary": "what it is", "meta": {...} } is a tool's binary output, like
+      // a GROMACS .tpr or checkpoint, with what the tool needs to read it back.
+      if (val.binary) {
+        node.content = BINARY;
+        node.binary = val.binary;
+        if (val.meta) node.meta = val.meta;
+      }
       // { "archive": { "gz": true, "files": { "run/a.pdb": { "lib": "pdb:small" } } } }
       if (val.archive) packArchive(node, val.archive, now);
     }
@@ -161,6 +168,7 @@ export class Session {
       jobs: machine.jobs ?? [],
       gpusBusy: Number(machine.gpusBusy ?? 2),
       jobRules: machine.jobRules ?? [],
+      liveJobs: !!machine.liveJobs,
     });
     this.shell = new Shell({ vfs, user, cwd: vfs.resolve(machine.cwd ?? '~', home, home), cluster });
     this.machines = { cluster: this.shell };

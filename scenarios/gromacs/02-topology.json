@@ -1,0 +1,108 @@
+{
+  "id": "gromacs-02-topology",
+  "track": "gromacs",
+  "order": 2,
+  "tier": 1,
+  "title": "From PDB to topology",
+  "story": "This track follows the classic lysozyme-in-water tutorial. 1aki.pdb is hen lysozyme with its crystal waters. First save a copy without the waters (lines with HOH) as 1AKI_clean.pdb. Then build the GROMACS files with pdb2gmx: coordinates 1AKI_processed.gro and a topology, using the AMBER99SB-ILDN force field and SPC/E water.",
+  "lesson": {
+    "title": "pdb2gmx: describe the protein",
+    "parts": [
+      {
+        "code": "gmx pdb2gmx",
+        "note": "Reads a PDB file and writes what GROMACS needs: coordinates (.gro), a topology (topol.top) and position restraints (posre.itp)."
+      },
+      {
+        "code": "-f 1AKI_clean.pdb",
+        "note": "The input structure."
+      },
+      {
+        "code": "-o 1AKI_processed.gro",
+        "note": "The output coordinates, with hydrogens added."
+      },
+      {
+        "code": "-water spce",
+        "note": "The water model the topology will use."
+      },
+      {
+        "code": "-ff amber99sb-ildn",
+        "note": "The force field: the rules for how atoms push and pull on each other."
+      }
+    ],
+    "why": "The topology lists every atom, its charge and its bonds. Every later step reads it.",
+    "without": "Leave out `-ff` or `-water` and pdb2gmx stops to ask you to pick from a menu."
+  },
+  "vars": {
+    "dir": [
+      "lysozyme_md",
+      "md_practice",
+      "lyz_water",
+      "mip662_md"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{dir}}",
+      "liveJobs": true,
+      "modules": [
+        "gromacs"
+      ],
+      "files": {
+        "~/{{dir}}/1aki.pdb": {
+          "lib": "pdb:1aki"
+        }
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Save 1aki.pdb without its waters as 1AKI_clean.pdb",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{dir}}/1AKI_clean.pdb"
+          },
+          {
+            "fileContains": {
+              "path": "~/{{dir}}/1AKI_clean.pdb",
+              "text": "LYS A   1"
+            }
+          },
+          {
+            "not": {
+              "fileContains": {
+                "path": "~/{{dir}}/1AKI_clean.pdb",
+                "text": "HOH"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "text": "Run pdb2gmx to make 1AKI_processed.gro and topol.top",
+      "check": {
+        "all": [
+          {
+            "isFile": "~/{{dir}}/1AKI_processed.gro"
+          },
+          {
+            "fileContains": {
+              "path": "~/{{dir}}/topol.top",
+              "text": "amber99sb-ildn.ff/spce.itp"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`grep -v HOH 1aki.pdb > 1AKI_clean.pdb` keeps every line that does not contain HOH.",
+    "`gmx pdb2gmx -f 1AKI_clean.pdb -o 1AKI_processed.gro -water spce -ff amber99sb-ildn`",
+    "Look at the end of topol.top with `tail topol.top`: the [ molecules ] section lists one protein."
+  ],
+  "solution": [
+    "grep -v HOH 1aki.pdb > 1AKI_clean.pdb",
+    "gmx pdb2gmx -f 1AKI_clean.pdb -o 1AKI_processed.gro -water spce -ff amber99sb-ildn"
+  ]
+}

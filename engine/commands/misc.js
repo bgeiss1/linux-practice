@@ -5,7 +5,7 @@ import { splitStatements } from '../parser.js';
 import { dirname, basename } from '../vfs.js';
 import { runRepoScript } from './tools.js';
 import { endInteractive } from './slurm.js';
-import { MODULES, REPO_SCRIPTS, repoScriptNamed, NODE } from '../cluster.js';
+import { MODULES, REPO_SCRIPTS, repoScriptNamed, envForCommand, NODE } from '../cluster.js';
 import { HELP, MANUAL } from './help.js';
 
 export function help(ctx) {
@@ -82,6 +82,8 @@ function locate(name, cluster) {
   for (const m of MODULES) {
     if (m.provides.includes(name)) return cluster.modules.includes(m.name) ? `/opt/modules/${m.name}/${m.version}/bin/${name}` : null;
   }
+  const env = envForCommand(name);
+  if (env) return cluster.condaEnv === env ? `/opt/conda/envs/${env}/bin/${name}` : null;
   return COMMANDS_ON_PATH.has(name) ? `/usr/bin/${name}` : null;
 }
 

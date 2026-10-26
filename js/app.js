@@ -125,11 +125,19 @@ function renderHome() {
       ${GUIDE_LINK}
 
       <section style="display:grid;gap:14px" aria-labelledby="tracks-title">
-        <h2 id="tracks-title">Tracks</h2>
+        <h2 id="tracks-title">Linux and Slurm</h2>
         <div class="tracks">
-          ${manifest.tracks.map(trackCard).join('')}
+          ${manifest.tracks.filter((t) => t.group !== 'tools').map(trackCard).join('')}
         </div>
       </section>
+
+      ${manifest.tracks.some((t) => t.group === 'tools') ? `<section style="display:grid;gap:14px" aria-labelledby="tools-title">
+        <h2 id="tools-title">Design tools</h2>
+        <p class="muted">Each tool gets its own track. Finish Start a session and Run Slurm jobs first: these tracks assume you can get a GPU with srun and submit a job with sbatch.</p>
+        <div class="tracks">
+          ${manifest.tracks.filter((t) => t.group === 'tools').map(trackCard).join('')}
+        </div>
+      </section>` : ''}
     </section>`),
   );
 
@@ -191,7 +199,7 @@ function renderTrack(trackId) {
         <h1>${esc(t.title)}</h1>
         <p class="muted">${esc(t.blurb)} Scenarios unlock in order. Hints get shorter as you climb.</p>
       </div>
-      ${t.id === 'session' || t.id === 'slurm' ? GUIDE_LINK : ''}
+      ${t.id === 'session' || t.id === 'slurm' || t.group === 'tools' ? GUIDE_LINK : ''}
       ${groups
         .map(
           (g) => `<div class="tier-group">

@@ -1,0 +1,78 @@
+{
+  "id": "chai-07-msa",
+  "track": "chai",
+  "order": 7,
+  "tier": 3,
+  "title": "Better predictions with an MSA",
+  "story": "Without other options, Chai-1 folds from the sequence alone, which is fast but less accurate. Run {{seq.0}}.fasta again into {{seq.0}}_msa, this time asking Chai-1 to fetch a multiple sequence alignment (MSA) from the ColabFold server.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "seq": [
+      [
+        "binder_01",
+        "MEARALIAIEKVEDRKALKELELKLLKADAKAKEAKEIAKEKERGLVEILLELGDLEILEKARLELAREK"
+      ],
+      [
+        "des_4471",
+        "MKLLAAKLLELKEKIEKEIAELKGRLELKGLLELLLEEKAAIEKEVAEARLGLLLALKAIAKKEARKLAR"
+      ],
+      [
+        "il7r_min",
+        "MIKERVILAIAALLREELLDILLKAERAILIELAAEAKLAERAILALEKRLEAEAKPIEKPAKAARRAKR"
+      ],
+      [
+        "pdl1_b3",
+        "MKEKELAEEKLLILEKIRLEKAGEAALEEKIKEDLALKKKLPLEAELEAEKKPERERDEILVLKRLPKGE"
+      ],
+      [
+        "her2_mb7",
+        "MKPLKAPLKIKKAKEEEARRERKARKAELLEELELGIIAEKLLEPRVEELKAEAPRELKKKEPAEKKREL"
+      ],
+      [
+        "tnf_c12",
+        "MKLEIEAEEAEEARKKEELELRLLRRARKKALEKALRKDERLLILLAAKIRAELKELKEIKRKEEKLLEP"
+      ]
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/{{seq.0}}.fasta": ">protein|name={{seq.0}}\n{{seq.1}}\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Fold with an MSA into {{seq.0}}_msa",
+      "check": {
+        "all": [
+          {
+            "isDir": "~/{{project}}/{{seq.0}}_msa/msas"
+          },
+          {
+            "isFile": "~/{{project}}/{{seq.0}}_msa/pred.model_idx_0.cif"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`chai-lab fold --help` lists `--use-msa-server`. Run it in a GPU job with the chai environment."
+  ],
+  "solution": [
+    "srun --gres=gpu:1 --mem=32G --pty bash",
+    "module load anaconda",
+    "conda activate chai",
+    "chai-lab fold --use-msa-server {{seq.0}}.fasta {{seq.0}}_msa",
+    "exit"
+  ]
+}

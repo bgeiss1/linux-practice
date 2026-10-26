@@ -5,7 +5,7 @@
     {
       "id": "session",
       "title": "Start a session",
-      "blurb": "Log in, check the GPUs, ask Slurm for one, and load your software.",
+      "blurb": "Log in, check the GPUs, ask Slurm for them, and load your software.",
       "commands": [
         "whoami",
         "hostname",
@@ -14,6 +14,7 @@
         "srun",
         "module",
         "conda",
+        "which",
         "exit"
       ],
       "scenarios": [
@@ -24,11 +25,11 @@
         "session/05-conda",
         "session/06-interactive",
         "session/07-partitions",
-        "session/08-colabfold",
+        "session/08-one-command",
         "session/09-big-request",
-        "session/10-mpnn",
+        "session/10-which-python",
         "session/11-forgotten",
-        "session/12-rfdiffusion"
+        "session/12-workday"
       ]
     },
     {
@@ -213,6 +214,101 @@
         "transfer/10-upload-submit",
         "transfer/11-top-designs",
         "transfer/12-job-results"
+      ]
+    },
+    {
+      "id": "colabfold",
+      "title": "Fold with ColabFold",
+      "group": "tools",
+      "blurb": "Predict structures with AlphaFold2: single chains, complexes, whole folders, and batch jobs.",
+      "commands": [
+        "module load colabfold",
+        "colabfold_batch",
+        "srun",
+        "sbatch"
+      ],
+      "scenarios": [
+        "colabfold/01-help",
+        "colabfold/02-first-fold",
+        "colabfold/03-rank",
+        "colabfold/04-plddt",
+        "colabfold/05-quick-test",
+        "colabfold/06-batch",
+        "colabfold/07-complex",
+        "colabfold/08-folder",
+        "colabfold/09-oom",
+        "colabfold/10-relax"
+      ]
+    },
+    {
+      "id": "chai",
+      "title": "Predict complexes with Chai-1",
+      "group": "tools",
+      "blurb": "Fold proteins with ligands, fix FASTA headers, use MSAs, and run array jobs.",
+      "commands": [
+        "conda activate chai",
+        "chai-lab fold",
+        "srun",
+        "sbatch"
+      ],
+      "scenarios": [
+        "chai/01-env",
+        "chai/02-headers",
+        "chai/03-fold",
+        "chai/04-count",
+        "chai/05-not-empty",
+        "chai/06-ligand",
+        "chai/07-msa",
+        "chai/08-batch",
+        "chai/09-samples",
+        "chai/10-array"
+      ]
+    },
+    {
+      "id": "mpnn",
+      "title": "Design sequences with ProteinMPNN",
+      "group": "tools",
+      "blurb": "Run the ProteinMPNN scripts, choose chains and temperatures, fix residues, and pick designs.",
+      "commands": [
+        "python",
+        "protein_mpnn_run.py",
+        "helper_scripts",
+        "sbatch"
+      ],
+      "scenarios": [
+        "mpnn/01-find",
+        "mpnn/02-first",
+        "mpnn/03-count",
+        "mpnn/04-temperature",
+        "mpnn/05-chains",
+        "mpnn/06-best",
+        "mpnn/07-many",
+        "mpnn/08-fixed",
+        "mpnn/09-batch",
+        "mpnn/10-pipeline"
+      ]
+    },
+    {
+      "id": "gromacs",
+      "title": "Simulate with GROMACS",
+      "group": "tools",
+      "blurb": "Take lysozyme from PDB file to a finished simulation: topology, box, water, ions, minimization, dynamics.",
+      "commands": [
+        "module load gromacs",
+        "gmx",
+        "sbatch"
+      ],
+      "scenarios": [
+        "gromacs/01-version",
+        "gromacs/02-topology",
+        "gromacs/03-box",
+        "gromacs/04-solvate",
+        "gromacs/05-ions",
+        "gromacs/06-mismatch",
+        "gromacs/07-minimize",
+        "gromacs/08-energy",
+        "gromacs/09-gpu-md",
+        "gromacs/10-continue"
       ]
     }
   ]

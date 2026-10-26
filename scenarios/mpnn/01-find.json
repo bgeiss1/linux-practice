@@ -1,0 +1,42 @@
+{
+  "id": "mpnn-01-find",
+  "track": "mpnn",
+  "order": 1,
+  "tier": 1,
+  "title": "Where ProteinMPNN lives",
+  "story": "ProteinMPNN isn't a command or a module. It's a GitHub repository copied into /opt/ProteinMPNN, and you run its Python script. Look inside that folder and type the full path of the script whose name ends in run.py in the answer box.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~",
+      "liveJobs": true,
+      "files": {}
+    }
+  },
+  "tasks": [
+    {
+      "text": "List /opt/ProteinMPNN",
+      "check": {
+        "ran": "ls",
+        "argHas": "ProteinMPNN"
+      }
+    },
+    {
+      "text": "Type the full path of the main script",
+      "check": {
+        "answer": "/opt/ProteinMPNN/protein_mpnn_run.py"
+      }
+    }
+  ],
+  "hints": [
+    "`ls /opt/ProteinMPNN` lists what's in the repository.",
+    "The main script is protein_mpnn_run.py. Its full path starts with /opt/ProteinMPNN/.",
+    "Type `/opt/ProteinMPNN/protein_mpnn_run.py`."
+  ],
+  "solution": [
+    "ls /opt/ProteinMPNN",
+    {
+      "answer": "/opt/ProteinMPNN/protein_mpnn_run.py"
+    }
+  ]
+}

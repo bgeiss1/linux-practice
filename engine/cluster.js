@@ -22,28 +22,43 @@ export const MODULES = [
   { name: 'pyrosetta', version: '2025.03', provides: [] },
   { name: 'alphafold', version: '2.3.2', provides: ['run_alphafold.py'] },
   { name: 'colabfold', version: '1.5.5', provides: ['colabfold_batch'] },
+  { name: 'gromacs', version: '2024.4', provides: ['gmx'] },
 ];
 
+// Conda environments. Some put commands on PATH when active (chai-lab,
+// rfd4-generate); ProteinMPNN is a GitHub repo cloned into /opt whose scripts
+// you run with the python from its environment.
 export const CONDA_ENVS = {
-  base: [],
-  proteinmpnn: ['/opt/ProteinMPNN/protein_mpnn_run.py'],
-  rfdiffusion: ['/opt/RFdiffusion/scripts/run_inference.py'],
+  base: {},
+  proteinmpnn: {
+    scripts: [
+      '/opt/ProteinMPNN/protein_mpnn_run.py',
+      '/opt/ProteinMPNN/helper_scripts/parse_multiple_chains.py',
+      '/opt/ProteinMPNN/helper_scripts/assign_fixed_chains.py',
+      '/opt/ProteinMPNN/helper_scripts/make_fixed_positions_dict.py',
+    ],
+  },
+  chai: { commands: ['chai-lab'] },
+  rfd4: { commands: ['rfd4-generate', 'rfd4-evaluate'] },
 };
 
-// ProteinMPNN and RFdiffusion are GitHub repos cloned into /opt, not commands on
-// PATH. You run their scripts with the python from their conda environment.
 export const REPO_SCRIPTS = Object.fromEntries(
-  Object.entries(CONDA_ENVS).flatMap(([env, paths]) => paths.map((p) => [p, env])),
+  Object.entries(CONDA_ENVS).flatMap(([env, e]) => (e.scripts ?? []).map((p) => [p, env])),
 );
 export const repoScriptNamed = (name) => Object.keys(REPO_SCRIPTS).find((p) => p.endsWith('/' + name.split('/').pop()));
+// The conda environment that provides a command, if any.
+export const envForCommand = (name) => Object.keys(CONDA_ENVS).find((env) => CONDA_ENVS[env].commands?.includes(name)) ?? null;
 
 const MINUTE = 60_000;
 
 export class Cluster {
-  constructor({ user = 'student', now = Date.now(), modules = [], conda = null, jobs = [], gpusBusy = 2, jobRules = [] } = {}) {
+  constructor({ user = 'student', now = Date.now(), modules = [], conda = null, jobs = [], gpusBusy = 2, jobRules = [], liveJobs = false } = {}) {
     // jobRules let a scenario decide how a submitted script behaves, e.g.
     // { "match": "run_mpnn.sh", "needsGpu": true, "needsTimeMin": 90, "creates": ["outputs/seqs.fa"] }
     this.jobRules = jobRules;
+    // With liveJobs, a job script no rule matches really runs when the job
+    // ends: its commands write the log, and they decide how the job ends.
+    this.liveJobs = liveJobs;
     this.user = user;
     this.start = now;
     this.step = 0;
@@ -97,6 +112,11 @@ export class Cluster {
       dependency: spec.dependency ?? null,
       afterJob: spec.dependency ?? null, // kept after the dependency is met
       interactive: spec.interactive ?? false,
+      live: spec.live ?? false,
+      script: spec.script ?? null,
+      env: spec.env ?? null,
+      cpus: spec.cpus ?? 1,
+      elapsedMin: spec.elapsedMin ?? null,
     };
   }
 
@@ -124,6 +144,8 @@ export class Cluster {
     if (cmd === 'conda') return 'The `conda` command appears only after its module is loaded. Try `module load anaconda`.';
     const mod = MODULES.find((m) => m.provides.includes(cmd));
     if (mod) return `\`${cmd}\` comes from a module. Try \`module avail\`, then \`module load ${mod.name}\`.`;
+    const env = envForCommand(cmd);
+    if (env) return `\`${cmd}\` is installed in the \`${env}\` conda environment. Run \`module load anaconda\`, then \`conda activate ${env}\`.`;
     const script = repoScriptNamed(cmd);
     if (script) return `\`${cmd.split('/').pop()}\` is a Python script in ${script.slice(0, script.lastIndexOf('/'))}. Activate the \`${REPO_SCRIPTS[script]}\` environment, then run \`python ${script}\`.`;
     return null;
@@ -165,6 +187,8 @@ export class Cluster {
   }
 
   finish(job, sh) {
+    // A live job runs its script now; the commands decide how it ends.
+    if (job.live && sh) Object.assign(job, sh.runJob(job));
     const states = { COMPLETED: ['CD', 0], FAILED: ['F', 1], TIMEOUT: ['TO', 0], OUT_OF_MEMORY: ['OOM', 0] };
     const [state, code] = states[job.result] ?? ['CD', 0];
     job.state = state;
@@ -173,7 +197,7 @@ export class Cluster {
     if (job.output && sh) {
       const tail = {
         COMPLETED: '',
-        FAILED: 'Error: job script exited with status 1\n',
+        FAILED: job.live ? '' : 'Error: job script exited with status 1\n',
         TIMEOUT: `slurmstepd: error: *** JOB ${job.id} ON geiss-01 CANCELLED DUE TO TIME LIMIT ***\n`,
         OUT_OF_MEMORY: `slurmstepd: error: Detected 1 oom_kill event in StepId=${job.id}.batch. Some of the step tasks have been OOM Killed.\n`,
       }[job.result] ?? '';
@@ -194,7 +218,7 @@ export class Cluster {
   fmtElapsed(job) {
     if (job.startStep === null) return '0:00';
     const end = job.endStep ?? this.step;
-    const secs = Math.max(0, end - job.startStep) * 37;
+    const secs = job.endStep && job.elapsedMin !== null ? Math.round(job.elapsedMin * 60) : Math.max(0, end - job.startStep) * 37;
     const m = Math.floor(secs / 60);
     const h = Math.floor(m / 60);
     const s = String(secs % 60).padStart(2, '0');
