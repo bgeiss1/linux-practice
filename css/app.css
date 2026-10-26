@@ -200,3 +200,53 @@ a.scen:hover { border-color: var(--accent); }
 a.guide-link:hover { border-color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+/* Track ladder: lessons between the practice scenarios. */
+.good-text { color: var(--good); }
+.warn-text { color: var(--amber); }
+.small { font-size: 13px; }
+.lesson-row .scen { background: var(--accent-soft); border-color: transparent; }
+.lesson-row a.scen:hover { border-color: var(--accent); }
+.lesson-pill { background: var(--surface); }
+.up-next { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 14px 16px; color: var(--fg); text-decoration: none; }
+.up-next:hover .btn { filter: brightness(1.1); }
+
+/* Lesson pages. */
+.lz { display: grid; gap: 18px; padding-block: 28px 48px; max-width: 76ch; }
+.lz-head { display: grid; gap: 8px; }
+.lz-head .lede { color: var(--muted); font-size: 1.08rem; }
+.lz-text { display: grid; gap: 10px; }
+.lz-cmd { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 8px; padding: 14px 16px; display: grid; gap: 8px; }
+.lz-cmd-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.lz-cmd-name { font-size: 1.35rem; font-weight: 700; padding: 2px 8px; }
+.lz-stands { font-family: var(--f-display); font-size: 1.1rem; color: var(--accent); }
+.lz-syntax code { background: transparent; padding: 0; font-size: .95em; }
+.lz-flags { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: 14.5px; }
+.lz-flags th { text-align: left; font: 11px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.lz-flags td { padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.lz-flags tr:last-child td { border-bottom: 0; }
+.lz-flags td:first-child { white-space: nowrap; }
+.table-scroll { overflow-x: auto; }
+.lz-example { margin: 0; display: grid; gap: 6px; }
+.lz-example pre { white-space: pre; overflow-x: auto; }
+.lz-prompt { color: var(--term-prompt); }
+.lz-out { color: var(--term-dim); }
+.lz-example figcaption { font-size: 14.5px; color: var(--muted); }
+.lz-try { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.lz-try.ok { border-color: var(--good); }
+.lz-try-head { display: flex; justify-content: space-between; gap: 8px; }
+.lz-status { color: var(--good); font-weight: 600; font-size: 14px; }
+.lz-term { min-height: 0; border-radius: 8px; overflow: hidden; }
+.lz-term .screen { min-height: 120px; max-height: 260px; }
+.lz-coach:empty { display: none; }
+.lz-quiz { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 10px; }
+.lz-options { display: grid; gap: 8px; }
+.lz-options button { justify-content: flex-start; text-align: left; white-space: normal; }
+.lz-options button.right { border-color: var(--good); background: var(--good-soft); color: var(--fg); }
+.lz-options button.wrong { border-color: var(--amber); opacity: .7; }
+.lz-options button:disabled { cursor: default; }
+.lz-why:empty { display: none; }
+.lz-note { border-radius: 8px; padding: 12px 14px; display: grid; gap: 4px; background: var(--accent-soft); }
+.lz-note.warn { background: color-mix(in srgb, var(--amber) 14%, var(--surface)); }
+.lz-end { display: grid; gap: 10px; justify-items: start; padding-top: 6px; border-top: 1px solid var(--line); }
+.lz-end:empty { display: none; }

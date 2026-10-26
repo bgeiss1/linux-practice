@@ -46,3 +46,24 @@ test('answers go in the answer box, not the terminal', async () => {
   assert.equal(s.submitAnswer(s.def.solution.at(-1).answer).correct, true);
   assert.ok(s.complete);
 });
+
+// Every tutorial lesson must be well formed, and every Try it solvable.
+for (const track of manifest.tracks) {
+  const file = new URL(`../tutorials/${track.id}.json`, import.meta.url);
+  test(`tutorial ${track.id}`, async () => {
+    const { validateTutorial } = await import('../engine/tutorial.js');
+    const tut = JSON.parse(readFileSync(file));
+    assert.equal(tut.track, track.id);
+    const ids = track.scenarios.map((p) => JSON.parse(readFileSync(new URL(`${p}.json`, root))).id);
+    assert.deepEqual(validateTutorial(tut, ids, { seeds: 5 }), []);
+  });
+}
+
+test('tracks open and close by date', async () => {
+  const { trackOpen } = await import('../engine/tutorial.js');
+  const day = new Date(2026, 10, 3);
+  assert.equal(trackOpen({}, day), true);
+  assert.equal(trackOpen({ available: false }, day), false);
+  assert.equal(trackOpen({ available: false, opens: '2026-11-03' }, day), true);
+  assert.equal(trackOpen({ available: false, opens: '2026-11-04' }, day), false);
+});

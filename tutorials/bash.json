@@ -1,0 +1,539 @@
+{
+  "track": "bash",
+  "lessons": [
+    {
+      "id": "scripts",
+      "title": "What a script is, and running one",
+      "before": "bash-01-run-script",
+      "summary": "A script is a file of commands. Here's how to run it and why it sometimes refuses.",
+      "blocks": [
+        {
+          "text": "Everything you've typed so far went to bash, the shell: the program that reads your commands and runs them. A bash script is just those same commands saved in a text file, so you can run them all again with one command. Every Slurm job you submit is a script."
+        },
+        {
+          "example": {
+            "cmd": "cat count_designs.sh",
+            "out": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l",
+            "note": "Line 1, the shebang (`#!`), says which program runs the file. Lines starting with `#` are comments for people. The rest are ordinary commands."
+          }
+        },
+        {
+          "flags": [
+            [
+              "./count_designs.sh",
+              "run it as a program",
+              "Needs execute permission (x). The ./ means 'the file in this folder'"
+            ],
+            [
+              "bash count_designs.sh",
+              "run it with bash",
+              "Works even without x permission"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Run `count_designs.sh` with bash.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              }
+            },
+            "check": {
+              "ran": "bash",
+              "argHas": "count_designs.sh"
+            },
+            "hint": "bash count_designs.sh",
+            "solution": [
+              "bash count_designs.sh"
+            ]
+          }
+        },
+        {
+          "text": "`./count_designs.sh` gives `Permission denied` until the file is executable. Give it x with `chmod +x`, then it runs."
+        },
+        {
+          "try": {
+            "text": "Make the script executable, then run it with `./`.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Make it executable",
+                "check": {
+                  "executable": "~/work/count_designs.sh"
+                }
+              },
+              {
+                "text": "Run it with ./",
+                "check": {
+                  "ran": "./count_designs.sh"
+                }
+              }
+            ],
+            "hint": "chmod +x count_designs.sh, then ./count_designs.sh",
+            "solution": [
+              "chmod +x count_designs.sh",
+              "./count_designs.sh"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Why does typing just `count_designs.sh` (without ./) say `command not found`?",
+            "options": [
+              "The file is broken",
+              "The shell only looks for commands in PATH folders, not the current folder",
+              "It needs sudo",
+              "Scripts can't run on Geiss-01"
+            ],
+            "answer": 1,
+            "why": "The shell searches the folders in PATH. ./ tells it the program is right here."
+          }
+        }
+      ]
+    },
+    {
+      "id": "args",
+      "title": "Giving a script arguments",
+      "before": "bash-03-argument",
+      "summary": "Make one script work on any folder or file.",
+      "blocks": [
+        {
+          "text": "Arguments are the words after a command: in `ls runs`, `runs` is an argument. Scripts take arguments too. Inside the script, `$1` is the first argument, `$2` the second, and `$#` how many there are."
+        },
+        {
+          "example": {
+            "cmd": "cat count.sh",
+            "out": "#!/bin/bash\n# Count the PDBs in the folder given as the first argument\nls $1/*.pdb | wc -l",
+            "note": "`./count.sh runs/run2` runs `ls runs/run2/*.pdb | wc -l`."
+          }
+        },
+        {
+          "try": {
+            "text": "Write `count.sh` that counts the PDBs in the folder given as `$1`, then run it on `runs/run2`.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Save count.sh using $1",
+                "check": {
+                  "fileContains": {
+                    "path": "~/work/count.sh",
+                    "text": "$1"
+                  }
+                }
+              },
+              {
+                "text": "Run it on runs/run2",
+                "check": {
+                  "ran": "bash",
+                  "argHas": "runs/run2"
+                }
+              }
+            ],
+            "hint": "nano count.sh, write: ls $1/*.pdb | wc -l, save with Ctrl+O, exit with Ctrl+X, then bash count.sh runs/run2",
+            "solution": [
+              {
+                "nano": "count.sh",
+                "text": "#!/bin/bash\nls $1/*.pdb | wc -l\n"
+              },
+              "bash count.sh runs/run2"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "You run `./prep.sh il7r 8`. Inside prep.sh, what is `$2`?",
+            "options": [
+              "prep.sh",
+              "il7r",
+              "8",
+              "Nothing"
+            ],
+            "answer": 2,
+            "why": "$1 is the first word after the script name (il7r), $2 the second (8)."
+          }
+        }
+      ]
+    },
+    {
+      "id": "redirect",
+      "title": "Saving output: >, >> and 2>",
+      "before": "bash-04-save-output",
+      "summary": "Send output to a file instead of the screen.",
+      "blocks": [
+        {
+          "text": "Programs print two streams: normal output (stdout) and error messages (stderr). Both go to your screen unless you redirect them."
+        },
+        {
+          "flags": [
+            [
+              "> file",
+              "redirect",
+              "Write normal output to file, replacing what was there"
+            ],
+            [
+              ">> file",
+              "append",
+              "Add normal output to the end of file"
+            ],
+            [
+              "2> file",
+              "redirect errors",
+              "Write error messages to file"
+            ],
+            [
+              "| command",
+              "pipe",
+              "Send output into another command instead of a file"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Save the list of designs to `list.txt` instead of printing it.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              }
+            },
+            "check": {
+              "fileContains": {
+                "path": "~/work/list.txt",
+                "text": "a.pdb"
+              }
+            },
+            "hint": "ls designs > list.txt",
+            "solution": [
+              "ls designs > list.txt"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "Add the contents of `runs/run1` to the end of `list.txt`.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/list.txt": "a.pdb\nb.pdb\nc.pdb\n"
+            },
+            "check": {
+              "all": [
+                {
+                  "fileContains": {
+                    "path": "~/work/list.txt",
+                    "text": "x.pdb"
+                  }
+                },
+                {
+                  "fileContains": {
+                    "path": "~/work/list.txt",
+                    "text": "a.pdb"
+                  }
+                }
+              ]
+            },
+            "hint": "ls runs/run1 >> list.txt  (two >, so it adds instead of replacing)",
+            "solution": [
+              "ls runs/run1 >> list.txt"
+            ]
+          }
+        },
+        {
+          "warn": "A single `>` empties the file before writing. `ls runs/run1 > list.txt` would wipe the list you built. Use `>>` to add."
+        },
+        {
+          "quiz": {
+            "q": "A script prints results and some error messages. How do you keep the errors in `errors.log` and still see the results?",
+            "options": [
+              "./run.sh > errors.log",
+              "./run.sh 2> errors.log",
+              "./run.sh >> errors.log",
+              "./run.sh | errors.log"
+            ],
+            "answer": 1,
+            "why": "2> redirects only stream 2, the errors. Normal output still goes to the screen."
+          }
+        }
+      ]
+    },
+    {
+      "id": "nano-vars",
+      "title": "Writing scripts in nano, with variables",
+      "before": "bash-06-first-script",
+      "summary": "Edit text right in the terminal, and keep settings in one place.",
+      "blocks": [
+        {
+          "command": {
+            "name": "nano",
+            "stands": "a small text editor",
+            "syntax": "nano FILE",
+            "what": "Opens FILE for editing in the terminal (or a new empty file). Type normally. The bottom lines list the shortcuts; ^ means the Ctrl key."
+          }
+        },
+        {
+          "flags": [
+            [
+              "Ctrl+O",
+              "write Out",
+              "Save; press Enter to keep the name"
+            ],
+            [
+              "Ctrl+X",
+              "eXit",
+              "Leave nano; it asks to save if you changed something"
+            ],
+            [
+              "Ctrl+K",
+              "cut",
+              "Cut the whole line"
+            ],
+            [
+              "Ctrl+W",
+              "where is",
+              "Search"
+            ]
+          ]
+        },
+        {
+          "text": "A variable holds a value you can reuse. Set it with `NAME=value` (no spaces around =) and use it with `$NAME`. Put settings at the top of a script as variables, so changing a target means changing one line."
+        },
+        {
+          "example": {
+            "cmd": "cat prep.sh",
+            "out": "#!/bin/bash\nTARGET=il7r\nmkdir -p $TARGET\ncp inputs/$TARGET.pdb $TARGET/",
+            "note": "Change TARGET=il7r to TARGET=pdl1 and the whole script follows."
+          }
+        },
+        {
+          "try": {
+            "text": "Create `hello.sh` in nano with two lines, `#!/bin/bash` and `echo hello`, save it, and run it with bash.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Save hello.sh with an echo line",
+                "check": {
+                  "fileContains": {
+                    "path": "~/work/hello.sh",
+                    "text": "echo"
+                  }
+                }
+              },
+              {
+                "text": "Run it",
+                "check": {
+                  "ran": "bash",
+                  "argHas": "hello.sh"
+                }
+              }
+            ],
+            "hint": "nano hello.sh, type the two lines, Ctrl+O, Enter, Ctrl+X, then bash hello.sh",
+            "solution": [
+              {
+                "nano": "hello.sh",
+                "text": "#!/bin/bash\necho hello\n"
+              },
+              "bash hello.sh"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which line sets a variable correctly in bash?",
+            "options": [
+              "TARGET = il7r",
+              "$TARGET=il7r",
+              "TARGET=il7r",
+              "set TARGET il7r"
+            ],
+            "answer": 2,
+            "why": "No spaces around =, and no $ when setting. The $ is only for reading the value."
+          }
+        }
+      ]
+    },
+    {
+      "id": "loops",
+      "title": "Doing it to every file: for loops",
+      "before": "bash-08-loop",
+      "summary": "Repeat a command for each file or folder.",
+      "blocks": [
+        {
+          "text": "A for loop runs the same commands once for each item in a list, with a variable holding the current item. With a wildcard, the list is every matching file."
+        },
+        {
+          "example": {
+            "cmd": "for f in designs/*.pdb; do echo $f; done",
+            "out": "designs/a.pdb\ndesigns/b.pdb\ndesigns/c.pdb",
+            "note": "Read it as: for each file f matching designs/*.pdb, do echo $f. `done` ends the loop. The `;` separates the parts on one line."
+          }
+        },
+        {
+          "try": {
+            "text": "Count the PDBs in each run folder with a loop.",
+            "cwd": "~/work",
+            "files": {
+              "~/work/count_designs.sh": "#!/bin/bash\n# Count the PDB files in designs/\nls designs/*.pdb | wc -l\n",
+              "~/work/designs/a.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/b.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/designs/c.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run1/x.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/y.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/work/runs/run2/z.pdb": {
+                "lib": "pdb:small"
+              }
+            },
+            "check": {
+              "ran": "wc",
+              "lineHas": "for "
+            },
+            "hint": "for r in runs/*; do ls $r/*.pdb | wc -l; done",
+            "solution": [
+              "for r in runs/*; do ls $r/*.pdb | wc -l; done"
+            ]
+          }
+        },
+        {
+          "tip": "Try a loop with `echo` first to see what it would do, then swap in the real command (like mv or rm) once the list looks right."
+        },
+        {
+          "quiz": {
+            "q": "In `for f in *.pdb; do cp $f backup/; done`, what is `$f` the second time through?",
+            "options": [
+              "*.pdb",
+              "The second matching file",
+              "backup/",
+              "The number 2"
+            ],
+            "answer": 1,
+            "why": "f takes each matching file name in turn."
+          }
+        }
+      ]
+    }
+  ]
+}

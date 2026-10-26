@@ -1,0 +1,242 @@
+{
+  "track": "gromacs",
+  "lessons": [
+    {
+      "id": "what",
+      "title": "What molecular dynamics is",
+      "before": "gromacs-01-version",
+      "summary": "Simulating how atoms move, step by step, and the files GROMACS uses.",
+      "blocks": [
+        {
+          "text": "Structure prediction gives you one static picture. Molecular dynamics (MD) simulates motion: it computes the force on every atom from a force field (a set of equations and parameters for bonds, angles, charges and contacts), moves each atom a tiny step (2 femtoseconds), and repeats millions of times. Watching a designed protein in water for 100 nanoseconds shows whether it stays folded, whether a binding loop flops around, and more."
+        },
+        {
+          "text": "GROMACS is a fast, widely used MD program. Everything goes through one command, `gmx`, followed by a subcommand: `gmx pdb2gmx`, `gmx solvate`, `gmx mdrun`, and so on. On Geiss-01 it's a module."
+        },
+        {
+          "flags": [
+            [
+              ".pdb / .gro",
+              "coordinates",
+              "Where each atom is (.gro is GROMACS's own format)"
+            ],
+            [
+              ".top / .itp",
+              "topology",
+              "What the molecules are: atoms, bonds, charges, and how many of each"
+            ],
+            [
+              ".mdp",
+              "MD parameters",
+              "Settings for a step: how long, what temperature, which algorithms"
+            ],
+            [
+              ".tpr",
+              "run input",
+              "Coordinates + topology + parameters in one binary file, made by grompp, run by mdrun"
+            ],
+            [
+              ".edr / .log",
+              "energies / log",
+              "Energies over time, and the run's log"
+            ],
+            [
+              ".xtc / .trr",
+              "trajectory",
+              "The atoms' positions over time: the movie"
+            ],
+            [
+              ".cpt",
+              "checkpoint",
+              "Saved state, to continue a run that stopped"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Load GROMACS and check its version.",
+            "cwd": "~/lysozyme",
+            "files": {
+              "~/lysozyme/topol.top": "; Include water topology\n#include \"amber99sb-ildn.ff/spce.itp\"\n\n[ system ]\nLYSOZYME in water\n\n[ molecules ]\n; Compound        #mols\nProtein_chain_A     1\nSOL             10832\n"
+            },
+            "tasks": [
+              {
+                "text": "Load the module",
+                "check": {
+                  "moduleLoaded": "gromacs"
+                }
+              },
+              {
+                "text": "Print the version",
+                "check": {
+                  "ran": "gmx",
+                  "argHas": "--version"
+                }
+              }
+            ],
+            "hint": "module load gromacs, then gmx --version",
+            "solution": [
+              "module load gromacs",
+              "gmx --version"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which file does `gmx mdrun` actually run?",
+            "options": [
+              ".mdp",
+              ".top",
+              ".tpr",
+              ".gro"
+            ],
+            "answer": 2,
+            "why": "grompp combines coordinates, topology and parameters into a .tpr, and mdrun runs that."
+          }
+        }
+      ]
+    },
+    {
+      "id": "prep",
+      "title": "Building the system",
+      "before": "gromacs-02-topology",
+      "summary": "Topology, box, water and ions: the steps before any simulation.",
+      "blocks": [
+        {
+          "text": "The Practice track follows the classic lysozyme-in-water tutorial. Before simulating, you build the system step by step. Each step reads the previous step's output."
+        },
+        {
+          "flags": [
+            [
+              "gmx pdb2gmx -f clean.pdb -o processed.gro -water spce -ff amber99sb-ildn",
+              "PDB to GROMACS",
+              "Builds the topology (topol.top) with a force field and water model, adds hydrogens. Remove crystal waters (HOH) first"
+            ],
+            [
+              "gmx editconf -f processed.gro -o newbox.gro -c -d 1.0 -bt cubic",
+              "edit configuration",
+              "Centers the protein (-c) in a cubic box (-bt) with 1.0 nm to each edge (-d)"
+            ],
+            [
+              "gmx solvate -cp newbox.gro -cs spc216.gro -o solv.gro -p topol.top",
+              "solvate",
+              "Fills the box with water and adds the water count to topol.top"
+            ],
+            [
+              "gmx grompp -f ions.mdp -c solv.gro -p topol.top -o ions.tpr",
+              "preprocess",
+              "Combines everything into a .tpr; checks that coordinates and topology agree"
+            ],
+            [
+              "echo SOL | gmx genion -s ions.tpr -o solv_ions.gro -p topol.top -pname NA -nname CL -neutral",
+              "generate ions",
+              "Swaps some waters for Na+ and Cl- so the system's net charge is zero"
+            ]
+          ]
+        },
+        {
+          "text": "The `[ molecules ]` section at the end of topol.top must list exactly what's in the coordinate file, in the same order. If you run solvate twice, or edit by hand, they disagree and grompp stops with \"number of coordinates in coordinate file does not match topology\"."
+        },
+        {
+          "try": {
+            "text": "Check the molecule counts at the end of `topol.top`.",
+            "cwd": "~/lysozyme",
+            "files": {
+              "~/lysozyme/topol.top": "; Include water topology\n#include \"amber99sb-ildn.ff/spce.itp\"\n\n[ system ]\nLYSOZYME in water\n\n[ molecules ]\n; Compound        #mols\nProtein_chain_A     1\nSOL             10832\n"
+            },
+            "check": {
+              "ran": "tail",
+              "argHas": "topol.top"
+            },
+            "hint": "tail -3 topol.top",
+            "solution": [
+              "tail -3 topol.top"
+            ]
+          }
+        },
+        {
+          "warn": "Some gmx programs ask you to pick a group from a menu (genion asks which group to replace with ions). In a script nobody can answer, so pipe the answer in: `echo SOL | gmx genion ...`."
+        },
+        {
+          "quiz": {
+            "q": "grompp warns the system has a net charge of +8. What's the next step?",
+            "options": [
+              "Ignore it with -maxwarn",
+              "Add ions with genion -neutral",
+              "Run solvate again",
+              "Delete 8 atoms"
+            ],
+            "answer": 1,
+            "why": "A charged system causes artifacts with PME electrostatics. genion -neutral adds 8 Cl- ions to balance it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "title": "Minimizing, simulating and continuing",
+      "before": "gromacs-07-minimize",
+      "summary": "mdrun, checking energies, GPUs, and checkpoints.",
+      "blocks": [
+        {
+          "text": "First, energy minimization relaxes clashes from building the system. Then, in the full protocol, come short equilibrations (NVT, then NPT) and the production run. Each step is grompp (make a .tpr) then mdrun (run it)."
+        },
+        {
+          "flags": [
+            [
+              "gmx grompp -f minim.mdp -c solv_ions.gro -p topol.top -o em.tpr",
+              "prepare",
+              "Build the minimization's run input"
+            ],
+            [
+              "gmx mdrun -v -deffnm em",
+              "run",
+              "-deffnm em names every output em.*; -v prints progress"
+            ],
+            [
+              "gmx mdrun -deffnm md -nb gpu",
+              "GPU",
+              "Compute non-bonded forces on the GPU. Needs a GPU in the job, or mdrun stops"
+            ],
+            [
+              "gmx mdrun -deffnm md -cpi md.cpt",
+              "continue",
+              "Pick up from the checkpoint after a TIMEOUT"
+            ],
+            [
+              "echo Potential | gmx energy -f em.edr -o potential.xvg",
+              "energy",
+              "Extract the potential energy over time"
+            ]
+          ]
+        },
+        {
+          "text": "A good minimization ends with a large negative potential energy (around -5×10^5 kJ/mol for solvated lysozyme) and a maximum force below the target in minim.mdp."
+        },
+        {
+          "example": {
+            "cmd": "cat md.sh",
+            "out": "#!/bin/bash\n#SBATCH --job-name=md\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=8G\n#SBATCH --time=1-00:00:00\n\nmodule load gromacs\ngmx mdrun -deffnm md -nb gpu -cpi md.cpt",
+            "note": "-cpi continues from md.cpt if it exists and starts fresh if not, so the same script can be resubmitted after a TIMEOUT."
+          }
+        },
+        {
+          "tip": "GROMACS backs up instead of overwriting: rerun a step and the old file is renamed `#em.gro.1#`. Clean them up with `rm \\#*`."
+        },
+        {
+          "quiz": {
+            "q": "Your 24-hour MD job ends with TIMEOUT halfway through. What's the quickest fix?",
+            "options": [
+              "Start over with more --time",
+              "Resubmit with gmx mdrun ... -cpi md.cpt to continue",
+              "Lower the temperature",
+              "Use fewer waters"
+            ],
+            "answer": 1,
+            "why": "mdrun writes checkpoints as it goes. -cpi continues from the last one instead of starting over."
+          }
+        }
+      ]
+    }
+  ]
+}

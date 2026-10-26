@@ -1,0 +1,504 @@
+{
+  "track": "read",
+  "lessons": [
+    {
+      "id": "cat-less",
+      "title": "Printing and paging through files",
+      "before": "read-01-readme",
+      "summary": "Look inside a text file without opening an editor.",
+      "blocks": [
+        {
+          "text": "Most files you'll meet are plain text: README files, FASTA sequences, PDB structures, logs, scores. You can read them right in the terminal."
+        },
+        {
+          "command": {
+            "name": "cat",
+            "stands": "concatenate",
+            "syntax": "cat FILE...",
+            "what": "Prints the whole file. Give it several files and it prints them one after another, which is where the name comes from. Best for short files."
+          }
+        },
+        {
+          "try": {
+            "text": "Print the README in `project`.",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "cat",
+              "argHas": "README"
+            },
+            "hint": "cat README.txt",
+            "solution": [
+              "cat README.txt"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "less",
+            "stands": "a pager (\"less is more\")",
+            "syntax": "less FILE",
+            "what": "Shows a long file one screen at a time. Space or arrow keys move, `/word` searches, `q` quits. Use it for logs and structures too long for cat."
+          }
+        },
+        {
+          "tip": "`cat -n` numbers the lines. Useful when an error message says \"line 37\"."
+        },
+        {
+          "quiz": {
+            "q": "A log file is 50,000 lines long. What's the best way to look through it?",
+            "options": [
+              "cat it",
+              "less it",
+              "Delete it",
+              "Open it in a word processor"
+            ],
+            "answer": 1,
+            "why": "cat would scroll 50,000 lines past you. less lets you page and search."
+          }
+        }
+      ]
+    },
+    {
+      "id": "head-tail",
+      "title": "The start and the end: head and tail",
+      "before": "read-02-header",
+      "summary": "Often you only need the first or last few lines.",
+      "blocks": [
+        {
+          "command": {
+            "name": "head",
+            "stands": "head of the file",
+            "syntax": "head [-n N] FILE",
+            "what": "Prints the first 10 lines, or the first N with `-n N`. Good for headers: the top of a PDB or a CSV."
+          }
+        },
+        {
+          "try": {
+            "text": "Show the first 5 lines of `target.pdb`.",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "head",
+              "argHas": "target.pdb"
+            },
+            "hint": "head -n 5 target.pdb",
+            "solution": [
+              "head -n 5 target.pdb"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "tail",
+            "stands": "tail of the file",
+            "syntax": "tail [-n N] [-f] FILE",
+            "what": "Prints the last 10 lines, or the last N. A job's log usually ends with whether it finished or why it failed, so tail is the first thing to run on a log."
+          }
+        },
+        {
+          "flags": [
+            [
+              "-n 3",
+              "number of lines",
+              "Last 3 lines"
+            ],
+            [
+              "-n +20",
+              "from line",
+              "Everything from line 20 on"
+            ],
+            [
+              "-f",
+              "follow",
+              "Keep printing new lines as a running job writes them; Ctrl+C stops"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Did job 48120 finish? Look at the end of its log.",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "tail",
+              "argHas": "slurm-48120.out"
+            },
+            "hint": "tail slurm-48120.out",
+            "solution": [
+              "tail slurm-48120.out"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which shows only the very last line of `run.log`?",
+            "options": [
+              "head -n 1 run.log",
+              "tail -n 1 run.log",
+              "cat -n run.log",
+              "tail -f run.log"
+            ],
+            "answer": 1,
+            "why": "tail counts from the end, and -n 1 asks for a single line."
+          }
+        }
+      ]
+    },
+    {
+      "id": "grep",
+      "title": "Finding lines with grep",
+      "before": "read-04-count-seqs",
+      "summary": "Pull out just the lines you care about, or count them.",
+      "blocks": [
+        {
+          "command": {
+            "name": "grep",
+            "stands": "global regular expression print",
+            "syntax": "grep [OPTIONS] TEXT FILE...",
+            "what": "Prints only the lines that contain TEXT. Put TEXT in quotes if it has spaces or symbols like > or *."
+          }
+        },
+        {
+          "flags": [
+            [
+              "-c",
+              "count",
+              "Print how many lines match instead of the lines"
+            ],
+            [
+              "-i",
+              "ignore case",
+              "WARNING and warning both match"
+            ],
+            [
+              "-n",
+              "line numbers",
+              "Show where each match is"
+            ],
+            [
+              "-v",
+              "invert",
+              "Print lines that do NOT match"
+            ]
+          ]
+        },
+        {
+          "text": "In a FASTA file, every sequence starts with a header line beginning with `>`. Counting those lines counts the sequences."
+        },
+        {
+          "try": {
+            "text": "How many sequences are in `designs.fasta`?",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "grep",
+              "flags": "c"
+            },
+            "hint": "grep -c \">\" designs.fasta  (quote the >, or the shell treats it as a redirect)",
+            "solution": [
+              "grep -c \">\" designs.fasta"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "Show every warning in `relax.log`, whatever its capitalization.",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "grep",
+              "flags": "i"
+            },
+            "hint": "grep -i warning relax.log",
+            "solution": [
+              "grep -i warning relax.log"
+            ]
+          }
+        },
+        {
+          "warn": "`grep > file` without quotes doesn't search for >. The shell sees > as \"send output to file\" and overwrites the file. Always quote it: `grep \">\" file`."
+        },
+        {
+          "quiz": {
+            "q": "Which counts the lines in `log.txt` that do NOT contain `ok`?",
+            "options": [
+              "grep ok log.txt",
+              "grep -c ok log.txt",
+              "grep -vc ok log.txt",
+              "grep -i ok log.txt"
+            ],
+            "answer": 2,
+            "why": "-v flips the match to lines without ok, and -c counts them. Letters combine, so -vc is -v -c."
+          }
+        }
+      ]
+    },
+    {
+      "id": "columns",
+      "title": "Columns, sorting and pipes",
+      "before": "read-07-column",
+      "summary": "Rank designs by a score column, and chain commands together.",
+      "blocks": [
+        {
+          "text": "Score files are tables: one row per design, columns separated by spaces or commas. Three commands work on columns: `sort` puts rows in order, `cut` keeps only some columns, and `head` or `tail` picks the top or bottom."
+        },
+        {
+          "command": {
+            "name": "sort",
+            "stands": "sort lines",
+            "syntax": "sort [-n] [-r] [-k N] [-t SEP] FILE",
+            "what": "Sorts lines alphabetically, or by number with -n. -k picks which column to sort by."
+          }
+        },
+        {
+          "flags": [
+            [
+              "-n",
+              "numeric",
+              "Compare as numbers, so 10 comes after 9 (not after 1)"
+            ],
+            [
+              "-r",
+              "reverse",
+              "Largest first"
+            ],
+            [
+              "-k 2",
+              "key column",
+              "Sort by column 2"
+            ],
+            [
+              "-t ,",
+              "field separator",
+              "Columns are separated by commas (CSV)"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Sort `scores.txt` by its second column, lowest (best) score first.",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "sort",
+              "lineHas": "-k"
+            },
+            "hint": "sort -n -k 2 scores.txt",
+            "solution": [
+              "sort -n -k 2 scores.txt"
+            ]
+          }
+        },
+        {
+          "text": "A pipe `|` sends one command's output into the next. `sort -n -k 2 scores.txt | head -1` sorts, then keeps only the first line: the best design."
+        },
+        {
+          "try": {
+            "text": "Print only the design with the highest pLDDT in `summary.csv` (column 2, comma-separated).",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "all": [
+                {
+                  "ran": "sort",
+                  "lineHas": "-t"
+                },
+                {
+                  "ran": "tail"
+                }
+              ]
+            },
+            "hint": "sort -t , -k 2 -n summary.csv | tail -1",
+            "solution": [
+              "sort -t , -k 2 -n summary.csv | tail -1"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "cut",
+            "stands": "cut out columns",
+            "syntax": "cut -d SEP -f LIST FILE",
+            "what": "Keeps only the columns (fields) you list. `cut -d , -f 1,3 summary.csv` prints the name and ipTM columns."
+          }
+        },
+        {
+          "quiz": {
+            "q": "`sort -k 2 scores.txt` puts -330.9 after -298.1. What's missing?",
+            "options": [
+              "-r",
+              "-n",
+              "-t",
+              "Nothing, that's right"
+            ],
+            "answer": 1,
+            "why": "Without -n, sort compares text character by character. -n compares the values as numbers."
+          }
+        }
+      ]
+    },
+    {
+      "id": "diff",
+      "title": "Comparing two files",
+      "before": "read-11-diff",
+      "summary": "Spot exactly what changed between two versions.",
+      "blocks": [
+        {
+          "command": {
+            "name": "diff",
+            "stands": "difference",
+            "syntax": "diff OLD NEW",
+            "what": "Prints only the lines that differ. Lines from the first file start with `<`, lines from the second with `>`. No output means the files are identical."
+          }
+        },
+        {
+          "example": {
+            "cmd": "diff config_old.txt config_new.txt",
+            "out": "2c2\n< temperature=0.1\n---\n> temperature=0.2",
+            "note": "`2c2` means line 2 changed. The old value is above the dashes, the new one below."
+          }
+        },
+        {
+          "try": {
+            "text": "What changed between the two configs?",
+            "cwd": "~/project",
+            "files": {
+              "~/project/README.txt": "Target: IL-7R, chain A.\nRun ProteinMPNN with 8 sequences per backbone.\n",
+              "~/project/slurm-48120.out": "step 1: loss 0.89\nstep 2: loss 0.88\nstep 3: loss 0.87\nstep 4: loss 0.86\nstep 5: loss 0.85\nstep 6: loss 0.84\nstep 7: loss 0.83\nstep 8: loss 0.82\nstep 9: loss 0.81\nstep 10: loss 0.80\nstep 11: loss 0.79\nstep 12: loss 0.78\nstep 13: loss 0.77\nstep 14: loss 0.76\nstep 15: loss 0.75\nstep 16: loss 0.74\nstep 17: loss 0.73\nstep 18: loss 0.72\nstep 19: loss 0.71\nstep 20: loss 0.70\nstep 21: loss 0.69\nstep 22: loss 0.68\nstep 23: loss 0.67\nstep 24: loss 0.66\nstep 25: loss 0.65\nstep 26: loss 0.64\nstep 27: loss 0.63\nstep 28: loss 0.62\nstep 29: loss 0.61\nstep 30: loss 0.60\nFinished: 8 designs written\n",
+              "~/project/designs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/project/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/scores.txt": "design_1 -312.4 0.81\ndesign_2 -298.1 0.77\ndesign_3 -330.9 0.85\ndesign_4 -301.7 0.79\n",
+              "~/project/relax.log": "Starting relax\nWARNING: residue 47 has clashes\nRelax round 1 done\nwarning: low confidence loop\nDone\n",
+              "~/project/summary.csv": "name,plddt,iptm\ndesign_1,84.1,0.71\ndesign_2,90.3,0.82\ndesign_3,77.5,0.64\n",
+              "~/project/config_old.txt": "num_seqs=8\ntemperature=0.1\nmodel=v_48_020\n",
+              "~/project/config_new.txt": "num_seqs=8\ntemperature=0.2\nmodel=v_48_020\n"
+            },
+            "check": {
+              "ran": "diff"
+            },
+            "hint": "diff config_old.txt config_new.txt",
+            "solution": [
+              "diff config_old.txt config_new.txt"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "diff prints nothing at all. What does that mean?",
+            "options": [
+              "It crashed",
+              "The files are identical",
+              "One file is empty",
+              "It needs -n"
+            ],
+            "answer": 1,
+            "why": "diff only prints differences. Silence means there are none."
+          }
+        }
+      ]
+    }
+  ]
+}

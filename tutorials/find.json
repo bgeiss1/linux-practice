@@ -1,0 +1,576 @@
+{
+  "track": "find",
+  "lessons": [
+    {
+      "id": "find-name",
+      "title": "Finding files by name",
+      "before": "find-01-by-name",
+      "summary": "find searches a folder and everything below it.",
+      "blocks": [
+        {
+          "text": "Projects grow fast: a few runs, each with its own folders, and soon you can't remember where a file went. `ls` only shows one folder at a time. `find` looks in a folder and every folder inside it."
+        },
+        {
+          "command": {
+            "name": "find",
+            "stands": "find files",
+            "syntax": "find WHERE -name \"PATTERN\"",
+            "what": "Searches WHERE and everything below it, and prints the path of every file whose name matches. WHERE is often `.` (here) or `~` (your whole home folder)."
+          }
+        },
+        {
+          "try": {
+            "text": "Find `il7r_target.pdb` somewhere in your home folder.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "find",
+              "argHas": "il7r_target.pdb"
+            },
+            "hint": "find ~ -name \"il7r_target.pdb\"",
+            "solution": [
+              "find ~ -name \"il7r_target.pdb\""
+            ]
+          }
+        },
+        {
+          "text": "find prints paths relative to WHERE: searching `~` prints `/home/student/binder_design/inputs/il7r_target.pdb`, and that folder is where you `cd` to."
+        },
+        {
+          "quiz": {
+            "q": "`find . -name seqs.fasta` prints `./runs/run2/seqs.fasta`. Where is the file?",
+            "options": [
+              "In your home folder",
+              "In runs/run2, below the folder you're in",
+              "At the root",
+              "Nowhere: . means nothing found"
+            ],
+            "answer": 1,
+            "why": "`.` is the folder you searched from, so the file is in runs/run2 inside it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "wildcards",
+      "title": "Wildcards: * and ?",
+      "before": "find-02-wildcard",
+      "summary": "Match many names at once.",
+      "blocks": [
+        {
+          "text": "A wildcard stands for characters you don't want to type. The shell expands it into every matching name before the command runs."
+        },
+        {
+          "flags": [
+            [
+              "*",
+              "any characters",
+              "`*.pdb` matches every name ending in .pdb; `design_*` every name starting with design_"
+            ],
+            [
+              "?",
+              "exactly one character",
+              "`design_?.pdb` matches design_1.pdb but not design_10.pdb"
+            ],
+            [
+              "[12]",
+              "one of these",
+              "`run[12]` matches run1 and run2"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "In run1, list only the PDB files.",
+            "cwd": "~/binder_design/runs/run1",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "ls",
+              "lineHas": "*.pdb"
+            },
+            "hint": "ls *.pdb",
+            "solution": [
+              "ls *.pdb"
+            ]
+          }
+        },
+        {
+          "warn": "With find, put the pattern in quotes: `find . -name \"*.pdb\"`. Without them, the shell expands `*.pdb` first, using only the files in the folder you're in, and find gets the wrong question."
+        },
+        {
+          "try": {
+            "text": "From `binder_design`, find every PDB in every folder below.",
+            "cwd": "~/binder_design",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "find",
+              "lineHas": "*.pdb"
+            },
+            "hint": "find . -name \"*.pdb\"",
+            "solution": [
+              "find . -name \"*.pdb\""
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which pattern matches `seqs_A.fasta` and `seqs_B.fasta` but not `seqs_AB.fasta`?",
+            "options": [
+              "seqs_*.fasta",
+              "seqs_?.fasta",
+              "*.fasta",
+              "seqs.fasta"
+            ],
+            "answer": 1,
+            "why": "? matches exactly one character, so seqs_AB.fasta (two characters) doesn't match. * would match all three."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tests",
+      "title": "Narrowing the search, and counting",
+      "before": "find-04-all-fasta",
+      "summary": "Only files or only folders, see every folder at once, and count results with a pipe.",
+      "blocks": [
+        {
+          "text": "`ls -R` (recursive) lists a folder and every folder inside it, one block per folder. Fine for a small tree; for a big one, find is easier to read."
+        },
+        {
+          "text": "find takes tests after WHERE. Each test narrows the results; give several and a file must pass them all."
+        },
+        {
+          "flags": [
+            [
+              "-name \"*.fasta\"",
+              "name",
+              "Name matches the pattern (case matters)"
+            ],
+            [
+              "-iname \"*.PDB\"",
+              "name, ignore case",
+              "Same, but upper and lower case match each other"
+            ],
+            [
+              "-type f",
+              "type: file",
+              "Only files"
+            ],
+            [
+              "-type d",
+              "type: directory",
+              "Only folders"
+            ],
+            [
+              "-maxdepth 1",
+              "maximum depth",
+              "Don't go more than 1 level down"
+            ]
+          ]
+        },
+        {
+          "text": "To count results, send find's output into `wc -l` (word count, lines only) with a pipe `|`. The pipe takes everything the first command prints and feeds it to the second, so `wc -l` counts the lines: one per file found."
+        },
+        {
+          "try": {
+            "text": "Count the FASTA files below `binder_design`.",
+            "cwd": "~/binder_design",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "all": [
+                {
+                  "ran": "wc"
+                },
+                {
+                  "ran": "find",
+                  "lineHas": "fasta"
+                }
+              ]
+            },
+            "hint": "find . -name \"*.fasta\" | wc -l",
+            "solution": [
+              "find . -name \"*.fasta\" | wc -l"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "List only the folders below `binder_design`.",
+            "cwd": "~/binder_design",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "find",
+              "lineHas": "-type d"
+            },
+            "hint": "find . -type d",
+            "solution": [
+              "find . -type d"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "What does `find . -type d -name outputs | wc -l` print?",
+            "options": [
+              "The files inside every outputs folder",
+              "The number of folders named outputs",
+              "The size of outputs",
+              "The word outputs"
+            ],
+            "answer": 1,
+            "why": "find lists folders (-type d) named outputs, one per line, and wc -l counts the lines."
+          }
+        }
+      ]
+    },
+    {
+      "id": "grep-r",
+      "title": "Searching inside files",
+      "before": "find-06-grep-id",
+      "summary": "When you know what's in the file but not its name.",
+      "blocks": [
+        {
+          "command": {
+            "name": "grep",
+            "stands": "global regular expression print",
+            "syntax": "grep [OPTIONS] TEXT FILES",
+            "what": "Prints every line in FILES that contains TEXT. The Read files track covers grep in depth; here it's used to find which file holds something."
+          }
+        },
+        {
+          "flags": [
+            [
+              "-r",
+              "recursive",
+              "Search every file in a folder and its subfolders"
+            ],
+            [
+              "-l",
+              "list file names",
+              "Print only the names of files that match, not the lines"
+            ],
+            [
+              "-i",
+              "ignore case",
+              "ERROR, error and Error all match"
+            ],
+            [
+              "-n",
+              "line numbers",
+              "Show the line number of each match"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Which file in `binder_design` mentions `chain A`?",
+            "cwd": "~/binder_design",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "grep",
+              "flags": "r"
+            },
+            "hint": "grep -r \"chain A\" .",
+            "solution": [
+              "grep -r \"chain A\" ."
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "You want just the names of the log files that contain `out of memory`. Which command?",
+            "options": [
+              "grep out of memory *.log",
+              "grep -l \"out of memory\" *.log",
+              "find -name \"out of memory\"",
+              "ls *.log"
+            ],
+            "answer": 1,
+            "why": "-l prints only file names, and the quotes keep the three words together as one search text."
+          }
+        }
+      ]
+    },
+    {
+      "id": "age-size",
+      "title": "Finding by age and size",
+      "before": "find-07-today",
+      "summary": "What changed recently, and what's eating your space.",
+      "blocks": [
+        {
+          "flags": [
+            [
+              "-mtime -1",
+              "modified time",
+              "Changed less than 1 day ago (+7: more than 7 days ago)"
+            ],
+            [
+              "-mmin -30",
+              "modified minutes",
+              "Changed less than 30 minutes ago"
+            ],
+            [
+              "-size +100M",
+              "size",
+              "Bigger than 100 MB (k, M, G; -10k means smaller than 10 KB)"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Find the PDB files below `binder_design` that changed in the last day.",
+            "cwd": "~/binder_design",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "find",
+              "lineHas": "-mtime"
+            },
+            "hint": "find . -name \"*.pdb\" -mtime -1",
+            "solution": [
+              "find . -name \"*.pdb\" -mtime -1"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "Find anything in your home folder bigger than 100 MB.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/inputs/il7r_target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/inputs/notes.txt": "use chain A\n",
+              "~/binder_design/runs/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/seqs.fasta": {
+                "lib": "fasta:designs"
+              },
+              "~/binder_design/runs/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/seqs.fasta": {
+                "lib": "fasta:designs",
+                "age": "3d"
+              },
+              "~/binder_design/runs/run2/big_traj.dcd": {
+                "lib": "text:readme",
+                "size": "420M"
+              }
+            },
+            "check": {
+              "ran": "find",
+              "lineHas": "-size"
+            },
+            "hint": "find ~ -size +100M",
+            "solution": [
+              "find ~ -size +100M"
+            ]
+          }
+        },
+        {
+          "tip": "Your home folder has a quota. When it fills up, jobs fail in odd ways. `find ~ -size +100M` is the quickest way to find the culprits; move big data to /scratch."
+        },
+        {
+          "quiz": {
+            "q": "Which finds files changed in the last 2 hours?",
+            "options": [
+              "find . -mtime -2",
+              "find . -mmin -120",
+              "find . -size -2h",
+              "find . -mtime +2"
+            ],
+            "answer": 1,
+            "why": "-mmin counts minutes, so -120 means less than 120 minutes ago. -mtime counts whole days."
+          }
+        }
+      ]
+    }
+  ]
+}

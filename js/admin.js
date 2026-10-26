@@ -228,6 +228,7 @@ function renderList() {
       </div>
       ${n ? `<div class="notice">You have ${n} unpublished change${n === 1 ? '' : 's'}. Students won't see ${n === 1 ? 'it' : 'them'} until you publish. <a class="btn primary" href="#/publish">Review and publish</a></div>` : ''}
       ${settings.baseVersion !== published.manifest.version && n ? `<div class="notice warn">The live site was updated (version ${esc(published.manifest.version)}) after you started these drafts. Publishing checks for conflicts first.</div>` : ''}
+      ${availabilityCard()}
       ${keywordCard()}
       ${work.manifest.tracks.map((t) => trackBlock(t, q)).join('')}
     </section>`),
@@ -240,8 +241,61 @@ function renderList() {
     q2.focus();
     q2.setSelectionRange(pos, pos);
   });
+  wireAvailabilityCard();
   wireKeywordCard();
   checkAllSoon();
+}
+
+// ---------- which tracks students can open ----------
+
+const trackState = (t) => (t.available !== false ? 'open' : t.opens ? 'date' : 'closed');
+
+function availabilityCard() {
+  return `<section class="card" aria-labelledby="av-title">
+    <div>
+      <h2 id="av-title">What students can open</h2>
+      <p class="muted">Open the simple tracks first and the design tools later. A closed track shows on the home page as "Not open yet", or with its opening date. Finished work and passphrases are kept either way.</p>
+    </div>
+    <div class="table-scroll"><table class="scen-table av-table">
+      <thead><tr><th scope="col">Track</th><th scope="col">Students</th><th scope="col">Opens on</th></tr></thead>
+      <tbody>${work.manifest.tracks
+        .map((t) => `<tr><td>${esc(t.title)}</td>
+          <td><select data-av="${esc(t.id)}" aria-label="Who can open ${esc(t.title)}">
+            <option value="open"${trackState(t) === 'open' ? ' selected' : ''}>Open</option>
+            <option value="closed"${trackState(t) === 'closed' ? ' selected' : ''}>Closed</option>
+            <option value="date"${trackState(t) === 'date' ? ' selected' : ''}>Opens on a date</option>
+          </select></td>
+          <td><input type="date" data-av-date="${esc(t.id)}" value="${esc(t.opens ?? '')}" aria-label="Opening date for ${esc(t.title)}"${trackState(t) === 'date' ? '' : ' disabled'}></td></tr>`)
+        .join('')}</tbody>
+    </table></div>
+    <label class="row"><input type="checkbox" id="av-lessons"${work.manifest.lessonsRequired !== false ? ' checked' : ''}> Students finish each lesson before the practice after it</label>
+    <div class="row"><button type="button" id="av-save" class="primary">Save</button><a class="btn" href="./?preview#/" target="_blank" rel="noopener">Preview as a student, all tracks open</a><span class="muted small">Saved as a draft. Publish to use it.</span></div>
+  </section>`;
+}
+
+function wireAvailabilityCard() {
+  for (const sel of app.querySelectorAll('[data-av]')) {
+    sel.addEventListener('change', () => {
+      const date = app.querySelector(`[data-av-date="${CSS.escape(sel.dataset.av)}"]`);
+      date.disabled = sel.value !== 'date';
+      if (!date.disabled && !date.value) date.focus();
+    });
+  }
+  app.querySelector('#av-save').addEventListener('click', () => {
+    for (const sel of app.querySelectorAll('[data-av]')) {
+      const t = work.manifest.tracks.find((x) => x.id === sel.dataset.av);
+      const date = app.querySelector(`[data-av-date="${CSS.escape(t.id)}"]`).value;
+      if (sel.value === 'date' && !date) return flash(`Pick an opening date for ${esc(t.title)}.`, 'bad');
+      delete t.available;
+      delete t.opens;
+      if (sel.value !== 'open') t.available = false;
+      if (sel.value === 'date') t.opens = date;
+    }
+    if (app.querySelector('#av-lessons').checked) delete work.manifest.lessonsRequired;
+    else work.manifest.lessonsRequired = false;
+    saveWork();
+    flash('Saved as a draft. Publish to use it.');
+  });
 }
 
 // ---------- term and keywords ----------
@@ -315,7 +369,7 @@ function trackBlock(t, q) {
   if (q && !rows.length) return '';
   return `<section class="card track-admin" aria-labelledby="t-${esc(t.id)}">
     <div class="track-head">
-      <div><h2 id="t-${esc(t.id)}">${esc(t.title)}</h2><p class="muted">${esc(t.blurb)} · ${t.scenarios.length} scenarios · keyword <span class="mono">${esc(t.keyword ?? '(none)')}</span></p></div>
+      <div><h2 id="t-${esc(t.id)}">${esc(t.title)}</h2><p class="muted">${esc(t.blurb)} · ${t.scenarios.length} scenarios · keyword <span class="mono">${esc(t.keyword ?? '(none)')}</span> · ${trackState(t) === 'open' ? 'open' : trackState(t) === 'date' ? `opens ${esc(t.opens)}` : '<span class="warn-text">closed</span>'} · <a href="./?preview#/track/${esc(t.id)}" target="_blank" rel="noopener">lessons and practice</a></p></div>
       <div class="row">
         <button type="button" data-act="new" data-track="${esc(t.id)}">New scenario</button>
         <button type="button" data-act="dl-track" data-track="${esc(t.id)}">Download track</button>
@@ -887,7 +941,7 @@ function renderPublish() {
                     <td class="acts"><button type="button" data-undo="${esc(x.p)}">Undo</button></td></tr>`;
                 })
                 .join('')}
-              ${d.manifestChanged ? `<tr><td><span class="badge changed">Changed</span></td><td>Track order, titles, keywords, or the term<div class="muted small mono">tracks.json</div></td><td></td><td class="acts"><button type="button" data-undo="__manifest">Undo</button></td></tr>` : ''}
+              ${d.manifestChanged ? `<tr><td><span class="badge changed">Changed</span></td><td>Track order, titles, keywords, the term, or which tracks are open<div class="muted small mono">tracks.json</div></td><td></td><td class="acts"><button type="button" data-undo="__manifest">Undo</button></td></tr>` : ''}
               </tbody></table>`
             : '<p class="muted">No changes. Edit a scenario or import some, and they\'ll show up here.</p>'
         }

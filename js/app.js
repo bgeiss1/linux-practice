@@ -1,9 +1,12 @@
-// Student site: track list, scenario list, and the practice terminal.
+// Student site: track list, each track's ladder of lessons and practice
+// scenarios, the lesson pages, and the practice terminal.
 
 import { Session, TIERS } from '../engine/scenario.js';
 import { Terminal, esc, fmt, h, lessonHTML } from './terminal.js';
 import { guideHTML } from './guide.js';
 import { makePassphrase } from '../engine/passphrase.js';
+import { ladder, tryDef, trackOpen } from '../engine/tutorial.js';
+import { lessonPageHTML, wireLesson } from './lesson.js';
 
 const app = document.getElementById('app');
 const STORE_KEY = 'linux-practice:v1';
@@ -13,11 +16,11 @@ const STORE_KEY = 'linux-practice:v1';
 function loadProgress() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORE_KEY));
-    if (saved && typeof saved === 'object') return { done: {}, phrases: {}, ...saved };
+    if (saved && typeof saved === 'object') return { done: {}, phrases: {}, lessons: {}, ...saved };
   } catch {
     // Private windows and blocked storage land here; start fresh.
   }
-  return { done: {}, phrases: {} };
+  return { done: {}, phrases: {}, lessons: {} };
 }
 
 const progress = loadProgress();
@@ -49,6 +52,43 @@ async function loadData() {
     ),
   );
   for (const t of manifest.tracks) (t.defs ??= []).sort((a, b) => a.order - b.order);
+  // Tutorials are optional: a track without one is just its scenarios.
+  await Promise.all(
+    manifest.tracks.map(async (t) => {
+      try {
+        const res = await fetch(`tutorials/${t.id}.json?v=${v}`, { cache: 'no-cache' });
+        if (res.ok) t.tutorial = await res.json();
+      } catch {
+        // No tutorial for this track.
+      }
+    }),
+  );
+}
+
+// ?preview on the address shows every track, open or not, for instructors.
+const preview = new URLSearchParams(location.search).has('preview');
+const isOpen = (t) => preview || trackOpen(t);
+const lessonsRequired = () => manifest.lessonsRequired !== false;
+
+const lessonKey = (t, lesson) => `${t.id}/${lesson.id}`;
+const lessonDone = (t, lesson) => !!progress.lessons[lessonKey(t, lesson)];
+const steps = (t) => ladder(t.defs, t.tutorial);
+const stepDone = (t, s) => (s.kind === 'lesson' ? lessonDone(t, s.lesson) : isDone(s.def.id));
+const stepHref = (t, s) => (s.kind === 'lesson' ? `#/learn/${esc(t.id)}/${esc(s.lesson.id)}` : `#/s/${esc(s.def.id)}`);
+const stepTitle = (s) => (s.kind === 'lesson' ? `Lesson: ${s.lesson.title}` : s.def.title);
+
+// A step opens once every step before it is done. Lessons only hold up the
+// practice after them when the instructor requires them.
+function stepOpen(t, i) {
+  const all = steps(t);
+  return all.slice(0, i).every((s) => stepDone(t, s) || (s.kind === 'lesson' && !lessonsRequired()));
+}
+
+// The first step in a track that isn't done yet.
+function nextStep(t) {
+  const all = steps(t);
+  const i = all.findIndex((s) => !stepDone(t, s));
+  return i < 0 ? null : { step: all[i], i };
 }
 
 const isDone = (id) => !!progress.done[id];
@@ -93,22 +133,29 @@ async function copyText(text, fallbackEl) {
 function renderHome() {
   const done = finishedTracks();
   const phrases = Object.fromEntries(manifest.tracks.map((t) => [t.id, phraseFor(t)]));
+  const shown = manifest.tracks.filter((t) => isOpen(t) || phrases[t.id]);
+  const upNext = manifest.tracks.filter(isOpen).map((t) => ({ t, n: nextStep(t) })).find((x) => x.n);
 
   app.replaceChildren(
     h(`
     <section class="home">
       <div class="intro">
         <h1>Practice the command line without breaking anything</h1>
-        <p class="lede">Each track is a ladder of short scenarios on a pretend copy of Geiss-01. Early ones walk you through every step. Later ones give you a goal and get out of the way. Finish a track to earn its passphrase.</p>
+        <p class="lede">Each track mixes short lessons, which explain what each command means and how its options work, with practice on a pretend copy of Geiss-01. Early practice walks you through every step. Later practice gives you a goal and gets out of the way. Finish a track to earn its passphrase.</p>
         <div class="row"><a class="btn" href="#/sandbox">Free play terminal</a></div>
       </div>
+
+      ${upNext ? `<a class="up-next" href="${stepHref(upNext.t, upNext.n.step)}">
+        <span style="display:grid;gap:2px"><span class="label">Up next · ${esc(upNext.t.title)}</span><strong>${esc(stepTitle(upNext.n.step))}</strong></span>
+        <span class="btn primary" aria-hidden="true">Continue</span>
+      </a>` : ''}
 
       <section class="pass" aria-labelledby="pass-title">
         <div class="pass-head">
           <h2 id="pass-title">Your passphrases</h2>
-          <span class="muted">${done.length} of ${manifest.tracks.length} tracks finished</span>
+          <span class="muted">${done.length} of ${shown.length} tracks finished</span>
         </div>
-        <div class="slots">${manifest.tracks
+        <div class="slots">${shown
           .map((t) => {
             const p = phrases[t.id];
             return `<div class="slot ${p ? 'earned' : ''}"><span class="label">${esc(t.title)}</span>${
@@ -146,15 +193,23 @@ function renderHome() {
   }
 }
 
+function opensText(t) {
+  if (!t.opens) return 'Not open yet';
+  const d = new Date(`${t.opens}T00:00:00`);
+  return `Opens ${d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+}
+
 function trackCard(t) {
   const total = t.defs.length;
-  if (!total) {
-    return `<div class="track-card soon"><span class="label">Coming soon</span><h3>${esc(t.title)}</h3><p class="muted">${esc(t.blurb)}</p><p class="cmds">${t.commands.map(esc).join(' · ')}</p></div>`;
+  if (!total || !isOpen(t)) {
+    return `<div class="track-card soon"><span class="label">${total ? opensText(t) : 'Coming soon'}</span><h3>${esc(t.title)}</h3><p class="muted">${esc(t.blurb)}</p><p class="cmds">${t.commands.map(esc).join(' · ')}</p></div>`;
   }
   const n = t.defs.filter((d) => isDone(d.id)).length;
+  const lessons = t.tutorial?.lessons ?? [];
+  const read = lessons.filter((l) => lessonDone(t, l)).length;
   const stars = t.defs.reduce((s, d) => s + (progress.done[d.id]?.stars ?? 0), 0);
   return `<a class="track-card ${n === total ? 'complete' : ''}" href="#/track/${esc(t.id)}">
-    <span class="label">${n === total ? 'Complete' : `${n} of ${total} done`} · ${stars} ★</span>
+    <span class="label">${n === total ? 'Complete' : `${lessons.length ? `${read} of ${lessons.length} lessons · ` : ''}${n} of ${total} practice`} · ${stars} ★</span>
     <h3>${esc(t.title)}</h3>
     <p class="muted">${esc(t.blurb)}</p>
     <p class="cmds">${t.commands.map(esc).join(' · ')}</p>
@@ -169,42 +224,63 @@ const GUIDE_LINK = `<a class="guide-link" href="#/guide">
 
 // ---------- track ----------
 
-function unlocked(t, i) {
-  return i === 0 || isDone(t.defs[i - 1].id);
-}
-
 function renderTrack(trackId) {
   const t = manifest.tracks.find((x) => x.id === trackId);
-  if (!t || !t.defs.length) return renderHome();
-  const groups = [1, 2, 3, 4].map((tier) => ({ tier, items: t.defs.map((d, i) => ({ d, i })).filter(({ d }) => Number(d.tier) === tier) })).filter((g) => g.items.length);
+  if (!t || !t.defs.length || !isOpen(t)) return renderHome();
+  const all = steps(t);
+  let num = 0;
+  let lessonNum = 0;
+  const rows = all.map((s, i) => {
+    const open = stepOpen(t, i);
+    const done = stepDone(t, s);
+    if (s.kind === 'lesson') {
+      lessonNum++;
+      const inner = `<span class="num">L${lessonNum}</span><span><strong>${esc(s.lesson.title)}</strong>${s.lesson.summary ? `<span class="muted small" style="display:block">${esc(s.lesson.summary)}</span>` : ''}</span><span class="pill lesson-pill">Lesson</span>${done ? '<span class="good-text">Done ✓</span>' : open ? '<span class="muted">Read</span>' : '<span class="muted">Locked</span>'}`;
+      return `<li class="lesson-row">${open ? `<a class="scen" href="${stepHref(t, s)}">${inner}</a>` : `<div class="scen locked" aria-disabled="true">${inner}</div>`}</li>`;
+    }
+    num++;
+    const d = s.def;
+    const rec = progress.done[d.id];
+    const inner = `<span class="num">${String(num).padStart(2, '0')}</span><span>${esc(d.title)}</span><span class="pill">Tier ${d.tier} · ${TIERS[d.tier].name}</span>${rec ? starsHTML(rec.stars) : open ? '<span class="muted">Start</span>' : '<span class="muted">Locked</span>'}`;
+    return `<li>${open ? `<a class="scen" href="${stepHref(t, s)}">${inner}</a>` : `<div class="scen locked" aria-disabled="true">${inner}</div>`}</li>`;
+  });
   app.replaceChildren(
     h(`
     <section class="track">
       <nav class="crumbs"><a href="#/">Tracks</a> / ${esc(t.title)}</nav>
       <div style="display:grid;gap:8px;max-width:68ch">
         <h1>${esc(t.title)}</h1>
-        <p class="muted">${esc(t.blurb)} Scenarios unlock in order. Hints get shorter as you climb.</p>
+        <p class="muted">${esc(t.blurb)} ${t.tutorial ? 'Each lesson explains the commands the practice after it uses.' : ''} Steps open in order, and hints get shorter as you climb.</p>
       </div>
       ${t.id === 'session' || t.id === 'slurm' || t.group === 'tools' ? GUIDE_LINK : ''}
-      ${groups
-        .map(
-          (g) => `<div class="tier-group">
-            <span class="label">Tier ${g.tier} · ${TIERS[g.tier].name}</span>
-            <ol class="scen-list">
-              ${g.items
-                .map(({ d, i }) => {
-                  const open = unlocked(t, i);
-                  const rec = progress.done[d.id];
-                  const inner = `<span class="num">${String(i + 1).padStart(2, '0')}</span><span>${esc(d.title)}</span><span class="pill">Tier ${d.tier}</span>${rec ? starsHTML(rec.stars) : open ? '<span class="muted">Start</span>' : '<span class="muted">Locked</span>'}`;
-                  return `<li>${open ? `<a class="scen" href="#/s/${esc(d.id)}">${inner}</a>` : `<div class="scen locked" aria-disabled="true">${inner}</div>`}</li>`;
-                })
-                .join('')}
-            </ol>
-          </div>`,
-        )
-        .join('')}
+      <ol class="scen-list">${rows.join('')}</ol>
     </section>`),
   );
+}
+
+// ---------- lesson ----------
+
+function renderLesson(trackId, lessonId) {
+  const t = manifest.tracks.find((x) => x.id === trackId);
+  const all = t ? steps(t) : [];
+  const i = all.findIndex((s) => s.kind === 'lesson' && s.lesson.id === lessonId);
+  if (!t || i < 0 || !isOpen(t)) return renderHome();
+  if (!stepOpen(t, i)) return renderTrack(t.id);
+  const lesson = all[i].lesson;
+  const n = all.slice(0, i + 1).filter((s) => s.kind === 'lesson').length;
+  const next = all[i + 1];
+  app.replaceChildren(h(lessonPageHTML(t, lesson, n, { done: lessonDone(t, lesson) })));
+  const finish = () => {
+    if (!lessonDone(t, lesson)) {
+      progress.lessons[lessonKey(t, lesson)] = { at: new Date().toISOString() };
+      saveProgress();
+    }
+    const box = document.getElementById('lesson-end');
+    box.innerHTML = `<p class="good-text"><strong>Lesson done.</strong></p>${
+      next ? `<a class="btn primary" href="${stepHref(t, next)}">Next: ${esc(stepTitle(next))}</a>` : `<a class="btn primary" href="#/track/${esc(t.id)}">Back to ${esc(t.title)}</a>`
+    }`;
+  };
+  wireLesson(app, lesson, { makeDef: (bi, block) => tryDef(t.id, lesson, bi, block), onComplete: finish, done: lessonDone(t, lesson) });
 }
 
 // ---------- scenario ----------
@@ -240,7 +316,8 @@ function renderScenario(id) {
   if (!def) return renderHome();
   const t = manifest.tracks.find((x) => x.id === def.track);
   const index = t ? t.defs.indexOf(def) : -1;
-  if (t && !unlocked(t, index)) return renderTrack(t.id);
+  if (t && !isOpen(t)) return renderHome();
+  if (t && !stepOpen(t, steps(t).findIndex((s) => s.def === def))) return renderTrack(t.id);
   current = { def, track: t, index, session: new Session(def, { seed: (Math.random() * 2 ** 32) >>> 0 }) };
 
   app.replaceChildren(
@@ -291,7 +368,8 @@ function renderPanel(coach = null) {
   if (!panel) return;
   const tierInfo = TIERS[session.tier];
   const cur = session.current;
-  const next = track && track.defs[index + 1];
+  const all = track ? steps(track) : [];
+  const next = all[all.findIndex((s) => s.def === def) + 1];
   let doneCard = '';
   if (session.complete && track) {
     const finishedTrack = trackDone(track);
@@ -299,7 +377,7 @@ function renderPanel(coach = null) {
     doneCard = `<div class="done-card" role="status">
       <strong>Scenario complete</strong> ${starsHTML(session.stars)}
       ${phrase ? `<p>Track finished. Your passphrase: <span class="word">${esc(phrase)}</span></p><a class="btn" href="#/">See all your passphrases</a>` : ''}
-      ${next ? `<a class="btn primary" href="#/s/${esc(next.id)}">Next: ${esc(next.title)}</a>` : track ? `<a class="btn" href="#/track/${esc(track.id)}">Back to ${esc(track.title)}</a>` : ''}
+      ${next ? `<a class="btn primary" href="${stepHref(track, next)}">Next: ${esc(stepTitle(next))}</a>` : track ? `<a class="btn" href="#/track/${esc(track.id)}">Back to ${esc(track.title)}</a>` : ''}
     </div>`;
   }
   panel.replaceChildren(
@@ -395,8 +473,9 @@ function recordCompletion() {
 
 function route() {
   const hash = location.hash.replace(/^#\/?/, '');
-  const [kind, id] = hash.split('/');
+  const [kind, id, sub] = hash.split('/');
   if (kind === 'track') renderTrack(id);
+  else if (kind === 'learn') renderLesson(id, sub);
   else if (kind === 's') renderScenario(id);
   else if (kind === 'sandbox') renderScenario('sandbox');
   else if (kind === 'guide') app.replaceChildren(h(guideHTML()));

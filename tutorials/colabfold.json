@@ -1,0 +1,250 @@
+{
+  "track": "colabfold",
+  "lessons": [
+    {
+      "id": "what",
+      "title": "What ColabFold does",
+      "before": "colabfold-01-help",
+      "summary": "AlphaFold2 structure prediction, packaged to run from one command.",
+      "blocks": [
+        {
+          "text": "ColabFold predicts a protein's 3D structure from its sequence. It runs AlphaFold2, DeepMind's structure prediction network, but replaces AlphaFold2's slow database search with a fast MMseqs2 search on the ColabFold server. A prediction that took hours with the original AlphaFold2 takes minutes.\n\nIn design work you use it as a check: if a designed sequence folds, in silico, into the structure you designed it for, with high confidence, it's worth ordering."
+        },
+        {
+          "text": "A run has three stages:\n\n1. MSA: find related sequences (a multiple sequence alignment). Evolution tells the network which residues touch. This step needs the internet, to reach the ColabFold server.\n\n2. Prediction: 5 AlphaFold2 models each predict the structure, refining it over several recycles. This is the part that needs a GPU.\n\n3. Ranking: the models are ranked by confidence, and the best is called rank_001."
+        },
+        {
+          "command": {
+            "name": "colabfold_batch",
+            "stands": "ColabFold, batch mode",
+            "syntax": "colabfold_batch [OPTIONS] INPUT RESULTS",
+            "what": "INPUT is a FASTA file (one query per record) or a folder of FASTA files. RESULTS is a folder for the output; it's created if needed. Available after `module load colabfold`."
+          }
+        },
+        {
+          "try": {
+            "text": "Load ColabFold and read its help.",
+            "cwd": "~/fold",
+            "files": {
+              "~/fold/binder_01.fasta": ">binder_01\nMLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDI\n",
+              "~/fold/binder_01_af/log.txt": "2026-10-24 10:12:01,113 Running colabfold 1.5.5\n2026-10-24 10:12:44,902 Query 1/1: binder_01 (length 64)\n2026-10-24 10:13:31,442 reranking models by 'plddt' metric\n2026-10-24 10:13:31,443 rank_001_alphafold2_ptm_model_3_seed_000 pLDDT=88.4 pTM=0.771\n2026-10-24 10:13:31,444 rank_002_alphafold2_ptm_model_1_seed_000 pLDDT=86.9 pTM=0.752\n2026-10-24 10:13:31,445 rank_003_alphafold2_ptm_model_5_seed_000 pLDDT=84.0 pTM=0.733\n2026-10-24 10:13:31,446 rank_004_alphafold2_ptm_model_2_seed_000 pLDDT=81.7 pTM=0.705\n2026-10-24 10:13:31,447 rank_005_alphafold2_ptm_model_4_seed_000 pLDDT=79.2 pTM=0.688\n2026-10-24 10:13:32,001 Done\n"
+            },
+            "tasks": [
+              {
+                "text": "Load the module",
+                "check": {
+                  "moduleLoaded": "colabfold"
+                }
+              },
+              {
+                "text": "Show the help",
+                "check": {
+                  "ran": "colabfold_batch",
+                  "argHas": "--help"
+                }
+              }
+            ],
+            "hint": "module load colabfold, then colabfold_batch --help",
+            "solution": [
+              "module load colabfold",
+              "colabfold_batch --help"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which stage of a ColabFold run needs the GPU?",
+            "options": [
+              "Reading the FASTA",
+              "The MSA search",
+              "The structure prediction",
+              "Writing the PDB files"
+            ],
+            "answer": 2,
+            "why": "The neural network predictions run on the GPU. The MSA search runs on the ColabFold server."
+          }
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "title": "Running it: GPU, memory and options",
+      "before": "colabfold-02-first-fold",
+      "summary": "Get a GPU, run a fold, and the options that change speed and quality.",
+      "blocks": [
+        {
+          "text": "ColabFold needs a GPU, so run it inside a Slurm job: interactively with srun for one quick fold, or with sbatch for anything bigger. Memory grows with sequence length; 32G covers most single chains, complexes may need 64G."
+        },
+        {
+          "example": {
+            "cmd": "srun --gres=gpu:1 --mem=32G --pty bash\nmodule load colabfold\ncolabfold_batch binder_01.fasta binder_01_af\nexit",
+            "note": "Get a GPU, load the software, fold, give the GPU back. Modules don't carry into a new job, so load inside it."
+          }
+        },
+        {
+          "flags": [
+            [
+              "--num-models 1-5",
+              "number of models",
+              "How many of the 5 AlphaFold2 models to run (default 5). 1 is 5× faster, for quick tests"
+            ],
+            [
+              "--num-recycle N",
+              "recycles",
+              "Refinement passes per model (default 3; more for complexes). More can help hard targets"
+            ],
+            [
+              "--msa-mode single_sequence",
+              "MSA mode",
+              "Skip the MSA search. Fast, and common for de novo designs, which have no relatives"
+            ],
+            [
+              "--templates",
+              "templates",
+              "Also use known structures from the PDB as hints"
+            ],
+            [
+              "--amber",
+              "Amber relax",
+              "Clean up clashes in the top models with a short force-field minimization"
+            ],
+            [
+              "--num-relax N",
+              "relax count",
+              "With --amber, relax only the top N"
+            ]
+          ]
+        },
+        {
+          "tip": "Test with `--num-models 1 --num-recycle 1` first. If that runs cleanly, run the full prediction in a batch job."
+        },
+        {
+          "quiz": {
+            "q": "You're checking 50 de novo designs quickly. Which options make sense for a first pass?",
+            "options": [
+              "--templates --amber",
+              "--num-models 1 --msa-mode single_sequence",
+              "--num-recycle 48",
+              "No options"
+            ],
+            "answer": 1,
+            "why": "One model and no MSA search is much faster, and de novo designs have no natural relatives for an MSA to find anyway."
+          }
+        }
+      ]
+    },
+    {
+      "id": "reading",
+      "title": "Reading the results: ranks and confidence",
+      "before": "colabfold-03-rank",
+      "summary": "Which file is the best model, and how much to trust it.",
+      "blocks": [
+        {
+          "text": "For each query, the results folder holds 5 PDB files named by rank, a scores JSON for each, plots (coverage, PAE, pLDDT), and `log.txt` with the summary. The best model's file contains `rank_001`."
+        },
+        {
+          "example": {
+            "out": "binder_01_unrelaxed_rank_001_alphafold2_ptm_model_3_seed_000.pdb\nbinder_01_unrelaxed_rank_002_alphafold2_ptm_model_1_seed_000.pdb\nbinder_01_scores_rank_001_alphafold2_ptm_model_3_seed_000.json\nbinder_01_pae.png  binder_01_plddt.png  log.txt",
+            "note": "rank_001 is the most confident model. model_3 says which of the 5 networks made it. unrelaxed means no Amber clean-up."
+          }
+        },
+        {
+          "flags": [
+            [
+              "pLDDT",
+              "predicted local distance difference test",
+              "Per-residue confidence, 0–100. Above 90 very high, 70–90 good, 50–70 low, below 50 likely disordered"
+            ],
+            [
+              "pTM",
+              "predicted TM-score",
+              "Confidence in the overall fold, 0–1. Above 0.5 suggests the fold is roughly right"
+            ],
+            [
+              "ipTM",
+              "interface pTM",
+              "For complexes: confidence in how the chains sit together. Above about 0.8 is strong; below 0.6 is doubtful"
+            ],
+            [
+              "PAE",
+              "predicted aligned error",
+              "Expected position error between pairs of residues, in Å. Low PAE between binder and target means a confident interface"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Pull the rank_001 line out of the log to see its pLDDT.",
+            "cwd": "~/fold",
+            "files": {
+              "~/fold/binder_01.fasta": ">binder_01\nMLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDI\n",
+              "~/fold/binder_01_af/log.txt": "2026-10-24 10:12:01,113 Running colabfold 1.5.5\n2026-10-24 10:12:44,902 Query 1/1: binder_01 (length 64)\n2026-10-24 10:13:31,442 reranking models by 'plddt' metric\n2026-10-24 10:13:31,443 rank_001_alphafold2_ptm_model_3_seed_000 pLDDT=88.4 pTM=0.771\n2026-10-24 10:13:31,444 rank_002_alphafold2_ptm_model_1_seed_000 pLDDT=86.9 pTM=0.752\n2026-10-24 10:13:31,445 rank_003_alphafold2_ptm_model_5_seed_000 pLDDT=84.0 pTM=0.733\n2026-10-24 10:13:31,446 rank_004_alphafold2_ptm_model_2_seed_000 pLDDT=81.7 pTM=0.705\n2026-10-24 10:13:31,447 rank_005_alphafold2_ptm_model_4_seed_000 pLDDT=79.2 pTM=0.688\n2026-10-24 10:13:32,001 Done\n"
+            },
+            "check": {
+              "ran": "grep",
+              "argHas": "rank_001"
+            },
+            "hint": "grep rank_001 binder_01_af/log.txt",
+            "solution": [
+              "grep rank_001 binder_01_af/log.txt"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "A designed binder with its target gets pLDDT 91 but ipTM 0.42. What does that suggest?",
+            "options": [
+              "Great binder",
+              "Both chains fold well, but the predicted binding is unreliable",
+              "The run failed",
+              "The binder is disordered"
+            ],
+            "answer": 1,
+            "why": "High pLDDT means each chain's structure is confident. Low ipTM means the network isn't confident about how they bind."
+          }
+        }
+      ]
+    },
+    {
+      "id": "complexes",
+      "title": "Complexes, folders and batch jobs",
+      "before": "colabfold-06-batch",
+      "summary": "Fold a binder with its target, fold many designs at once, and run it all as a job.",
+      "blocks": [
+        {
+          "text": "To predict a complex, put the chains in one FASTA record separated by a colon. ColabFold then uses the multimer model and reports ipTM."
+        },
+        {
+          "example": {
+            "cmd": "cat complex.fasta",
+            "out": ">binder_01_il7r\nMLEPPKKADEKLDIVLVD...:GSHMESGYAQNGDLEDAELDDYSFSCYSQLEVNGSQHSLTCAFEDPDVNTTNLEFEICGALVEVKCLNFRKLQEIYFIETKKFLLIGKSNICVKVGEKSLTCKKIDLTTIVKPEAPFDLSVVYREGANDFVVTFNTSHLQKKYVKVLMHDVAYRQEKDENKWTHVNLSSTKLTLLQRKLQPAAMYEIKVRSIPDHYFKGFWSEWSPSYYFRTPEINNSSGEMD",
+            "note": "Binder first, a colon, then the target."
+          }
+        },
+        {
+          "text": "Give a folder instead of a file and ColabFold folds every .fasta in it, one after another, loading the model only once. It skips queries that already have a `.done.txt` file, so a run that stopped can simply be restarted."
+        },
+        {
+          "example": {
+            "cmd": "cat fold.sh",
+            "out": "#!/bin/bash\n#SBATCH --job-name=fold\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=32G\n#SBATCH --time=03:00:00\n#SBATCH --output=fold-%j.out\n\nmodule load colabfold\ncolabfold_batch designs/ designs_af/",
+            "note": "A batch job for a folder of designs. If it runs out of memory (State OUT_OF_MEMORY), raise --mem; if it times out, rerun it: finished queries are skipped."
+          }
+        },
+        {
+          "quiz": {
+            "q": "How do you write a two-chain complex for ColabFold?",
+            "options": [
+              "Two separate FASTA files",
+              "Two records in one FASTA file",
+              "Both sequences in one record, joined by :",
+              "Use --complex"
+            ],
+            "answer": 2,
+            "why": "A colon inside one record tells ColabFold the chains belong to one complex. Separate records are folded separately."
+          }
+        }
+      ]
+    }
+  ]
+}

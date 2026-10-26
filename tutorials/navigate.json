@@ -1,0 +1,611 @@
+{
+  "track": "navigate",
+  "lessons": [
+    {
+      "id": "tree",
+      "title": "Folders, paths and your home",
+      "before": "navigate-01-where-am-i",
+      "summary": "How files are organized on Geiss-01, and the two commands that tell you where you are and what is around you.",
+      "blocks": [
+        {
+          "text": "Everything on Geiss-01 lives in one big tree of folders (Linux calls them directories). The top of the tree is `/`, called the root. Every other folder hangs below it: `/home`, `/scratch`, `/opt`, and so on.\n\nYou have your own folder at `/home/student`. It's called your home folder, and the shortcut `~` (tilde) always means it. When you log in, you start there."
+        },
+        {
+          "example": {
+            "out": "/\n├── home/\n│   └── student/          ← your home folder, also called ~\n│       ├── binder_design/\n│       │   ├── inputs/\n│       │   └── runs/\n│       └── notes.txt\n├── scratch/              ← big, fast, temporary space\n└── opt/                  ← installed software",
+            "note": "A path names a spot in this tree by listing the folders on the way, separated by `/`. `/home/student/binder_design/inputs` means: start at the root, go into home, then student, then binder_design, then inputs."
+          }
+        },
+        {
+          "text": "At any moment your terminal is \"in\" one folder, called the working directory. Commands look for files there unless you say otherwise. The prompt shows it: `student@geiss-01:~$` means you are in `~`."
+        },
+        {
+          "command": {
+            "name": "pwd",
+            "stands": "print working directory",
+            "syntax": "pwd",
+            "what": "Prints the full path of the folder you are in. Use it whenever you're not sure where you are."
+          }
+        },
+        {
+          "try": {
+            "text": "Type `pwd` and press Enter to see where you start.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "ran": "pwd"
+            },
+            "hint": "Type the three letters pwd, then press Enter.",
+            "solution": [
+              "pwd"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "ls",
+            "stands": "list",
+            "syntax": "ls [OPTIONS] [FOLDER]",
+            "what": "Lists what is in a folder. With no folder named, it lists the folder you are in. Folders are shown in blue here."
+          }
+        },
+        {
+          "try": {
+            "text": "List what's in your home folder with `ls`.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "ran": "ls"
+            },
+            "hint": "Type ls and press Enter.",
+            "solution": [
+              "ls"
+            ]
+          }
+        },
+        {
+          "text": "You can also list a folder without going into it: `ls binder_design` shows what is inside binder_design, and you stay where you are."
+        },
+        {
+          "try": {
+            "text": "List the inside of `binder_design` without moving.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "ran": "ls",
+              "arg": "~/binder_design"
+            },
+            "hint": "Put the folder name after ls, with a space: ls binder_design",
+            "solution": [
+              "ls binder_design"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "You type `pwd` and see `/home/student/binder_design/inputs`. Which folder are you in?",
+            "options": [
+              "home",
+              "student",
+              "inputs",
+              "binder_design"
+            ],
+            "answer": 2,
+            "why": "pwd prints the whole path from the root, and the last name is the folder you are in. The names before it are the folders that contain it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "cd",
+      "title": "Moving around with cd",
+      "before": "navigate-01-where-am-i",
+      "summary": "Step into folders, climb back out, and jump home.",
+      "blocks": [
+        {
+          "command": {
+            "name": "cd",
+            "stands": "change directory",
+            "syntax": "cd [FOLDER]",
+            "what": "Moves you into another folder. It prints nothing when it works; the prompt changes to show where you are now."
+          }
+        },
+        {
+          "try": {
+            "text": "Move into `binder_design`.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "cwd": "~/binder_design"
+            },
+            "hint": "cd binder_design",
+            "solution": [
+              "cd binder_design"
+            ]
+          }
+        },
+        {
+          "text": "Three special names work with `cd` and almost every other command:"
+        },
+        {
+          "flags": [
+            [
+              "..",
+              "parent",
+              "The folder one level up, the one that contains this one"
+            ],
+            [
+              ".",
+              "this folder",
+              "The folder you are in right now"
+            ],
+            [
+              "~",
+              "home",
+              "Your home folder, /home/student"
+            ]
+          ]
+        },
+        {
+          "example": {
+            "cmd": "cd ..",
+            "out": "",
+            "note": "From `~/binder_design/inputs`, `cd ..` takes you up to `~/binder_design`. Run it again and you're back in `~`."
+          }
+        },
+        {
+          "tip": "Plain `cd` with nothing after it also takes you home. It's the quickest way back when you're lost."
+        },
+        {
+          "try": {
+            "text": "You're deep inside a run folder. Climb up one level with `..`.",
+            "cwd": "~/binder_design/runs/run1/outputs",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "cwd": "~/binder_design/runs/run1"
+            },
+            "hint": "cd ..  (cd, a space, then two dots)",
+            "solution": [
+              "cd .."
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "Now jump straight home in one move.",
+            "cwd": "~/binder_design/runs/run1",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "cwd": "~"
+            },
+            "hint": "cd ~ or just cd",
+            "solution": [
+              "cd ~"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "You are in `~/binder_design/runs`. Where does `cd ..` take you?",
+            "options": [
+              "~",
+              "~/binder_design",
+              "~/binder_design/runs/run1",
+              "/"
+            ],
+            "answer": 1,
+            "why": ".. is the parent: the folder that holds the one you're in. runs sits inside binder_design."
+          }
+        }
+      ]
+    },
+    {
+      "id": "hidden",
+      "title": "Hidden files and ls options",
+      "before": "navigate-03-hidden-files",
+      "summary": "What the letters after a dash do, and the files ls doesn't show you.",
+      "blocks": [
+        {
+          "text": "Most commands take options (also called flags) that change what they do. An option starts with a dash: `ls -a`. Single letters can be combined: `ls -la` is the same as `ls -l -a`."
+        },
+        {
+          "text": "Files and folders whose names start with a dot, like `.bashrc`, are hidden: plain `ls` skips them. Programs keep their settings in hidden files so they don't clutter your listing."
+        },
+        {
+          "flags": [
+            [
+              "-a",
+              "all",
+              "Show hidden files too, including . and .."
+            ],
+            [
+              "-l",
+              "long",
+              "One line per file: permissions, owner, size, date"
+            ],
+            [
+              "-h",
+              "human-readable",
+              "With -l, sizes like 4.0K and 12M instead of bytes"
+            ],
+            [
+              "-t",
+              "time",
+              "Newest first"
+            ],
+            [
+              "-r",
+              "reverse",
+              "Reverse the order (with -t: oldest first)"
+            ],
+            [
+              "-R",
+              "recursive",
+              "Also list every folder inside, all the way down"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Show everything in your home folder, hidden files included.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "ran": "ls",
+              "flags": "a"
+            },
+            "hint": "ls -a",
+            "solution": [
+              "ls -a"
+            ]
+          }
+        },
+        {
+          "example": {
+            "cmd": "ls -lh",
+            "out": "drwxr-xr-x 4 student student 4.0K Oct 24 09:12 binder_design\n-rw-r--r-- 1 student student   27 Oct 24 09:10 notes.txt",
+            "note": "The first letter is `d` for a folder and `-` for a file. Then come permissions, owner, size, the date it last changed, and the name."
+          }
+        },
+        {
+          "try": {
+            "text": "Get the long listing with readable sizes.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "ran": "ls",
+              "flags": "lh"
+            },
+            "hint": "Combine the letters: ls -lh",
+            "solution": [
+              "ls -lh"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which command lists hidden files, one per line, with sizes like 12M?",
+            "options": [
+              "ls -h",
+              "ls -alh",
+              "ls -R",
+              "ls -t"
+            ],
+            "answer": 1,
+            "why": "-a adds hidden files, -l gives one line per file with details, and -h makes the sizes readable."
+          }
+        }
+      ]
+    },
+    {
+      "id": "paths",
+      "title": "Relative and absolute paths",
+      "before": "navigate-04-one-path",
+      "summary": "Go several folders at once, and name any folder from anywhere.",
+      "blocks": [
+        {
+          "text": "You don't have to `cd` one folder at a time. Join the names with `/` and go in one move: `cd binder_design/runs/run1`."
+        },
+        {
+          "text": "A path that starts from where you are is a relative path. A path that starts with `/` is an absolute path: it starts at the root, so it works the same from any folder. `~/...` counts as absolute too, because `~` always means `/home/student`."
+        },
+        {
+          "flags": [
+            [
+              "runs/run1",
+              "relative",
+              "From the folder you're in, go into runs, then run1"
+            ],
+            [
+              "/scratch/student",
+              "absolute",
+              "From the root, wherever you are"
+            ],
+            [
+              "~/binder_design",
+              "absolute (home)",
+              "From your home folder, wherever you are"
+            ],
+            [
+              "../run2",
+              "relative",
+              "Up one level, then into run2"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "From home, go straight to `binder_design/runs/run1/outputs` in one command.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "cwd": "~/binder_design/runs/run1/outputs"
+            },
+            "hint": "cd binder_design/runs/run1/outputs  (Tab completes each name)",
+            "solution": [
+              "cd binder_design/runs/run1/outputs"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "You're in run1. Move sideways into run2 using `..`.",
+            "cwd": "~/binder_design/runs/run1",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "check": {
+              "cwd": "~/binder_design/runs/run2"
+            },
+            "hint": "Go up to runs, then down into run2: cd ../run2",
+            "solution": [
+              "cd ../run2"
+            ]
+          }
+        },
+        {
+          "tip": "Press Tab while typing a name and the terminal finishes it for you. If nothing happens, press Tab twice to see the choices. It saves typing and catches typos."
+        },
+        {
+          "quiz": {
+            "q": "You're in `/scratch/student`. Which command takes you to `/home/student/binder_design`?",
+            "options": [
+              "cd binder_design",
+              "cd ../binder_design",
+              "cd ~/binder_design",
+              "cd /binder_design"
+            ],
+            "answer": 2,
+            "why": "~/binder_design works from anywhere because it starts at your home folder. The others look for binder_design next to where you are, or at the root."
+          }
+        }
+      ]
+    },
+    {
+      "id": "names",
+      "title": "Capitals, spaces and going back",
+      "before": "navigate-09-case",
+      "summary": "Small details that trip people up: case, spaces in names, and cd -.",
+      "blocks": [
+        {
+          "text": "Linux treats upper and lower case as different letters. `Projects` and `projects` are two different names, and `cd projects` fails if the folder is really called `Projects`."
+        },
+        {
+          "text": "A space separates the parts of a command, so a name with a space in it confuses `cd`: `cd my runs` looks like two names. Put the name in quotes, `cd \"my runs\"`, or put a backslash before the space, `cd my\\ runs`. Tab completion adds the backslash for you."
+        },
+        {
+          "try": {
+            "text": "Move into the folder called `shared results`.",
+            "cwd": "~",
+            "files": {
+              "~/shared results/summary.txt": "all runs\n"
+            },
+            "check": {
+              "cwd": "~/shared results"
+            },
+            "hint": "Quote the name: cd \"shared results\"",
+            "solution": [
+              "cd \"shared results\""
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "cd -",
+            "stands": "change to the previous directory",
+            "syntax": "cd -",
+            "what": "Takes you back to the folder you were in before the last cd, and prints its path. Run it again to swap back. Handy when comparing two folders."
+          }
+        },
+        {
+          "try": {
+            "text": "Go into `binder_design/runs/run1`, then use `cd -` to jump back to where you started.",
+            "cwd": "~",
+            "files": {
+              "~/binder_design/README.txt": "Binder design project for IL-7R.\n",
+              "~/binder_design/inputs/target.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run1/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/binder_design/runs/run2/outputs/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/notes.txt": "Ask Brian about GPU hours.\n",
+              "~/.bashrc": "# settings that run when you log in\n"
+            },
+            "tasks": [
+              {
+                "text": "Go into binder_design/runs/run1",
+                "check": {
+                  "cwd": "~/binder_design/runs/run1"
+                }
+              },
+              {
+                "text": "Jump back with cd -",
+                "check": {
+                  "all": [
+                    {
+                      "ran": "cd",
+                      "arg": "-"
+                    },
+                    {
+                      "cwd": "~"
+                    }
+                  ]
+                }
+              }
+            ],
+            "hint": "cd binder_design/runs/run1, then cd -",
+            "solution": [
+              "cd binder_design/runs/run1",
+              "cd -"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "`ls` shows a folder named `My Runs`. Which command works?",
+            "options": [
+              "cd my runs",
+              "cd My Runs",
+              "cd \"My Runs\"",
+              "cd my_runs"
+            ],
+            "answer": 2,
+            "why": "The name has a capital letter and a space. Quotes keep the two words together as one name, and the case has to match exactly."
+          }
+        }
+      ]
+    }
+  ]
+}

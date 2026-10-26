@@ -1,0 +1,645 @@
+{
+  "track": "manage",
+  "lessons": [
+    {
+      "id": "mkdir",
+      "title": "Making folders",
+      "before": "manage-01-new-project",
+      "summary": "Give every project the same tidy layout.",
+      "blocks": [
+        {
+          "text": "A tidy project is much easier to work with, for you and for anyone who helps you. A common layout is one folder per project with `inputs`, `outputs` and `scripts` inside."
+        },
+        {
+          "command": {
+            "name": "mkdir",
+            "stands": "make directory",
+            "syntax": "mkdir [-p] NAME...",
+            "what": "Creates folders. Give several names to make several at once. It prints nothing when it works."
+          }
+        },
+        {
+          "try": {
+            "text": "In your home folder, make a folder called `demo`, go into it, and make `inputs` and `outputs` inside it.",
+            "cwd": "~",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "tasks": [
+              {
+                "text": "Make the demo folder",
+                "check": {
+                  "isDir": "~/demo"
+                }
+              },
+              {
+                "text": "Make inputs and outputs inside demo",
+                "check": {
+                  "all": [
+                    {
+                      "isDir": "~/demo/inputs"
+                    },
+                    {
+                      "isDir": "~/demo/outputs"
+                    }
+                  ]
+                }
+              }
+            ],
+            "hint": "mkdir demo, cd demo, then mkdir inputs outputs",
+            "solution": [
+              "mkdir demo",
+              "cd demo",
+              "mkdir inputs outputs"
+            ]
+          }
+        },
+        {
+          "tip": "Avoid spaces in names: use `il7r_design` or `il7r-design`, not `il7r design`. Every command will be easier to type."
+        },
+        {
+          "quiz": {
+            "q": "What does `mkdir inputs outputs scripts` do?",
+            "options": [
+              "Makes one folder named 'inputs outputs scripts'",
+              "Makes three folders",
+              "Makes inputs, then moves into it",
+              "Fails: one name at a time"
+            ],
+            "answer": 1,
+            "why": "Spaces separate arguments, so mkdir gets three names and makes three folders."
+          }
+        }
+      ]
+    },
+    {
+      "id": "cp-mv",
+      "title": "Copying, moving and renaming",
+      "before": "manage-02-copy-in",
+      "summary": "cp makes a copy; mv moves or renames.",
+      "blocks": [
+        {
+          "command": {
+            "name": "cp",
+            "stands": "copy",
+            "syntax": "cp SOURCE... DESTINATION",
+            "what": "Copies files. If DESTINATION is a folder, the copies go inside it with the same names; otherwise the copy gets that new name. The original stays where it was."
+          }
+        },
+        {
+          "try": {
+            "text": "Copy `~/downloads/il7r.pdb` into `~/project/inputs/`.",
+            "cwd": "~",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "check": {
+              "exists": "~/project/inputs/il7r.pdb"
+            },
+            "hint": "cp ~/downloads/il7r.pdb ~/project/inputs/",
+            "solution": [
+              "cp ~/downloads/il7r.pdb ~/project/inputs/"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "mv",
+            "stands": "move",
+            "syntax": "mv SOURCE... DESTINATION",
+            "what": "Moves files into a folder, or renames a file when DESTINATION is a new name. Linux has no separate rename command; renaming is moving to a new name."
+          }
+        },
+        {
+          "try": {
+            "text": "In `project`, rename `seqs.fa` to `il7r_run1.fasta`.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "check": {
+              "all": [
+                {
+                  "exists": "~/project/il7r_run1.fasta"
+                },
+                {
+                  "notExists": "~/project/seqs.fa"
+                }
+              ]
+            },
+            "hint": "mv seqs.fa il7r_run1.fasta",
+            "solution": [
+              "mv seqs.fa il7r_run1.fasta"
+            ]
+          }
+        },
+        {
+          "warn": "If a file with the destination name already exists, cp and mv overwrite it without asking. Check with ls first."
+        },
+        {
+          "quiz": {
+            "q": "After `mv notes.txt old/`, where is notes.txt?",
+            "options": [
+              "In both places",
+              "Only in old/",
+              "Deleted",
+              "Renamed to old"
+            ],
+            "answer": 1,
+            "why": "old/ is an existing folder, so mv moves the file inside it. The original is gone from where it was."
+          }
+        }
+      ]
+    },
+    {
+      "id": "rm",
+      "title": "Deleting safely",
+      "before": "manage-04-clean-logs",
+      "summary": "There's no trash can on Linux.",
+      "blocks": [
+        {
+          "command": {
+            "name": "rm",
+            "stands": "remove",
+            "syntax": "rm [-r] [-i] FILE...",
+            "what": "Deletes files for good. There is no trash can and no undo."
+          }
+        },
+        {
+          "flags": [
+            [
+              "-r",
+              "recursive",
+              "Delete a folder and everything in it"
+            ],
+            [
+              "-i",
+              "interactive",
+              "Ask before each file"
+            ],
+            [
+              "-f",
+              "force",
+              "Don't ask, don't complain about missing files"
+            ]
+          ]
+        },
+        {
+          "warn": "`rm` with a wildcard deletes everything that matches. Run `ls` with the same pattern first to see exactly what will go: `ls slurm-*.out`, then `rm slurm-*.out`."
+        },
+        {
+          "try": {
+            "text": "In `project`, check which Slurm logs match, then delete them.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "tasks": [
+              {
+                "text": "List the logs with ls slurm-*.out",
+                "check": {
+                  "ran": "ls",
+                  "lineHas": "slurm-*"
+                }
+              },
+              {
+                "text": "Delete them",
+                "check": {
+                  "all": [
+                    {
+                      "notExists": "~/project/slurm-101.out"
+                    },
+                    {
+                      "notExists": "~/project/slurm-102.out"
+                    },
+                    {
+                      "exists": "~/project/notes.txt"
+                    }
+                  ]
+                }
+              }
+            ],
+            "hint": "ls slurm-*.out, then rm slurm-*.out",
+            "solution": [
+              "ls slurm-*.out",
+              "rm slurm-*.out"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which command deletes the folder `old_run` and everything in it?",
+            "options": [
+              "rm old_run",
+              "rmdir old_run",
+              "rm -r old_run",
+              "mv old_run trash"
+            ],
+            "answer": 2,
+            "why": "Folders need -r. rmdir only removes empty folders, and there is no trash folder."
+          }
+        }
+      ]
+    },
+    {
+      "id": "deep-perms",
+      "title": "Nested folders, folder copies and permissions",
+      "before": "manage-05-deep-folders",
+      "summary": "mkdir -p, cp -r, and making a script runnable.",
+      "blocks": [
+        {
+          "text": "Two options save a lot of typing: `mkdir -p` makes a whole chain of folders at once, and `cp -r` copies a folder with everything in it."
+        },
+        {
+          "flags": [
+            [
+              "mkdir -p a/b/c",
+              "parents",
+              "Make a, a/b and a/b/c, whichever are missing; no error if they exist"
+            ],
+            [
+              "cp -r run1 run1_backup",
+              "recursive",
+              "Copy the folder run1 and all its contents"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "In `project`, make `runs/run3/outputs/pdbs` in one command.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "check": {
+              "isDir": "~/project/runs/run3/outputs/pdbs"
+            },
+            "hint": "mkdir -p runs/run3/outputs/pdbs",
+            "solution": [
+              "mkdir -p runs/run3/outputs/pdbs"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "Back up the folder `run1` as `run1_backup`.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "check": {
+              "exists": "~/project/run1_backup/design_1.pdb"
+            },
+            "hint": "cp -r run1 run1_backup",
+            "solution": [
+              "cp -r run1 run1_backup"
+            ]
+          }
+        },
+        {
+          "text": "Every file has permissions: who may read it (r), change it (w) and run it as a program (x). `ls -l` shows them as `-rwxr-xr-x`: the owner's three letters, then the group's, then everyone else's."
+        },
+        {
+          "command": {
+            "name": "chmod",
+            "stands": "change mode",
+            "syntax": "chmod +x FILE   |   chmod 755 FILE",
+            "what": "Changes permissions. `+x` adds execute permission so you can run a script with `./name.sh`."
+          }
+        },
+        {
+          "try": {
+            "text": "Make `go.sh` runnable.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "check": {
+              "executable": "~/project/go.sh"
+            },
+            "hint": "chmod +x go.sh",
+            "solution": [
+              "chmod +x go.sh"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "`ls -l` shows `-rw-r--r--` for run.sh. What happens with `./run.sh`?",
+            "options": [
+              "It runs",
+              "Permission denied",
+              "It opens in nano",
+              "It is deleted"
+            ],
+            "answer": 1,
+            "why": "There is no x anywhere, so nobody may run it. chmod +x run.sh fixes that."
+          }
+        }
+      ]
+    },
+    {
+      "id": "du-tar",
+      "title": "Disk space and archives",
+      "before": "manage-08-disk-usage",
+      "summary": "See what takes up space, and bundle a folder into one file.",
+      "blocks": [
+        {
+          "command": {
+            "name": "du",
+            "stands": "disk usage",
+            "syntax": "du -sh PATH...",
+            "what": "Shows how much space files and folders take. -s gives one total per path; -h writes sizes as K, M, G."
+          }
+        },
+        {
+          "try": {
+            "text": "In `project`, see how big each run folder is.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "check": {
+              "ran": "du",
+              "flags": "sh"
+            },
+            "hint": "du -sh run*",
+            "solution": [
+              "du -sh run*"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "tar",
+            "stands": "tape archive",
+            "syntax": "tar -czf OUT.tar.gz FOLDER   |   tar -tzf FILE   |   tar -xzf FILE",
+            "what": "Bundles many files into one archive file, usually compressed (.tar.gz). Easier to copy, share and back up than thousands of small files."
+          }
+        },
+        {
+          "flags": [
+            [
+              "c",
+              "create",
+              "Make a new archive"
+            ],
+            [
+              "t",
+              "table of contents",
+              "List what's inside"
+            ],
+            [
+              "x",
+              "extract",
+              "Unpack it"
+            ],
+            [
+              "z",
+              "gzip",
+              "Compress or decompress (.gz)"
+            ],
+            [
+              "f",
+              "file",
+              "The archive's name comes next; keep f last"
+            ],
+            [
+              "-C DIR",
+              "change directory",
+              "Unpack into DIR instead of here"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Bundle `run1` into `run1.tar.gz`, then list what's inside.",
+            "cwd": "~/project",
+            "files": {
+              "~/downloads/il7r.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/inputs/": {},
+              "~/project/seqs.fa": {
+                "lib": "fasta:designs"
+              },
+              "~/project/slurm-101.out": "done\n",
+              "~/project/slurm-102.out": "done\n",
+              "~/project/notes.txt": "keep\n",
+              "~/project/run1/design_1.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run1/design_2.pdb": {
+                "lib": "pdb:small"
+              },
+              "~/project/run2/design_1.pdb": {
+                "lib": "pdb:small",
+                "size": "230M"
+              },
+              "~/project/go.sh": "#!/bin/bash\necho running\n"
+            },
+            "tasks": [
+              {
+                "text": "Create run1.tar.gz",
+                "check": {
+                  "archiveHas": {
+                    "path": "~/project/run1.tar.gz",
+                    "names": [
+                      "run1/design_1.pdb"
+                    ],
+                    "gz": true
+                  }
+                }
+              },
+              {
+                "text": "List its contents",
+                "check": {
+                  "ran": "tar",
+                  "flags": "t"
+                }
+              }
+            ],
+            "hint": "tar -czf run1.tar.gz run1, then tar -tzf run1.tar.gz",
+            "solution": [
+              "tar -czf run1.tar.gz run1",
+              "tar -tzf run1.tar.gz"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Which command unpacks `data.tar.gz` into the folder `inputs`?",
+            "options": [
+              "tar -czf data.tar.gz inputs",
+              "tar -tzf data.tar.gz",
+              "tar -xzf data.tar.gz -C inputs",
+              "tar -x inputs data.tar.gz"
+            ],
+            "answer": 2,
+            "why": "x extracts, z decompresses, f names the file, and -C says where to unpack."
+          }
+        }
+      ]
+    }
+  ]
+}

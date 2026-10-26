@@ -1,0 +1,695 @@
+{
+  "track": "session",
+  "lessons": [
+    {
+      "id": "login",
+      "title": "Logging in: who and where you are",
+      "before": "session-01-who-where",
+      "summary": "What Geiss-01 is, how you reach it, and two commands that confirm you landed in the right place.",
+      "blocks": [
+        {
+          "text": "Geiss-01 is a shared computer in the lab with 8 powerful GPUs and about 356 GB of memory. You don't sit at it. You reach it over the network from your own laptop and type commands into a terminal: a window where you type a command, press Enter, and read what it prints.\n\nYou connect with `ssh` (secure shell), for example `ssh student@geiss-01`, and type your password. From then on, everything you type runs on Geiss-01, not on your laptop. This site skips the login and drops you straight into a practice copy."
+        },
+        {
+          "text": "The prompt at the start of each line tells you who and where you are: `student@geiss-01:~$` means user `student`, on the computer `geiss-01`, in the folder `~`. The `$` means it's waiting for you."
+        },
+        {
+          "command": {
+            "name": "whoami",
+            "stands": "who am I",
+            "syntax": "whoami",
+            "what": "Prints the user name you are logged in as. Your files, jobs and permissions all belong to this name."
+          }
+        },
+        {
+          "try": {
+            "text": "Check which user you are.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "ran": "whoami"
+            },
+            "hint": "Type whoami and press Enter.",
+            "solution": [
+              "whoami"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "hostname",
+            "stands": "host name",
+            "syntax": "hostname",
+            "what": "Prints the name of the computer you are on. When you have several terminals open, some on your laptop and some on the cluster, this tells you which is which."
+          }
+        },
+        {
+          "try": {
+            "text": "Check which computer this terminal is on.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "ran": "hostname"
+            },
+            "hint": "Type hostname and press Enter.",
+            "solution": [
+              "hostname"
+            ]
+          }
+        },
+        {
+          "tip": "Commands are case sensitive. `whoami` works; `WhoAmI` doesn't. Almost every Linux command is lowercase."
+        },
+        {
+          "quiz": {
+            "q": "Your prompt reads `student@geiss-01:~/runs$`. What does `~/runs` tell you?",
+            "options": [
+              "Your user name",
+              "The computer's name",
+              "The folder you are in",
+              "The command you ran last"
+            ],
+            "answer": 2,
+            "why": "The part after the colon is the folder you're in. `~` is your home folder, so you're in the runs folder inside it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "gpus",
+      "title": "GPUs and nvidia-smi",
+      "before": "session-02-gpus",
+      "summary": "What the GPUs are for, and how to see which ones are busy.",
+      "blocks": [
+        {
+          "text": "A GPU (graphics processing unit) does thousands of small calculations at once. Structure prediction and design tools like ColabFold, Chai-1 and RFdiffusion need one; on a normal processor they would take days instead of minutes.\n\nGeiss-01 has 8 GPUs, numbered 0 to 7, shared by everyone in the class and the lab. Before asking for one, it helps to see how busy they are."
+        },
+        {
+          "command": {
+            "name": "nvidia-smi",
+            "stands": "NVIDIA System Management Interface",
+            "syntax": "nvidia-smi",
+            "what": "Prints a table of the GPUs: each one's number, how much of its memory is in use, how busy it is, and which programs are running on it."
+          }
+        },
+        {
+          "example": {
+            "cmd": "nvidia-smi",
+            "out": "| GPU  Name                  | Memory-Usage          | GPU-Util |\n|   0  RTX PRO 6000 Blackwell |  71234MiB / 97887MiB  |    98%   |\n|   1  RTX PRO 6000 Blackwell |      0MiB / 97887MiB  |     0%   |",
+            "note": "GPU 0 is busy: most of its memory is used and it's at 98%. GPU 1 is idle. A GPU with memory in use and a process listed below the table belongs to someone's job."
+          }
+        },
+        {
+          "try": {
+            "text": "Look at the GPUs.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "ran": "nvidia-smi"
+            },
+            "hint": "Type nvidia-smi (with the dash) and press Enter.",
+            "solution": [
+              "nvidia-smi"
+            ]
+          }
+        },
+        {
+          "warn": "Seeing a free GPU doesn't mean you can just use it. On Geiss-01 you ask Slurm for a GPU (lesson 5), and Slurm gives you one that nobody else is using."
+        },
+        {
+          "quiz": {
+            "q": "In nvidia-smi, a GPU shows 0MiB memory used and 0% utilization. What does that mean?",
+            "options": [
+              "It is broken",
+              "Nobody is using it right now",
+              "It is reserved for the instructor",
+              "It has no memory"
+            ],
+            "answer": 1,
+            "why": "No memory in use and no work being done means the GPU is idle at the moment."
+          }
+        }
+      ]
+    },
+    {
+      "id": "modules",
+      "title": "Loading software with modules",
+      "before": "session-03-module-avail",
+      "summary": "Why software isn't there until you load it, and the module commands.",
+      "blocks": [
+        {
+          "text": "Geiss-01 has many programs installed, sometimes several versions of the same one. If all of them were switched on at once they would clash. Instead, software is packaged as modules that you load when you need them.\n\nLoading a module adds the program to your PATH, the list of folders the shell searches when you type a command name. Before you load it, typing the program's name gives `command not found`."
+        },
+        {
+          "command": {
+            "name": "module",
+            "stands": "environment modules",
+            "syntax": "module avail | list | load NAME | unload NAME | purge",
+            "what": "Manages which software is switched on in this terminal. The word after `module` says what to do."
+          }
+        },
+        {
+          "flags": [
+            [
+              "module avail",
+              "available",
+              "List every module you could load"
+            ],
+            [
+              "module load NAME",
+              "load",
+              "Switch on that software (and the version shown, like colabfold/1.5.5)"
+            ],
+            [
+              "module list",
+              "list",
+              "Show what you have loaded now"
+            ],
+            [
+              "module unload NAME",
+              "unload",
+              "Switch one module off"
+            ],
+            [
+              "module purge",
+              "purge",
+              "Switch everything off and start clean"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "See what software is available.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "ran": "module",
+              "argHas": "avail"
+            },
+            "hint": "module avail",
+            "solution": [
+              "module avail"
+            ]
+          }
+        },
+        {
+          "try": {
+            "text": "Load ColabFold, then check it's loaded.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Load the colabfold module",
+                "check": {
+                  "moduleLoaded": "colabfold"
+                }
+              },
+              {
+                "text": "List your loaded modules",
+                "check": {
+                  "ran": "module",
+                  "argHas": "list"
+                }
+              }
+            ],
+            "hint": "module load colabfold, then module list",
+            "solution": [
+              "module load colabfold",
+              "module list"
+            ]
+          }
+        },
+        {
+          "tip": "Modules last until you close the terminal or the job ends. Every new login, and every batch job, starts with nothing loaded, so job scripts load their modules at the top."
+        },
+        {
+          "quiz": {
+            "q": "You type `colabfold_batch` and get `command not found`. What's the most likely fix?",
+            "options": [
+              "Reinstall ColabFold",
+              "module load colabfold",
+              "cd /opt",
+              "Ask for a GPU"
+            ],
+            "answer": 1,
+            "why": "The program is installed but not switched on in this terminal. Loading its module puts it on your PATH."
+          }
+        }
+      ]
+    },
+    {
+      "id": "conda",
+      "title": "Conda environments",
+      "before": "session-05-conda",
+      "summary": "Python tools live in their own environments. Here's how to switch them on and check which Python you're using.",
+      "blocks": [
+        {
+          "text": "Python tools like ProteinMPNN and Chai-1 each need specific versions of many Python packages, and those versions often conflict. Conda solves this by giving each tool its own environment: a separate folder with its own Python and its own packages.\n\nOn Geiss-01, conda itself comes from a module, so you load that first."
+        },
+        {
+          "command": {
+            "name": "conda",
+            "stands": "conda package and environment manager",
+            "syntax": "conda env list | activate NAME | deactivate",
+            "what": "Lists environments, switches one on, or switches it off. Only one environment is active at a time; activating another replaces it."
+          }
+        },
+        {
+          "flags": [
+            [
+              "module load anaconda",
+              "",
+              "Makes the conda command available"
+            ],
+            [
+              "conda env list",
+              "environment list",
+              "Show every environment; the active one has a *"
+            ],
+            [
+              "conda activate NAME",
+              "activate",
+              "Switch on that environment; its name appears in brackets before your prompt"
+            ],
+            [
+              "conda deactivate",
+              "deactivate",
+              "Switch it off again"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Load anaconda, list the environments, and activate `proteinmpnn`.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Load the anaconda module",
+                "check": {
+                  "moduleLoaded": "anaconda"
+                }
+              },
+              {
+                "text": "List the environments",
+                "check": {
+                  "ran": "conda",
+                  "argHas": "env"
+                }
+              },
+              {
+                "text": "Activate proteinmpnn",
+                "check": {
+                  "condaEnv": "proteinmpnn"
+                }
+              }
+            ],
+            "hint": "module load anaconda, then conda env list, then conda activate proteinmpnn",
+            "solution": [
+              "module load anaconda",
+              "conda env list",
+              "conda activate proteinmpnn"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "which",
+            "stands": "which program will run",
+            "syntax": "which NAME",
+            "what": "Prints the full path of the program that runs when you type NAME. `which python` tells you which environment's Python you're about to use."
+          }
+        },
+        {
+          "try": {
+            "text": "Activate `chai` and check which python you'd run.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Activate the chai environment",
+                "check": {
+                  "condaEnv": "chai"
+                }
+              },
+              {
+                "text": "Ask which python runs",
+                "check": {
+                  "ran": "which",
+                  "argHas": "python"
+                }
+              }
+            ],
+            "hint": "module load anaconda, conda activate chai, then which python",
+            "solution": [
+              "module load anaconda",
+              "conda activate chai",
+              "which python"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "`which python` prints `/opt/conda/envs/chai/bin/python`. Which environment is active?",
+            "options": [
+              "base",
+              "proteinmpnn",
+              "chai",
+              "none"
+            ],
+            "answer": 2,
+            "why": "The path goes through envs/chai, so that Python, with Chai-1's packages, is the one that runs."
+          }
+        }
+      ]
+    },
+    {
+      "id": "srun",
+      "title": "Asking Slurm for a GPU",
+      "before": "session-06-interactive",
+      "summary": "Slurm hands out the GPUs fairly. srun gets you one to work on interactively.",
+      "blocks": [
+        {
+          "text": "With many people sharing 8 GPUs, something has to decide who gets which one, so two jobs never fight over the same GPU. That something is Slurm, the job scheduler. You tell Slurm what you need; it finds free resources, reserves them for you, and gives them back when you're done.\n\nThe resources Slurm hands out are GPUs, memory (RAM), CPU cores and time. Together they're called an allocation, and a running allocation is a job."
+        },
+        {
+          "command": {
+            "name": "srun",
+            "stands": "Slurm run",
+            "syntax": "srun [OPTIONS] COMMAND",
+            "what": "Asks Slurm for resources and runs COMMAND inside them. With `--pty bash`, the command is a new shell you can type in, so you get an interactive session on the GPU."
+          }
+        },
+        {
+          "flags": [
+            [
+              "--gres=gpu:1",
+              "generic resource",
+              "How many GPUs (here 1). Leave it out and you get none"
+            ],
+            [
+              "--mem=32G",
+              "memory",
+              "How much RAM for the job. The default here is small (4G)"
+            ],
+            [
+              "--time=02:00:00",
+              "time limit",
+              "Hours:minutes:seconds before Slurm ends the job"
+            ],
+            [
+              "--partition=short",
+              "partition",
+              "Which queue: gpu (up to 2 days) or short (up to 1 hour)"
+            ],
+            [
+              "--pty",
+              "pseudo-terminal",
+              "Connect the job to your keyboard and screen"
+            ],
+            [
+              "bash",
+              "",
+              "The program to run: a shell, so you can type commands in the job"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Get an interactive session with one GPU.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "inInteractiveJob": 1
+            },
+            "hint": "srun --gres=gpu:1 --pty bash",
+            "solution": [
+              "srun --gres=gpu:1 --pty bash"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "exit",
+            "stands": "exit the shell",
+            "syntax": "exit",
+            "what": "Leaves the interactive job and gives the GPU back. Always exit when you're done; an idle session still holds a GPU someone else could use."
+          }
+        },
+        {
+          "try": {
+            "text": "Get a GPU session, then give it back.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "tasks": [
+              {
+                "text": "Start a session with one GPU",
+                "check": {
+                  "inInteractiveJob": 1
+                }
+              },
+              {
+                "text": "Exit the session",
+                "check": {
+                  "all": [
+                    {
+                      "ran": "exit"
+                    },
+                    {
+                      "notInInteractiveJob": true
+                    }
+                  ]
+                }
+              }
+            ],
+            "hint": "srun --gres=gpu:1 --pty bash, then exit",
+            "solution": [
+              "srun --gres=gpu:1 --pty bash",
+              "exit"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "sinfo",
+            "stands": "Slurm information",
+            "syntax": "sinfo",
+            "what": "Lists the partitions (queues) and whether their nodes are idle, partly used (mix) or fully used (alloc). TIMELIMIT is the longest job each partition allows."
+          }
+        },
+        {
+          "try": {
+            "text": "See the partitions.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "ran": "sinfo"
+            },
+            "hint": "sinfo",
+            "solution": [
+              "sinfo"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "You ran `srun --pty bash` with no other options. Can you run ColabFold in that session?",
+            "options": [
+              "Yes, every job gets a GPU",
+              "No, you asked for no GPU",
+              "Only if you wait",
+              "Only on the short partition"
+            ],
+            "answer": 1,
+            "why": "Without --gres=gpu:1, Slurm gives you a job with no GPU. GPU tools will stop with a 'no GPU' error."
+          }
+        }
+      ]
+    },
+    {
+      "id": "requests",
+      "title": "Sizing a request, and cleaning up",
+      "before": "session-08-one-command",
+      "summary": "Run one command on a GPU, ask for the right memory and time, and find jobs you forgot.",
+      "blocks": [
+        {
+          "text": "Leave out `--pty bash` and srun runs a single command in the allocation, prints its output, and gives everything back as soon as the command finishes. Handy for a quick check."
+        },
+        {
+          "try": {
+            "text": "Run `nvidia-smi` once on a GPU through Slurm.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "ran": "srun",
+              "argHas": "nvidia-smi"
+            },
+            "hint": "srun --gres=gpu:1 nvidia-smi",
+            "solution": [
+              "srun --gres=gpu:1 nvidia-smi"
+            ]
+          }
+        },
+        {
+          "text": "Ask for what the work needs: enough that it doesn't get killed, not so much that you hold resources others are waiting for. Memory is written with a unit: `--mem=64G` is 64 gigabytes. Time is `hours:minutes:seconds`, or `days-hours:minutes:seconds` for long jobs."
+        },
+        {
+          "flags": [
+            [
+              "--mem=64G",
+              "64 gigabytes",
+              "Too little and the job is killed: OUT_OF_MEMORY"
+            ],
+            [
+              "--time=04:00:00",
+              "4 hours",
+              "Too little and the job is stopped: TIMEOUT"
+            ],
+            [
+              "--time=1-12:00:00",
+              "1 day 12 hours",
+              "The gpu partition allows up to 2 days"
+            ],
+            [
+              "--gres=gpu:2",
+              "2 GPUs",
+              "Only if the program actually uses more than one"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Start an interactive session with 2 GPUs, 64 GB of memory and 3 hours.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "check": {
+              "inInteractiveJob": {
+                "gpus": 2,
+                "memGB": 64,
+                "timeMin": 180
+              }
+            },
+            "hint": "srun --gres=gpu:2 --mem=64G --time=03:00:00 --pty bash",
+            "solution": [
+              "srun --gres=gpu:2 --mem=64G --time=03:00:00 --pty bash"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "squeue",
+            "stands": "Slurm queue",
+            "syntax": "squeue --me",
+            "what": "Lists your jobs that are waiting (PD, pending) or running (R). A session you forgot to exit shows up here, still holding its GPU."
+          }
+        },
+        {
+          "command": {
+            "name": "scancel",
+            "stands": "Slurm cancel",
+            "syntax": "scancel JOBID",
+            "what": "Ends one of your jobs and frees its resources. Get the JOBID from squeue."
+          }
+        },
+        {
+          "try": {
+            "text": "You left a session running yesterday. Find it and cancel it.",
+            "files": {
+              "~/README.txt": {
+                "lib": "text:readme"
+              }
+            },
+            "cwd": "~",
+            "machines": {
+              "cluster": {
+                "cwd": "~",
+                "files": {
+                  "~/README.txt": {
+                    "lib": "text:readme"
+                  }
+                },
+                "jobs": [
+                  {
+                    "id": 47790,
+                    "name": "bash",
+                    "gpus": 1,
+                    "state": "R"
+                  }
+                ]
+              }
+            },
+            "tasks": [
+              {
+                "text": "List your jobs",
+                "check": {
+                  "ran": "squeue"
+                }
+              },
+              {
+                "text": "Cancel the forgotten job",
+                "check": {
+                  "ran": "scancel",
+                  "argHas": "47790"
+                }
+              }
+            ],
+            "hint": "squeue --me shows the JOBID; then scancel 47790",
+            "solution": [
+              "squeue --me",
+              "scancel 47790"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Your job needs about 2 hours. Which time request is best?",
+            "options": [
+              "--time=00:30:00",
+              "--time=02:30:00",
+              "--time=2-00:00:00",
+              "Leave it out"
+            ],
+            "answer": 1,
+            "why": "2.5 hours covers the work with some margin. Too short and it times out; 2 days holds the slot far longer than needed; the default here is only 1 hour."
+          }
+        }
+      ]
+    }
+  ]
+}

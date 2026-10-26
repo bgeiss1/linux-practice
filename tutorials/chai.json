@@ -1,0 +1,193 @@
+{
+  "track": "chai",
+  "lessons": [
+    {
+      "id": "what",
+      "title": "What Chai-1 does",
+      "before": "chai-01-env",
+      "summary": "Structures of proteins together with ligands, DNA and RNA.",
+      "blocks": [
+        {
+          "text": "Chai-1 is a structure prediction model from Chai Discovery, in the same family as AlphaFold3. Besides proteins, it predicts complexes with small molecules (ligands), DNA, RNA and modified residues. Instead of refining one answer, it uses diffusion: it starts from random noise and refines it into a structure, several times over, so you get several samples."
+        },
+        {
+          "text": "It's a Python package, so on Geiss-01 it lives in the `chai` conda environment, not in a module."
+        },
+        {
+          "command": {
+            "name": "chai-lab fold",
+            "stands": "Chai-1, fold command",
+            "syntax": "chai-lab fold [OPTIONS] INPUT.fasta OUTPUT_DIR",
+            "what": "Predicts the structure of everything in the FASTA file together, as one complex. OUTPUT_DIR must be empty or not exist yet."
+          }
+        },
+        {
+          "try": {
+            "text": "Activate Chai-1's environment and read the fold command's help.",
+            "cwd": "~/chai",
+            "files": {
+              "~/chai/binder_01.fasta": ">protein|name=binder_01\nMLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDI\n"
+            },
+            "tasks": [
+              {
+                "text": "Activate the chai environment",
+                "check": {
+                  "condaEnv": "chai"
+                }
+              },
+              {
+                "text": "Show the help for chai-lab fold",
+                "check": {
+                  "ran": "chai-lab",
+                  "argHas": "--help"
+                }
+              }
+            ],
+            "hint": "module load anaconda, conda activate chai, chai-lab fold --help",
+            "solution": [
+              "module load anaconda",
+              "conda activate chai",
+              "chai-lab fold --help"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "How is a Chai-1 FASTA different from a ColabFold one?",
+            "options": [
+              "It isn't",
+              "Each record is a separate molecule of the same complex, with its type in the header",
+              "It needs PDB files instead",
+              "It only takes one sequence"
+            ],
+            "answer": 1,
+            "why": "Chai-1 folds every record in the file together, and each header says what kind of molecule it is."
+          }
+        }
+      ]
+    },
+    {
+      "id": "fasta",
+      "title": "Writing the input FASTA",
+      "before": "chai-02-headers",
+      "summary": "Headers say what each molecule is.",
+      "blocks": [
+        {
+          "text": "Each record's header has the form `>TYPE|name=NAME`. TYPE is `protein`, `ligand`, `dna` or `rna`. A ligand's \"sequence\" is its SMILES string, a line of text that encodes the molecule's atoms and bonds."
+        },
+        {
+          "example": {
+            "cmd": "cat il7r_atp.fasta",
+            "out": ">protein|name=il7r\nMKTAYIAKQRQISFVKSHFSRQ...\n>ligand|name=ATP\nNc1ncnc2c1ncn2[C@@H]1O[C@H](COP(=O)(O)OP(=O)(O)OP(=O)(O)O)[C@@H](O)[C@H]1O",
+            "note": "A protein and a ligand, predicted together."
+          }
+        },
+        {
+          "warn": "A plain ColabFold-style header like `>binder_01` stops Chai-1 with an error. Every header needs the type and name."
+        },
+        {
+          "try": {
+            "text": "Write `pair.fasta` with two proteins, `binder_01` and `target`, each with a correct header (any sequences).",
+            "cwd": "~/chai",
+            "files": {
+              "~/chai/binder_01.fasta": ">protein|name=binder_01\nMLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDI\n"
+            },
+            "check": {
+              "all": [
+                {
+                  "fileContains": {
+                    "path": "~/chai/pair.fasta",
+                    "text": ">protein|name=binder_01"
+                  }
+                },
+                {
+                  "fileContains": {
+                    "path": "~/chai/pair.fasta",
+                    "text": ">protein|name=target"
+                  }
+                }
+              ]
+            },
+            "hint": "nano pair.fasta, then two records: >protein|name=binder_01 with a sequence below it, and >protein|name=target with one below it",
+            "solution": [
+              {
+                "nano": "pair.fasta",
+                "text": ">protein|name=binder_01\nMLEPPKKADEKLDIVLVDADELKVLIRAALVKLLEEAKEELKKAEREEPLRLELIARKEVERDI\n>protein|name=target\nMKTAYIAKQRQISFVKSHFSRQ\n"
+              }
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "How do you give Chai-1 a small-molecule ligand?",
+            "options": [
+              "Its PDB code",
+              "Its SMILES string under a >ligand|name= header",
+              "Its name only",
+              "A separate --ligand option"
+            ],
+            "answer": 1,
+            "why": "Ligands go in the FASTA as SMILES, with a ligand header."
+          }
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "title": "Running Chai-1 and reading the output",
+      "before": "chai-03-fold",
+      "summary": "GPU, empty output folders, samples and scores.",
+      "blocks": [
+        {
+          "example": {
+            "cmd": "srun --gres=gpu:1 --mem=32G --pty bash\nmodule load anaconda\nconda activate chai\nchai-lab fold binder_01.fasta binder_01_chai\nexit",
+            "note": "Activate the environment inside the job: a new job starts with nothing loaded."
+          }
+        },
+        {
+          "flags": [
+            [
+              "--num-diffn-samples 5",
+              "diffusion samples",
+              "How many structures to generate (default 5)"
+            ],
+            [
+              "--seed N",
+              "random seed",
+              "Same seed and input give the same samples, so runs can be repeated"
+            ],
+            [
+              "--use-msa-server",
+              "MSA server",
+              "Search for related sequences online, which usually improves protein predictions"
+            ],
+            [
+              "--num-trunk-recycles 3",
+              "recycles",
+              "Refinement passes before diffusion (default 3)"
+            ]
+          ]
+        },
+        {
+          "text": "Outputs are mmCIF files, the modern replacement for PDB format, `pred.model_idx_0.cif` to `pred.model_idx_4.cif`, plus a `scores.model_idx_N.npz` for each with its pTM, ipTM and aggregate score. Open .cif files in PyMOL or ChimeraX like PDBs."
+        },
+        {
+          "warn": "Chai-1 refuses to write into a folder that already has files in it. Give each run a new output folder name, like binder_01_run2."
+        },
+        {
+          "quiz": {
+            "q": "You rerun Chai-1 into the same output folder. What happens?",
+            "options": [
+              "It overwrites the old results",
+              "It adds new samples",
+              "It stops with an error: the folder isn't empty",
+              "It asks first"
+            ],
+            "answer": 2,
+            "why": "Chai-1 won't mix runs in one folder. Use a new folder name."
+          }
+        }
+      ]
+    }
+  ]
+}

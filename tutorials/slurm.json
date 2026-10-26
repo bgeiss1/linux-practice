@@ -1,0 +1,620 @@
+{
+  "track": "slurm",
+  "lessons": [
+    {
+      "id": "batch",
+      "title": "Batch jobs and sbatch",
+      "before": "slurm-01-submit",
+      "summary": "Write the job down once, hand it to Slurm, and walk away.",
+      "blocks": [
+        {
+          "text": "An interactive session (srun --pty bash) is good for trying things. Real work, like designing 1,000 sequences or folding 50 structures, takes hours, and you don't want to sit and watch. Instead you write a job script and submit it as a batch job: Slurm queues it, runs it when resources are free, writes everything it prints to a log file, and frees the GPU when it finishes. You can log out in the meantime."
+        },
+        {
+          "example": {
+            "cmd": "cat run_mpnn.sh",
+            "out": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/",
+            "note": "The `#SBATCH` lines at the top are requests to Slurm, written as options. To bash they are just comments. Below them come the commands the job runs, exactly as you'd type them."
+          }
+        },
+        {
+          "command": {
+            "name": "sbatch",
+            "stands": "Slurm batch",
+            "syntax": "sbatch SCRIPT",
+            "what": "Submits the script as a batch job and prints its job ID: `Submitted batch job 48213`. The job runs later, on its own."
+          }
+        },
+        {
+          "command": {
+            "name": "squeue",
+            "stands": "Slurm queue",
+            "syntax": "squeue --me",
+            "what": "Shows your jobs that are waiting or running. The ST (state) column says PD (pending, waiting for resources) or R (running). A finished job drops off the list."
+          }
+        },
+        {
+          "try": {
+            "text": "Submit `run_mpnn.sh`, then check the queue.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/inputs/target.pdb": {
+                    "lib": "pdb:small"
+                  },
+                  "~/project/outputs/": {}
+                },
+                "jobRules": [
+                  {
+                    "match": "run_mpnn.sh",
+                    "needsGpu": true,
+                    "creates": [
+                      "outputs/target.fa"
+                    ],
+                    "log": "Designing 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n"
+                  }
+                ]
+              }
+            },
+            "tasks": [
+              {
+                "text": "Submit the job",
+                "check": {
+                  "jobSubmitted": {
+                    "name": "mpnn"
+                  }
+                }
+              },
+              {
+                "text": "Look at the queue",
+                "check": {
+                  "ran": "squeue"
+                }
+              }
+            ],
+            "hint": "sbatch run_mpnn.sh, then squeue --me",
+            "solution": [
+              "sbatch run_mpnn.sh",
+              "squeue --me"
+            ]
+          }
+        },
+        {
+          "text": "Everything the job prints goes to `slurm-JOBID.out` in the folder you submitted from (the `--output` line sets the name; `%j` becomes the job ID). When the job leaves the queue, read the log with `cat` or `tail`."
+        },
+        {
+          "try": {
+            "text": "Submit the job, wait for it to leave the queue (run `squeue --me` a few times), then read its log.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/inputs/target.pdb": {
+                    "lib": "pdb:small"
+                  },
+                  "~/project/outputs/": {}
+                },
+                "jobRules": [
+                  {
+                    "match": "run_mpnn.sh",
+                    "needsGpu": true,
+                    "creates": [
+                      "outputs/target.fa"
+                    ],
+                    "log": "Designing 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n"
+                  }
+                ]
+              }
+            },
+            "tasks": [
+              {
+                "text": "Submit run_mpnn.sh",
+                "check": {
+                  "jobSubmitted": {
+                    "name": "mpnn"
+                  }
+                }
+              },
+              {
+                "text": "Wait for it to finish",
+                "check": {
+                  "jobState": {
+                    "name": "mpnn",
+                    "state": "CD"
+                  }
+                }
+              },
+              {
+                "text": "Read the log",
+                "check": {
+                  "ran": [
+                    "cat",
+                    "tail",
+                    "less",
+                    "head"
+                  ],
+                  "argHas": "slurm-"
+                }
+              }
+            ],
+            "hint": "sbatch run_mpnn.sh, squeue --me until it's gone, then cat slurm-*.out",
+            "solution": [
+              "sbatch run_mpnn.sh",
+              "squeue --me",
+              "squeue --me",
+              "squeue --me",
+              "squeue --me",
+              "squeue --me",
+              "cat slurm-*.out"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "squeue shows your job with ST = PD. What does that mean?",
+            "options": [
+              "It failed",
+              "It's waiting for resources",
+              "It's running",
+              "It finished"
+            ],
+            "answer": 1,
+            "why": "PD is pending: queued, waiting until the GPUs, memory or time it asked for are free."
+          }
+        }
+      ]
+    },
+    {
+      "id": "requests",
+      "title": "Reading a job's requests",
+      "before": "slurm-03-read-request",
+      "summary": "What each #SBATCH line asks for.",
+      "blocks": [
+        {
+          "text": "The `#SBATCH` lines take the same options as srun. Each asks for something; leave one out and you get the default."
+        },
+        {
+          "flags": [
+            [
+              "--job-name=NAME",
+              "job name",
+              "The name in squeue and sacct"
+            ],
+            [
+              "--partition=gpu",
+              "partition",
+              "Which queue: gpu (2 days max) or short (1 hour max)"
+            ],
+            [
+              "--gres=gpu:1",
+              "generic resource",
+              "Number of GPUs. Default: none"
+            ],
+            [
+              "--mem=16G",
+              "memory",
+              "RAM for the job. Default here: 4G"
+            ],
+            [
+              "--time=01:00:00",
+              "time limit",
+              "Hours:minutes:seconds. Default here: 1 hour"
+            ],
+            [
+              "--cpus-per-task=4",
+              "CPUs",
+              "CPU cores. Default: 1"
+            ],
+            [
+              "--output=slurm-%j.out",
+              "output file",
+              "Where the log goes; %j is the job ID"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Look at the top of `run_mpnn.sh` to see what it asks for.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/inputs/target.pdb": {
+                    "lib": "pdb:small"
+                  },
+                  "~/project/outputs/": {}
+                },
+                "jobRules": [
+                  {
+                    "match": "run_mpnn.sh",
+                    "needsGpu": true,
+                    "creates": [
+                      "outputs/target.fa"
+                    ],
+                    "log": "Designing 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n"
+                  }
+                ]
+              }
+            },
+            "check": {
+              "ran": [
+                "head",
+                "cat",
+                "less"
+              ],
+              "argHas": "run_mpnn.sh"
+            },
+            "hint": "head run_mpnn.sh",
+            "solution": [
+              "head run_mpnn.sh"
+            ]
+          }
+        },
+        {
+          "tip": "Options given to sbatch on the command line override the script: `sbatch --time=03:00:00 run_mpnn.sh` asks for 3 hours whatever the script says."
+        },
+        {
+          "quiz": {
+            "q": "A script has no `#SBATCH --gres` line. What does the job get?",
+            "options": [
+              "One GPU",
+              "All free GPUs",
+              "No GPU",
+              "Whatever it needs"
+            ],
+            "answer": 2,
+            "why": "GPUs are only given when asked for. GPU tools in that job will fail to find a GPU."
+          }
+        }
+      ]
+    },
+    {
+      "id": "cancel-acct",
+      "title": "Cancelling jobs and checking finished ones",
+      "before": "slurm-04-cancel",
+      "summary": "scancel, sacct and seff.",
+      "blocks": [
+        {
+          "command": {
+            "name": "scancel",
+            "stands": "Slurm cancel",
+            "syntax": "scancel JOBID   |   scancel -n NAME",
+            "what": "Stops a job, waiting or running. Use it when you submitted the wrong thing, so it doesn't hold a GPU for nothing."
+          }
+        },
+        {
+          "try": {
+            "text": "You submitted a job by mistake. Find its ID and cancel it.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/inputs/target.pdb": {
+                    "lib": "pdb:small"
+                  },
+                  "~/project/outputs/": {}
+                },
+                "jobRules": [
+                  {
+                    "match": "run_mpnn.sh",
+                    "needsGpu": true,
+                    "creates": [
+                      "outputs/target.fa"
+                    ],
+                    "log": "Designing 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n"
+                  }
+                ],
+                "jobs": [
+                  {
+                    "id": 48300,
+                    "name": "wrong_target",
+                    "gpus": 1,
+                    "state": "PD"
+                  }
+                ]
+              }
+            },
+            "tasks": [
+              {
+                "text": "Find the job ID",
+                "check": {
+                  "ran": "squeue"
+                }
+              },
+              {
+                "text": "Cancel it",
+                "check": {
+                  "ran": "scancel",
+                  "argHas": "48300"
+                }
+              }
+            ],
+            "hint": "squeue --me, then scancel 48300",
+            "solution": [
+              "squeue --me",
+              "scancel 48300"
+            ]
+          }
+        },
+        {
+          "command": {
+            "name": "sacct",
+            "stands": "Slurm accounting",
+            "syntax": "sacct [-j JOBID]",
+            "what": "Lists your recent jobs, including finished ones, with their final State: COMPLETED, FAILED, TIMEOUT, OUT_OF_MEMORY or CANCELLED. squeue forgets a job once it ends; sacct remembers."
+          }
+        },
+        {
+          "command": {
+            "name": "seff",
+            "stands": "Slurm efficiency",
+            "syntax": "seff JOBID",
+            "what": "For a finished job: how much of the requested memory and time it actually used. Use it to size the next request."
+          }
+        },
+        {
+          "quiz": {
+            "q": "Your job vanished from squeue. Where do you check whether it worked?",
+            "options": [
+              "squeue again",
+              "sacct, and the log file",
+              "nvidia-smi",
+              "sinfo"
+            ],
+            "answer": 1,
+            "why": "Finished jobs leave the queue. sacct shows the final state, and the slurm-JOBID.out log shows the details."
+          }
+        }
+      ]
+    },
+    {
+      "id": "failures",
+      "title": "Why jobs fail",
+      "before": "slurm-05-no-gpu",
+      "summary": "The three classic failures, how to recognize them, and the fix.",
+      "blocks": [
+        {
+          "text": "When a job ends badly, check `sacct` for the State and `tail` the log for the last message. Most failures are one of three, and each comes from a request that was too small."
+        },
+        {
+          "flags": [
+            [
+              "no GPU",
+              "log says no CUDA GPUs / no GPU detected",
+              "Add #SBATCH --gres=gpu:1"
+            ],
+            [
+              "TIMEOUT",
+              "State TIMEOUT; log stops mid-run, 'DUE TO TIME LIMIT'",
+              "Raise --time (check how far it got first)"
+            ],
+            [
+              "OUT_OF_MEMORY",
+              "State OUT_OF_MEMORY; log ends with 'oom-kill' or 'Killed'",
+              "Raise --mem; seff shows what it used"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "`design.sh` failed in seconds. Read its request lines and its log to see why.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/design.sh": "#!/bin/bash\n#SBATCH --job-name=design\n#SBATCH --partition=gpu\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/slurm-48250.out": "Loading model weights\nRuntimeError: No CUDA GPUs are available\n"
+                },
+                "jobRules": []
+              }
+            },
+            "tasks": [
+              {
+                "text": "Read the log",
+                "check": {
+                  "ran": [
+                    "cat",
+                    "tail",
+                    "less"
+                  ],
+                  "argHas": "slurm-48250.out"
+                }
+              },
+              {
+                "text": "Read the script's #SBATCH lines",
+                "check": {
+                  "ran": [
+                    "cat",
+                    "head",
+                    "less"
+                  ],
+                  "argHas": "design.sh"
+                }
+              }
+            ],
+            "hint": "cat slurm-48250.out, then head design.sh. Which #SBATCH line is missing?",
+            "solution": [
+              "cat slurm-48250.out",
+              "head design.sh"
+            ]
+          }
+        },
+        {
+          "tip": "Before resubmitting a big job, test the script on one small input with a short --time on the short partition. You find typos in minutes instead of after a day in the queue."
+        },
+        {
+          "quiz": {
+            "q": "sacct shows State OUT_OF_MEMORY for a job that asked for --mem=8G. What do you change?",
+            "options": [
+              "--time",
+              "--gres",
+              "--mem, to more than 8G",
+              "Nothing, resubmit"
+            ],
+            "answer": 2,
+            "why": "The job used more RAM than it asked for and Slurm killed it. Ask for more; seff shows how much it reached."
+          }
+        }
+      ]
+    },
+    {
+      "id": "wrap",
+      "title": "Quick jobs with --wrap",
+      "before": "slurm-06-wrap",
+      "summary": "Submit one command as a batch job without writing a script.",
+      "blocks": [
+        {
+          "text": "For a single command, writing a script is overkill. `sbatch --wrap=\"COMMAND\"` wraps the command in a script for you. Add any other options as usual."
+        },
+        {
+          "example": {
+            "cmd": "sbatch -J count --wrap=\"ls /scratch/student/data | wc -l\"",
+            "out": "Submitted batch job 48231",
+            "note": "-J is short for --job-name. The quotes keep the whole command, pipe included, together as one option."
+          }
+        },
+        {
+          "try": {
+            "text": "Submit `ls inputs` as a job named `peek`.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/inputs/target.pdb": {
+                    "lib": "pdb:small"
+                  },
+                  "~/project/outputs/": {}
+                },
+                "jobRules": [
+                  {
+                    "match": "run_mpnn.sh",
+                    "needsGpu": true,
+                    "creates": [
+                      "outputs/target.fa"
+                    ],
+                    "log": "Designing 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n"
+                  }
+                ]
+              }
+            },
+            "check": {
+              "jobSubmitted": {
+                "name": "peek"
+              }
+            },
+            "hint": "sbatch -J peek --wrap=\"ls inputs\"",
+            "solution": [
+              "sbatch -J peek --wrap=\"ls inputs\""
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Why must the command after --wrap= be in quotes when it contains a pipe?",
+            "options": [
+              "Slurm requires quotes always",
+              "Without them, the shell runs the pipe itself before sbatch sees it",
+              "Quotes make it run faster",
+              "They don't need to be"
+            ],
+            "answer": 1,
+            "why": "The shell would split the line at | and pipe sbatch's own output into wc. Quotes hand the whole command to sbatch."
+          }
+        }
+      ]
+    },
+    {
+      "id": "arrays",
+      "title": "Many inputs: arrays and dependencies",
+      "before": "slurm-09-array",
+      "summary": "One script for many targets, and jobs that wait for other jobs.",
+      "blocks": [
+        {
+          "text": "An array job runs the same script many times, once per task number. Inside each task, `$SLURM_ARRAY_TASK_ID` holds its number, which the script uses to pick its input."
+        },
+        {
+          "example": {
+            "cmd": "cat mpnn_array.sh",
+            "out": "#!/bin/bash\n#SBATCH --job-name=mpnn_array\n#SBATCH --gres=gpu:1\n#SBATCH --array=1-4\nTARGET=$(sed -n \"${SLURM_ARRAY_TASK_ID}p\" targets.txt)\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/$TARGET.pdb",
+            "note": "Task 3 reads line 3 of targets.txt. squeue shows the tasks as JOBID_1, JOBID_2, and so on."
+          }
+        },
+        {
+          "flags": [
+            [
+              "--array=1-4",
+              "array",
+              "Run tasks 1 to 4, each as its own job with its own GPU"
+            ],
+            [
+              "--array=1-50%5",
+              "array with limit",
+              "50 tasks, at most 5 running at once"
+            ],
+            [
+              "--dependency=afterok:48215",
+              "dependency",
+              "Wait until job 48215 finishes successfully, then start"
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Submit `run_mpnn.sh` as an array of 3 tasks.",
+            "machines": {
+              "cluster": {
+                "cwd": "~/project",
+                "files": {
+                  "~/project/run_mpnn.sh": "#!/bin/bash\n#SBATCH --job-name=mpnn\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --mem=16G\n#SBATCH --time=01:00:00\n#SBATCH --output=slurm-%j.out\n\nmodule load anaconda\nconda activate proteinmpnn\npython /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path inputs/target.pdb --out_folder outputs/\n",
+                  "~/project/inputs/target.pdb": {
+                    "lib": "pdb:small"
+                  },
+                  "~/project/outputs/": {}
+                },
+                "jobRules": [
+                  {
+                    "match": "run_mpnn.sh",
+                    "needsGpu": true,
+                    "creates": [
+                      "outputs/target.fa"
+                    ],
+                    "log": "Designing 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n"
+                  }
+                ]
+              }
+            },
+            "check": {
+              "jobSubmitted": {
+                "name": "mpnn",
+                "array": 3
+              }
+            },
+            "hint": "sbatch --array=1-3 run_mpnn.sh",
+            "solution": [
+              "sbatch --array=1-3 run_mpnn.sh"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Design (job 48215) must finish before scoring (score.sh) starts. Which command?",
+            "options": [
+              "sbatch score.sh 48215",
+              "sbatch --dependency=afterok:48215 score.sh",
+              "sbatch --array=48215 score.sh",
+              "sbatch --after score.sh"
+            ],
+            "answer": 1,
+            "why": "afterok:48215 holds score.sh in the queue until job 48215 completes without errors."
+          }
+        }
+      ]
+    }
+  ]
+}

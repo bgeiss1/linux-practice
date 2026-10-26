@@ -1,0 +1,193 @@
+{
+  "track": "mpnn",
+  "lessons": [
+    {
+      "id": "what",
+      "title": "What ProteinMPNN does",
+      "before": "mpnn-01-find",
+      "summary": "Inverse folding: from a backbone to sequences that should fold into it.",
+      "blocks": [
+        {
+          "text": "Structure prediction goes from sequence to structure. ProteinMPNN goes the other way: given a protein backbone (from RFdiffusion, a crystal structure, or anywhere else), it designs amino acid sequences likely to fold into that shape. It's a message-passing neural network (MPNN) from the Baker lab, and it's fast: designing a sequence takes about a second."
+        },
+        {
+          "text": "ProteinMPNN isn't a module or a single command. It's a folder of Python scripts, a git repository, installed at `/opt/ProteinMPNN`. You run its scripts with the Python from the `proteinmpnn` conda environment."
+        },
+        {
+          "try": {
+            "text": "Look at what's in `/opt/ProteinMPNN`.",
+            "cwd": "~/design",
+            "files": {
+              "~/design/inputs/pdl1.pdb": {
+                "lib": "pdb:chains A:62"
+              },
+              "~/design/outputs/seqs/pdl1.fa": ">pdl1, score=1.9932, global_score=1.9932, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, seed=37\nMSEELLKKAEELIKRAKELGDP\n>T=0.1, sample=1, score=0.8812, global_score=0.8812, seq_recovery=0.4194\nMSPEELLRKAEELIRRAEELGLP\n>T=0.1, sample=2, score=0.8471, global_score=0.8471, seq_recovery=0.4355\nMSEEELLKKAEELIRKAKELGNP\n"
+            },
+            "check": {
+              "ran": "ls",
+              "argHas": "/opt/ProteinMPNN"
+            },
+            "hint": "ls /opt/ProteinMPNN",
+            "solution": [
+              "ls /opt/ProteinMPNN"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "What does ProteinMPNN take as input, and what does it give back?",
+            "options": [
+              "A sequence; a structure",
+              "A backbone structure; sequences",
+              "A FASTA; an MSA",
+              "A ligand; a pocket"
+            ],
+            "answer": 1,
+            "why": "It's inverse folding: structure in, sequences out."
+          }
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "title": "Running protein_mpnn_run.py",
+      "before": "mpnn-02-first",
+      "summary": "The main script, its options, and its output file.",
+      "blocks": [
+        {
+          "command": {
+            "name": "python /opt/ProteinMPNN/protein_mpnn_run.py",
+            "stands": "run ProteinMPNN",
+            "syntax": "python /opt/ProteinMPNN/protein_mpnn_run.py --pdb_path IN.pdb --out_folder OUT [OPTIONS]",
+            "what": "Designs sequences for the backbone in IN.pdb and writes them to OUT/seqs/IN.fa. Activate the proteinmpnn environment first, or Python can't find its packages."
+          }
+        },
+        {
+          "flags": [
+            [
+              "--pdb_path FILE",
+              "input",
+              "The backbone to design for"
+            ],
+            [
+              "--out_folder DIR",
+              "output",
+              "Where to write; sequences go in DIR/seqs/"
+            ],
+            [
+              "--num_seq_per_target N",
+              "how many",
+              "Sequences to design (default 1)"
+            ],
+            [
+              "--sampling_temp \"0.1\"",
+              "temperature",
+              "Randomness: 0.1 is conservative, 0.3 more varied. Several values in quotes give several sets"
+            ],
+            [
+              "--pdb_path_chains \"B\"",
+              "chains",
+              "Design only these chains; the others are kept as they are (the target)"
+            ],
+            [
+              "--seed N",
+              "random seed",
+              "Repeatable results"
+            ]
+          ]
+        },
+        {
+          "tip": "ProteinMPNN runs fine on a CPU for a handful of backbones. Use a GPU job for hundreds."
+        },
+        {
+          "example": {
+            "cmd": "head -4 outputs/seqs/pdl1.fa",
+            "out": ">pdl1, score=1.9932, global_score=1.9932, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, seed=37\nMSEELLKKAEELIKRAKELGDP\n>T=0.1, sample=1, score=0.8812, global_score=0.8812, seq_recovery=0.4194\nMSPEELLRKAEELIRRAEELGLP",
+            "note": "The first record is the input's own (native) sequence. Each design after it has a header with its temperature (T), sample number and score. Lower score is better: the model is more confident the sequence fits the backbone. seq_recovery is how much of the native sequence it reproduced."
+          }
+        },
+        {
+          "try": {
+            "text": "List just the design headers in `outputs/seqs/pdl1.fa`.",
+            "cwd": "~/design",
+            "files": {
+              "~/design/inputs/pdl1.pdb": {
+                "lib": "pdb:chains A:62"
+              },
+              "~/design/outputs/seqs/pdl1.fa": ">pdl1, score=1.9932, global_score=1.9932, fixed_chains=[], designed_chains=['A'], model_name=v_48_020, seed=37\nMSEELLKKAEELIKRAKELGDP\n>T=0.1, sample=1, score=0.8812, global_score=0.8812, seq_recovery=0.4194\nMSPEELLRKAEELIRRAEELGLP\n>T=0.1, sample=2, score=0.8471, global_score=0.8471, seq_recovery=0.4355\nMSEEELLKKAEELIRKAKELGNP\n"
+            },
+            "check": {
+              "ran": "grep",
+              "argHas": "T="
+            },
+            "hint": "grep \"^>T=\" outputs/seqs/pdl1.fa  (^ means the line starts with)",
+            "solution": [
+              "grep \"^>T=\" outputs/seqs/pdl1.fa"
+            ]
+          }
+        },
+        {
+          "quiz": {
+            "q": "Two designs have scores 0.85 and 1.12. Which does ProteinMPNN prefer?",
+            "options": [
+              "1.12",
+              "0.85",
+              "They're equal",
+              "Score doesn't matter"
+            ],
+            "answer": 1,
+            "why": "The score is a negative log probability: lower means more likely to fit the backbone."
+          }
+        }
+      ]
+    },
+    {
+      "id": "helpers",
+      "title": "Many backbones and fixed residues",
+      "before": "mpnn-07-many",
+      "summary": "The helper scripts that prepare JSONL files for bigger jobs.",
+      "blocks": [
+        {
+          "text": "For many backbones, or to control which positions change, you first convert the PDBs to a JSONL file (one JSON record per line) with the helper scripts in `/opt/ProteinMPNN/helper_scripts/`, then point protein_mpnn_run.py at it."
+        },
+        {
+          "flags": [
+            [
+              "parse_multiple_chains.py --input_path=DIR/ --output_path=parsed.jsonl",
+              "parse",
+              "Read every PDB in a folder into one JSONL file"
+            ],
+            [
+              "assign_fixed_chains.py --input_path=parsed.jsonl --output_path=chains.jsonl --chain_list \"B\"",
+              "assign chains",
+              "Which chains to design (the rest stay fixed)"
+            ],
+            [
+              "make_fixed_positions_dict.py ... --chain_list \"B\" --position_list \"10 11 12\"",
+              "fixed positions",
+              "Residues to keep, like hotspots that must stay"
+            ],
+            [
+              "protein_mpnn_run.py --jsonl_path parsed.jsonl --chain_id_jsonl chains.jsonl --fixed_positions_jsonl fixed.jsonl",
+              "run",
+              "Design using those files"
+            ]
+          ]
+        },
+        {
+          "quiz": {
+            "q": "You want to redesign a binder (chain B) but keep its three hotspot residues. Which helper do you need besides parsing?",
+            "options": [
+              "Only assign_fixed_chains.py",
+              "make_fixed_positions_dict.py, and assign_fixed_chains.py for the chain",
+              "None, use --pdb_path",
+              "colabfold_batch"
+            ],
+            "answer": 1,
+            "why": "assign_fixed_chains picks the chain to design, and make_fixed_positions_dict keeps the hotspot positions unchanged."
+          }
+        }
+      ]
+    }
+  ]
+}
