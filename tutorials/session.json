@@ -8,7 +8,7 @@
       "summary": "What Geiss-01 is, how you reach it, and two commands that confirm you landed in the right place.",
       "blocks": [
         {
-          "text": "Geiss-01 is a shared computer in the lab with 8 powerful GPUs and about 356 GB of memory. You don't sit at it. You reach it over the network from your own laptop and type commands into a terminal: a window where you type a command, press Enter, and read what it prints.\n\nYou connect with `ssh` (secure shell), for example `ssh student@geiss-01`, and type your password. From then on, everything you type runs on Geiss-01, not on your laptop. This site skips the login and drops you straight into a practice copy."
+          "text": "Geiss-01 is a shared computer in the lab with 8 powerful GPUs and about 190 GB of memory. You don't sit at it. You reach it over the network from your own laptop and type commands into a terminal: a window where you type a command, press Enter, and read what it prints.\n\nYou connect with `ssh` (secure shell), for example `ssh student@geiss-01`, and type your password. From then on, everything you type runs on Geiss-01, not on your laptop. This site skips the login and drops you straight into a practice copy."
         },
         {
           "text": "The prompt at the start of each line tells you who and where you are: `student@geiss-01:~$` means user `student`, on the computer `geiss-01`, in the folder `~`. The `$` means it's waiting for you."
@@ -411,7 +411,7 @@
             [
               "--mem=32G",
               "memory",
-              "How much RAM for the job. The default here is small (4G)"
+              "How much RAM for the job. Leave it out and you get 16G for each GPU (4G with no GPU)"
             ],
             [
               "--time=02:00:00",
@@ -564,13 +564,13 @@
           }
         },
         {
-          "text": "Ask for what the work needs: enough that it doesn't get killed, not so much that you hold resources others are waiting for. Memory is written with a unit: `--mem=64G` is 64 gigabytes. Time is `hours:minutes:seconds`, or `days-hours:minutes:seconds` for long jobs."
+          "text": "Ask for what the work needs: enough that it doesn't get killed, not so much that you hold resources others are waiting for. Memory is written with a unit: `--mem=48G` is 48 gigabytes. Geiss-01 has about 190 GB for the whole class, and in this course each student can hold at most 2 GPUs and 48 GB at a time. Time is `hours:minutes:seconds`, or `days-hours:minutes:seconds` for long jobs."
         },
         {
           "flags": [
             [
-              "--mem=64G",
-              "64 gigabytes",
+              "--mem=48G",
+              "48 gigabytes",
               "Too little and the job is killed: OUT_OF_MEMORY"
             ],
             [
@@ -592,7 +592,7 @@
         },
         {
           "try": {
-            "text": "Start an interactive session with 2 GPUs, 64 GB of memory and 3 hours.",
+            "text": "Start an interactive session with 2 GPUs, 48 GB of memory and 3 hours.",
             "files": {
               "~/README.txt": {
                 "lib": "text:readme"
@@ -601,13 +601,13 @@
             "check": {
               "inInteractiveJob": {
                 "gpus": 2,
-                "memGB": 64,
+                "memGB": 48,
                 "timeMin": 180
               }
             },
-            "hint": "srun --gres=gpu:2 --mem=64G --time=03:00:00 --pty bash",
+            "hint": "srun --gres=gpu:2 --mem=48G --time=03:00:00 --pty bash",
             "solution": [
-              "srun --gres=gpu:2 --mem=64G --time=03:00:00 --pty bash"
+              "srun --gres=gpu:2 --mem=48G --time=03:00:00 --pty bash"
             ]
           }
         },

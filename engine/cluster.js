@@ -1,4 +1,4 @@
-// Simulated Geiss-01: one machine with 8 GPUs and ~356 GB RAM, Slurm,
+// Simulated Geiss-01: one machine with 8 GPUs and ~190 GB RAM, Slurm,
 // environment modules, and conda. Time moves forward one step per command.
 
 export const NODE = {
@@ -6,9 +6,16 @@ export const NODE = {
   gpus: 8,
   gpuModel: 'NVIDIA RTX PRO 6000 Blackwell',
   gpuMemMiB: 97887,
-  memGB: 356,
+  memGB: 190,
+  // Slurm keeps 16 GB for the system (MemSpecLimit), so jobs share the rest.
+  jobMemGB: 174,
   cpus: 64,
+  // Memory a job gets without --mem: 16 GB per GPU (DefMemPerGPU), 4 GB with no GPU.
+  defMemPerGpuGB: 16,
+  defMemGB: 4,
 };
+
+export const defaultMemGB = (gpus) => (gpus > 0 ? gpus * NODE.defMemPerGpuGB : NODE.defMemGB);
 
 export const PARTITIONS = {
   gpu: { limitMin: 48 * 60, default: true },
@@ -70,16 +77,18 @@ export class Cluster {
     this.interactive = null; // an srun session: { jobId, gpus }
     // Other people's jobs keep some GPUs busy so the queue looks real.
     const others = [
-      { user: 'ahernandez', name: 'rfdiff', gpus: 1 },
-      { user: 'kpatel', name: 'af2_screen', gpus: 1 },
-      { user: 'mlee', name: 'colabfold', gpus: 2 },
-      { user: 'jnguyen', name: 'relax', gpus: 1 },
+      { user: 'ahernandez', name: 'rfdiff', gpus: 1, memGB: 16 },
+      { user: 'kpatel', name: 'af2_screen', gpus: 1, memGB: 32 },
+      { user: 'mlee', name: 'colabfold', gpus: 2, memGB: 48 },
+      { user: 'jnguyen', name: 'relax', gpus: 1, memGB: 16 },
+      { user: 'tbrooks', name: 'gmx_md', gpus: 1, memGB: 16 },
+      { user: 'rsingh', name: 'chai_fold', gpus: 1, memGB: 24 },
     ];
     let busy = 0;
     for (const o of others) {
       if (busy + o.gpus > gpusBusy) break;
       busy += o.gpus;
-      this.jobs.push(this.makeJob({ ...o, state: 'R', startStep: -30, runSteps: 10_000, timeMin: 24 * 60, memGB: 64 }));
+      this.jobs.push(this.makeJob({ ...o, state: 'R', startStep: -30, runSteps: 10_000, timeMin: 24 * 60 }));
     }
     for (const j of jobs) this.jobs.push(this.makeJob({ user, ...j }));
   }
@@ -96,7 +105,7 @@ export class Cluster {
       partition: spec.partition ?? 'gpu',
       state: spec.state ?? 'PD',
       gpus: spec.gpus ?? 0,
-      memGB: spec.memGB ?? 4,
+      memGB: spec.memGB ?? defaultMemGB(spec.gpus ?? 0),
       timeMin: spec.timeMin ?? 60,
       submitStep: spec.submitStep ?? this.step,
       startStep: spec.startStep ?? null,

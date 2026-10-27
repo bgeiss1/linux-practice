@@ -15,31 +15,29 @@
         "note": "Ask Slurm for a job."
       },
       {
-        "code": "--gres=gpu:3",
-        "note": "3 GPUs, only for you. Programs in the job see exactly these 3."
+        "code": "--gres=gpu:2",
+        "note": "2 GPUs, only for you. Programs in the job see exactly these 2."
       },
       {
-        "code": "--mem=96G",
-        "note": "96 GB of RAM for the whole job. `G` is gigabytes. Use more than this and Slurm kills the job."
+        "code": "--mem=48G",
+        "note": "48 GB of RAM for the whole job. `G` is gigabytes. Use more than this and Slurm kills the job."
       },
       {
         "code": "--pty bash",
         "note": "An interactive shell inside the job."
       }
     ],
-    "why": "Slurm reserves exactly what you ask for. Big structure predictions need several GPUs and a lot of memory, and the GPUs and memory you hold can't go to anyone else until you `exit`.",
-    "without": "Leave out `--mem` and you get a small default (4 GB here), so a big job runs out of memory. Ask for more than Geiss-01 has (8 GPUs, 356 GB) and Slurm refuses: \"Requested node configuration is not available\"."
+    "why": "Slurm reserves exactly what you ask for. Big structure predictions need several GPUs and a lot of memory, and the GPUs and memory you hold can't go to anyone else until you `exit`. In this course each student can hold at most 2 GPUs and 48 GB at a time.",
+    "without": "Leave out `--mem` and you get the default, 16 GB for each GPU, so a big job runs out of memory. Ask for more than Geiss-01 can give a job (8 GPUs, about 174 GB) and Slurm refuses: \"Requested node configuration is not available\"."
   },
   "vars": {
     "gpus": [
-      2,
-      3,
-      4
+      2
     ],
     "mem": [
-      64,
-      96,
-      128
+      32,
+      40,
+      48
     ]
   },
   "machines": {

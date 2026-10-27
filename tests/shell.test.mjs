@@ -181,13 +181,28 @@ test('GPU tools need a GPU and enough memory from Slurm', () => {
   sh.run('cd proj');
   sh.run('module load colabfold');
   assert.match(text(sh.run('colabfold_batch a.fasta out')), /no GPU detected/);
-  sh.run('srun --gres=gpu:1 --pty bash');
-  assert.match(errors(sh.run('colabfold_batch a.fasta out')), /Killed/); // the default 4 GB isn't enough
+  sh.run('srun --gres=gpu:1 --mem=4G --pty bash');
+  assert.match(errors(sh.run('colabfold_batch a.fasta out')), /Killed/); // 4 GB isn't enough
   sh.run('exit');
-  sh.run('srun --gres=gpu:1 --mem=32G --pty bash');
+  sh.run('srun --gres=gpu:1 --pty bash'); // the default, 16 GB per GPU, is
   sh.run('colabfold_batch a.fasta out');
   assert.ok(sh.vfs.get('/home/student/proj/out/binder.done.txt'));
   assert.match(sh.vfs.readFile('/home/student/proj/out/log.txt'), /rank_001_alphafold2_ptm_model_\d_seed_000 pLDDT=/);
+});
+
+test('Geiss-01 has 190 GB, 174 GB of it for jobs, and 16 GB per GPU by default', () => {
+  const sh = shell();
+  sh.run('srun --gres=gpu:2 --pty bash');
+  assert.equal(sh.cluster.interactive.memGB, 32);
+  sh.run('exit');
+  sh.run('srun --pty bash');
+  assert.equal(sh.cluster.interactive.memGB, 4);
+  sh.run('exit');
+  assert.match(errors(sh.run('srun --gres=gpu:1 --mem=175G --pty bash')), /Requested node configuration is not available/);
+  sh.run('srun --gres=gpu:1 --mem=174G --pty bash');
+  assert.equal(sh.cluster.interactive.memGB, 174);
+  sh.run('exit');
+  assert.match(text(sh.run('sinfo -o "%m"')), /190000/);
 });
 
 test('chai-lab needs Chai-1 headers and an empty output folder', () => {

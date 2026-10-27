@@ -4,7 +4,7 @@
   "order": 2,
   "tier": 1,
   "title": "Your first fold",
-  "story": "Fold {{seq.0}}.fasta with ColabFold and put the results in a folder called {{seq.0}}_af. ColabFold needs a GPU and more memory than Slurm gives by default, so start an interactive job that asks for both. Leave the job when you're done.",
+  "story": "Fold {{seq.0}}.fasta with ColabFold and put the results in a folder called {{seq.0}}_af. ColabFold needs a GPU and plenty of memory, so start an interactive job that asks for both. Leave the job when you're done.",
   "lesson": {
     "title": "Folding in an interactive job",
     "intro": "Two commands: one to get a GPU from Slurm, one to fold.",
@@ -31,7 +31,7 @@
       }
     ],
     "why": "ColabFold first searches for related sequences (an MSA) on the ColabFold server, then runs 5 AlphaFold2 models and ranks them.",
-    "without": "Without `--gres=gpu:1` ColabFold warns \"no GPU detected\" and would take hours on the CPU. Without `--mem`, the job gets 4 GB and the run is killed."
+    "without": "Without `--gres=gpu:1` ColabFold warns \"no GPU detected\" and would take hours on the CPU. Without `--mem`, the job gets the default of 16 GB per GPU: enough for a small protein, but a big complex is killed for running out of memory."
   },
   "vars": {
     "project": [

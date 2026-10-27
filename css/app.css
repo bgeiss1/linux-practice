@@ -251,3 +251,4 @@ a.guide-link:hover { border-color: var(--accent); }
 .lz-note.warn { background: color-mix(in srgb, var(--amber) 14%, var(--surface)); }
 .lz-end { display: grid; gap: 10px; justify-items: start; padding-top: 6px; border-top: 1px solid var(--line); }
 .lz-end:empty { display: none; }
+.guide p code, .guide li code { white-space: nowrap; }

@@ -4,7 +4,7 @@
   "order": 11,
   "tier": 4,
   "title": "The job you forgot",
-  "story": "Yesterday you started an interactive job with 4 GPUs and closed your laptop without typing exit. It's still holding the GPUs, and the server is full. Find that job, cancel it, then start a fresh 1-GPU session.",
+  "story": "Yesterday you started an interactive job with 2 GPUs and closed your laptop without typing exit. It's still holding the GPUs, and the server is full. Find that job, cancel it, then start a fresh 1-GPU session.",
   "lesson": {
     "title": "Give your interactive jobs a time limit",
     "parts": [
@@ -27,18 +27,18 @@
   "machines": {
     "cluster": {
       "cwd": "~",
-      "gpusBusy": 4,
+      "gpusBusy": 6,
       "files": {},
       "jobs": [
         {
           "id": 47790,
           "name": "bash",
-          "gpus": 4,
+          "gpus": 2,
           "state": "R",
           "startStep": -900,
           "runSteps": 100000,
           "timeMin": 2880,
-          "memGB": 64
+          "memGB": 48
         }
       ]
     }

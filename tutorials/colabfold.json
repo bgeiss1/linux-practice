@@ -73,7 +73,7 @@
       "summary": "Get a GPU, run a fold, and the options that change speed and quality.",
       "blocks": [
         {
-          "text": "ColabFold needs a GPU, so run it inside a Slurm job: interactively with srun for one quick fold, or with sbatch for anything bigger. Memory grows with sequence length; 32G covers most single chains, complexes may need 64G."
+          "text": "ColabFold needs a GPU, so run it inside a Slurm job: interactively with srun for one quick fold, or with sbatch for anything bigger. Memory grows with sequence length; 32G covers most single chains, and big complexes may need 48G, the most one student can hold."
         },
         {
           "example": {

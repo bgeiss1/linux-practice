@@ -30,9 +30,9 @@
       "her2_binders"
     ],
     "need": [
+      32,
       40,
-      48,
-      60
+      48
     ]
   },
   "machines": {

@@ -39,7 +39,7 @@
     "cluster": {
       "cwd": "~/{{project}}",
       "files": {
-        "~/{{project}}/fold.sh": "#!/bin/bash\n#SBATCH --job-name=af2_screen\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=00:30:00\n#SBATCH --mem=64G\n#SBATCH --output=slurm-%j.out\n\nmodule load alphafold\nrun_alphafold.py --fasta_paths=designs.fasta --output_dir=af2_out --max_template_date=2024-01-01\n",
+        "~/{{project}}/fold.sh": "#!/bin/bash\n#SBATCH --job-name=af2_screen\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=00:30:00\n#SBATCH --mem=48G\n#SBATCH --output=slurm-%j.out\n\nmodule load alphafold\nrun_alphafold.py --fasta_paths=designs.fasta --output_dir=af2_out --max_template_date=2024-01-01\n",
         "~/{{project}}/designs.fasta": {
           "lib": "fasta:designs"
         },
@@ -55,7 +55,7 @@
           "submitStep": -400,
           "startStep": -390,
           "timeMin": 30,
-          "memGB": 64
+          "memGB": 48
         }
       ],
       "jobRules": [
@@ -88,7 +88,7 @@
     "cat slurm-{{jid}}.out",
     {
       "nano": "fold.sh",
-      "text": "#!/bin/bash\n#SBATCH --job-name=af2_screen\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=04:00:00\n#SBATCH --mem=64G\n#SBATCH --output=slurm-%j.out\n\nmodule load alphafold\nrun_alphafold.py --fasta_paths=designs.fasta --output_dir=af2_out --max_template_date=2024-01-01\n"
+      "text": "#!/bin/bash\n#SBATCH --job-name=af2_screen\n#SBATCH --partition=gpu\n#SBATCH --gres=gpu:1\n#SBATCH --time=04:00:00\n#SBATCH --mem=48G\n#SBATCH --output=slurm-%j.out\n\nmodule load alphafold\nrun_alphafold.py --fasta_paths=designs.fasta --output_dir=af2_out --max_template_date=2024-01-01\n"
     },
     "sbatch fold.sh",
     "squeue --me",

@@ -1,7 +1,7 @@
 // Environment and job commands: module, conda, sbatch, squeue, scancel,
 // sacct, seff, sinfo, srun, nvidia-smi.
 
-import { MODULES, CONDA_ENVS, NODE, PARTITIONS } from '../cluster.js';
+import { MODULES, CONDA_ENVS, NODE, PARTITIONS, defaultMemGB } from '../cluster.js';
 import { basename } from '../vfs.js';
 import { parseArgs, missingTip } from './util.js';
 
@@ -214,7 +214,7 @@ function validate(opts) {
   if (gpus > NODE.gpus) return 'sbatch: error: Batch job submission failed: Requested node configuration is not available';
   const mem = parseMem(opts.mem);
   if (Number.isNaN(mem)) return `sbatch: error: Invalid --mem specification`;
-  if (mem > NODE.memGB) return 'sbatch: error: Memory specification can not be satisfied\nsbatch: error: Batch job submission failed: Requested node configuration is not available';
+  if (mem > NODE.jobMemGB) return 'sbatch: error: Memory specification can not be satisfied\nsbatch: error: Batch job submission failed: Requested node configuration is not available';
   const time = parseTime(opts.time);
   if (Number.isNaN(time)) return 'sbatch: error: Invalid time limit specification';
   return null;
@@ -226,7 +226,7 @@ function submit(ctx, opts, { scriptPath, scriptText, command }) {
   const name = opts['job-name'] ?? (scriptPath ? basename(scriptPath) : 'wrap');
   const partition = opts.partition ?? 'gpu';
   const gpus = gpusFrom(opts);
-  const memGB = parseMem(opts.mem) ?? 4;
+  const memGB = parseMem(opts.mem) ?? defaultMemGB(gpus);
   const timeMin = parseTime(opts.time) ?? 60;
   const rule = cluster.ruleFor(scriptPath ?? command ?? '', scriptText ?? '');
   // No rule for this script: on a live cluster the script itself decides.
@@ -337,7 +337,7 @@ export function sbatch(ctx) {
   const err = validate(opts);
   if (err) {
     ctx.err(err + '\n');
-    ctx.coach('sbatch-invalid', `Geiss-01 has ${NODE.gpus} GPUs and about ${NODE.memGB} GB of memory. A job can't ask for more than the machine has.`);
+    ctx.coach('sbatch-invalid', `Geiss-01 has ${NODE.gpus} GPUs and about ${NODE.memGB} GB of memory, of which jobs can use ${NODE.jobMemGB} GB. A job can't ask for more than that.`);
     return 1;
   }
   const { base } = submit(ctx, opts, { scriptPath: abs, scriptText });
@@ -489,7 +489,7 @@ export function sinfo(ctx) {
     N: ['NODELIST', () => NODE.name],
     G: ['GRES', () => `gpu:rtx_pro_6000:${NODE.gpus}`],
     c: ['CPUS', () => String(NODE.cpus)],
-    m: ['MEMORY', () => String(NODE.memGB * 1024)],
+    m: ['MEMORY', () => String(NODE.memGB * 1000)],
   };
   const render = (get) => format.replace(/%(\.?)(\d*)([A-Za-z])/g, (m, right, width, f) => {
     const v = FIELDS[f] ? get(FIELDS[f]) : '';
@@ -575,7 +575,7 @@ export function srun(ctx) {
     ctx.coach('srun-wait', 'Every GPU is busy. On the real server srun would wait here until one frees up.');
     return 1;
   }
-  const memGB = parseMem(opts.mem) ?? 4;
+  const memGB = parseMem(opts.mem) ?? defaultMemGB(gpus);
   const timeMin = parseTime(opts.time) ?? 60;
   const cpus = Number(opts['cpus-per-task'] ?? 1) || 1;
   const job = cluster.makeJob({ id, name: command[0], gpus, memGB, timeMin, cpus, state: 'R', startStep: cluster.step, runSteps: Infinity, interactive: true });

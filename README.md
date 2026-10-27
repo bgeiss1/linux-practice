@@ -1,7 +1,7 @@
 # Linux Practice
 
 Safe Linux and Slurm practice for MIP662. Students work through short scenarios on a
-pretend copy of **Geiss-01** (8 RTX PRO 6000 Blackwell GPUs, about 356 GB RAM) right in
+pretend copy of **Geiss-01** (8 RTX PRO 6000 Blackwell GPUs, about 190 GB RAM) right in
 the browser. There is no real shell or server behind it, so nothing a student types can
 break anything.
 

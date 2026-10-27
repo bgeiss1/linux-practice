@@ -30,7 +30,7 @@
       }
     ],
     "why": "Chai-1 makes 5 structures by default (pred.model_idx_0.cif to pred.model_idx_4.cif), each with a scores file.",
-    "without": "Without a GPU, Chai-1 stops with \"No CUDA GPUs are available\". Without `--mem`, the job gets 4 GB and the run is killed."
+    "without": "Without a GPU, Chai-1 stops with \"No CUDA GPUs are available\". Without `--mem`, the job gets the default of 16 GB per GPU: enough for a small protein, but a big complex is killed for running out of memory."
   },
   "vars": {
     "project": [

@@ -196,7 +196,7 @@
             [
               "--mem=16G",
               "memory",
-              "RAM for the job. Default here: 4G"
+              "RAM for the job. Default here: 16G per GPU, 4G with no GPU"
             ],
             [
               "--time=01:00:00",
