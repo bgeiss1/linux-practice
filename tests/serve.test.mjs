@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { createServer } from '../serve.mjs';
+import { execFileSync } from 'node:child_process';
+import { createServer, gitStatus, publishLive } from '../serve.mjs';
 
 async function withServer(fn) {
   const root = await mkdtemp(path.join(tmpdir(), 'lp-serve-'));
@@ -57,4 +58,49 @@ test('refuses anything but scenario JSON', async () => {
     }
     assert.equal(await readFile(path.join(root, 'index.html'), 'utf8'), '<h1>hi</h1>');
   });
+});
+
+test('publishes saved content to main and local-sync through git', async () => {
+  const base = await mkdtemp(path.join(tmpdir(), 'lp-git-'));
+  const g = (cwd, ...args) => execFileSync('git', args, { cwd, encoding: 'utf8' });
+  const origin = path.join(base, 'origin.git');
+  const seed = path.join(base, 'seed');
+  const mine = path.join(base, 'mine');
+  g(base, 'init', '--quiet', '--bare', '-b', 'main', origin);
+  g(base, 'init', '--quiet', '-b', 'main', seed);
+  g(seed, 'config', 'user.email', 't@example.com');
+  g(seed, 'config', 'user.name', 'T');
+  await mkdir(path.join(seed, 'scenarios'), { recursive: true });
+  await writeFile(path.join(seed, 'scenarios/tracks.json'), '{"version":1}\n');
+  await writeFile(path.join(seed, 'app.js'), 'old\n');
+  g(seed, 'add', '-A');
+  g(seed, 'commit', '--quiet', '-m', 'seed');
+  g(seed, 'remote', 'add', 'origin', origin);
+  g(seed, 'push', '--quiet', 'origin', 'main', 'main:local-sync');
+  g(base, 'clone', '--quiet', '-b', 'local-sync', origin, mine);
+  g(mine, 'config', 'user.email', 'b@example.com');
+  g(mine, 'config', 'user.name', 'B');
+  // Someone else updates main on GitHub (like a merged pull request).
+  await writeFile(path.join(seed, 'README.md'), 'hi\n');
+  g(seed, 'add', '-A');
+  g(seed, 'commit', '--quiet', '-m', 'readme');
+  g(seed, 'push', '--quiet', 'origin', 'main');
+  // The dashboard saved a change here.
+  await writeFile(path.join(mine, 'scenarios/tracks.json'), '{"version":2}\n');
+  await mkdir(path.join(mine, 'tutorials'));
+  await writeFile(path.join(mine, 'tutorials/navigate.json'), '{}\n');
+  const before = await gitStatus(mine);
+  assert.deepEqual(before.files.sort(), ['scenarios/tracks.json', 'tutorials/navigate.json']);
+  assert.equal(before.behind, 1);
+  const r = await publishLive(mine);
+  assert.equal(r.committed, 2);
+  for (const b of ['main', 'local-sync']) {
+    assert.equal(g(origin, 'show', `${b}:scenarios/tracks.json`), '{"version":2}\n');
+    assert.equal(g(origin, 'show', `${b}:README.md`), 'hi\n');
+  }
+  const after = await gitStatus(mine);
+  assert.deepEqual(after.files, []);
+  assert.equal(after.ahead, 0);
+  // Publishing again with nothing new is harmless.
+  assert.equal((await publishLive(mine)).committed, 0);
 });

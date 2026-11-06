@@ -8,11 +8,17 @@
 // committing them to GitHub, and keeps the passphrase history file in
 // records/ (left out of git: it has student names). No packages needed, just
 // Node 18 or newer.
+//
+// When this folder is a git clone, the dashboard can also publish to the live site:
+//   GET  /__local/git      what saved changes the live site doesn't have yet
+//   POST /__local/publish  commit saved scenarios/ and tutorials/, then push to main
+//                          (which GitHub Pages deploys) and to local-sync.
 
 import http from 'node:http';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execFile } from 'node:child_process';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -63,6 +69,87 @@ export async function saveScenarios(root, { write = {}, remove = [] }) {
   return all.length;
 }
 
+// ---------- publishing through git ----------
+
+const LIVE = 'main'; // GitHub Pages deploys this branch
+const SYNC = 'local-sync'; // the branch this copy is kept in step with
+const CONTENT = ['scenarios', 'tutorials'];
+
+function git(root, args) {
+  return new Promise((resolve, reject) =>
+    execFile('git', args, { cwd: root, timeout: 120000 }, (e, out, err) => (e ? reject(new Error(String(err || out || e.message).trim())) : resolve(String(out)))),
+  );
+}
+
+const lines = (text) => text.split('\n').map((l) => l.trim()).filter(Boolean);
+
+// What publishing would send: saved content files that differ from the live
+// site, and how many commits of site code come along.
+export async function gitStatus(root, { fetch = true } = {}) {
+  try {
+    await git(root, ['rev-parse', '--is-inside-work-tree']);
+  } catch {
+    return { git: false };
+  }
+  let fetched = true;
+  if (fetch) {
+    try {
+      await git(root, ['fetch', '--quiet', 'origin', LIVE]);
+    } catch {
+      fetched = false;
+    }
+  }
+  const branch = (await git(root, ['rev-parse', '--abbrev-ref', 'HEAD'])).trim();
+  let files = [];
+  let behind = 0;
+  let ahead = 0;
+  try {
+    files = lines(await git(root, ['diff', '--name-only', `origin/${LIVE}`, '--', ...CONTENT]));
+    ahead = Number((await git(root, ['rev-list', '--count', `origin/${LIVE}..HEAD`])).trim());
+    behind = Number((await git(root, ['rev-list', '--count', `HEAD..origin/${LIVE}`])).trim());
+  } catch {
+    // No origin/main yet.
+  }
+  const untracked = lines(await git(root, ['ls-files', '--others', '--exclude-standard', '--', ...CONTENT]));
+  files = [...new Set([...files, ...untracked])];
+  const code = ahead ? lines(await git(root, ['diff', '--name-only', `origin/${LIVE}`, 'HEAD'])).filter((f) => !CONTENT.some((c) => f.startsWith(`${c}/`))).length : 0;
+  return { git: true, fetched, branch, files, ahead, behind, codeFiles: code };
+}
+
+// Commits saved content, brings in anything newer on GitHub, and pushes to the
+// live branch and the sync branch. Stops without pushing if the two copies
+// can't be combined automatically.
+export async function publishLive(root, { message = 'Update scenarios and lessons from the dashboard' } = {}) {
+  await git(root, ['rev-parse', '--is-inside-work-tree']);
+  const email = await git(root, ['config', 'user.email']).catch(() => '');
+  if (!email.trim()) throw new Error('git doesn\'t know who you are yet, so it can\'t make a commit. In Terminal, in the site folder, run: git config user.name "Your Name" and git config user.email "you@example.com", then publish again.');
+  await git(root, ['add', '-A', '--', ...CONTENT]);
+  const staged = lines(await git(root, ['diff', '--cached', '--name-only', '--', ...CONTENT]));
+  if (staged.length) await git(root, ['commit', '--quiet', '-m', message, '--', ...CONTENT]);
+  for (const b of [LIVE, SYNC]) {
+    try {
+      await git(root, ['fetch', '--quiet', 'origin', b]);
+    } catch {
+      continue; // that branch doesn't exist on GitHub yet
+    }
+    try {
+      await git(root, ['merge-base', '--is-ancestor', `origin/${b}`, 'HEAD']);
+    } catch {
+      try {
+        await git(root, ['merge', '--quiet', '--no-edit', `origin/${b}`]);
+      } catch (e) {
+        await git(root, ['merge', '--abort']).catch(() => {});
+        throw new Error(`Your copy and GitHub's ${b} branch both changed the same files, so nothing was pushed. (${e.message.split('\n')[0]})`);
+      }
+    }
+  }
+  await git(root, ['push', '--quiet', 'origin', `HEAD:${LIVE}`, `HEAD:${SYNC}`]);
+  const commit = (await git(root, ['rev-parse', '--short', 'HEAD'])).trim();
+  const remote = (await git(root, ['remote', 'get-url', 'origin'])).trim();
+  const repo = remote.match(/github\.com[:/]([^/]+\/[^/.]+)/)?.[1] ?? null;
+  return { committed: staged.length, commit, repo };
+}
+
 export function createServer(root) {
   return http.createServer(async (req, res) => {
     try {
@@ -72,6 +159,12 @@ export function createServer(root) {
         if (req.method !== 'POST') return send(res, 405, { error: 'use POST' });
         const n = await saveScenarios(root, JSON.parse(await readBody(req)));
         return send(res, 200, { saved: n });
+      }
+      if (url.pathname === '/__local/git') return send(res, 200, await gitStatus(root));
+      if (url.pathname === '/__local/publish') {
+        if (req.method !== 'POST') return send(res, 405, { error: 'use POST' });
+        const body = JSON.parse((await readBody(req)) || '{}');
+        return send(res, 200, await publishLive(root, { message: body.message || undefined }));
       }
       if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'read only' });
       let rel = decodeURIComponent(url.pathname);

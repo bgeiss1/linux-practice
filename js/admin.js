@@ -1419,7 +1419,7 @@ function renderPublish() {
   app.replaceChildren(
     h(`
     <section class="admin-page">
-      <div class="page-head"><div><h1>Publish</h1><p class="muted">${localMode ? 'Publishing saves your drafts into the scenarios and tutorials folders on this computer. Reload the practice site to see them.' : 'Publishing commits your drafts to GitHub. The site updates in about two minutes, after the tests pass.'}</p></div></div>
+      <div class="page-head"><div><h1>Publish</h1><p class="muted">${localMode ? 'Two steps: save your drafts on this computer, where the practice site at this address shows them right away, then publish what you saved to the live site.' : 'Publishing commits your drafts to GitHub. The site updates in about two minutes, after the tests pass.'}</p></div></div>
       <section class="card">
         <h2>Your changes</h2>
         ${
@@ -1483,6 +1483,7 @@ function renderPublish() {
   if (localMode) {
     for (const b of app.querySelectorAll('[data-undo]')) b.addEventListener('click', () => undoChange(b.dataset.undo));
     app.querySelector('#p-go').addEventListener('click', () => saveLocal());
+    showLiveCard();
     return;
   }
   app.querySelector('#p-repo').addEventListener('change', (e) => { settings.repo = e.target.value.trim(); saveWork(); });
@@ -1612,11 +1613,70 @@ async function publish(note) {
 
 function localPublishCard(d, broken) {
   return `<section class="card">
-        <h2>Save to this computer</h2>
-        <p class="muted">This dashboard is running from the local server, so nothing goes to GitHub. Saved files land in <code>scenarios/</code> and <code>tutorials/</code> in this copy of the repo.</p>
+        <h2>1. Save to this computer</h2>
+        <p class="muted">Saved files land in <code>scenarios/</code> and <code>tutorials/</code> in this copy of the repo. Nothing goes to GitHub until step 2.</p>
         <div class="row"><button type="button" id="p-go" class="primary" ${!d.count || broken.length ? 'disabled' : ''}>Save ${d.count} change${d.count === 1 ? '' : 's'}</button></div>
         <ol class="log-lines" id="p-log"></ol>
+      </section>
+      <section class="card" aria-labelledby="live-h">
+        <h2 id="live-h">2. Publish to the live site</h2>
+        <div id="live-body" class="muted">Checking what the live site has…</div>
       </section>`;
+}
+
+// The second step when running locally: push what was saved here to GitHub,
+// which rebuilds the student site.
+async function showLiveCard() {
+  const box = app.querySelector('#live-body');
+  if (!box) return;
+  let st;
+  try {
+    const res = await fetch('__local/git', { cache: 'no-cache' });
+    st = await res.json();
+    if (!res.ok) throw new Error(st.error ?? res.status);
+  } catch (e) {
+    box.innerHTML = `<p class="bad-text">Couldn't check git: ${esc(e.message)}</p>`;
+    return;
+  }
+  if (!box.isConnected) return;
+  if (!st.git) {
+    box.innerHTML = '<p>This folder isn\'t a git clone of the site, so it can\'t publish. Save here, and copy the files to GitHub another way.</p>';
+    return;
+  }
+  const drafts = changes().count;
+  const n = st.files.length;
+  const list = st.files.slice(0, 12).map((f) => `<li class="mono small">${esc(f)}</li>`).join('') + (n > 12 ? `<li class="muted small">and ${n - 12} more</li>` : '');
+  box.classList.remove('muted');
+  box.innerHTML = `
+    <p class="muted">Sends everything you've saved on this computer to GitHub. The student site updates about two minutes later, once the tests pass.</p>
+    ${!st.fetched ? '<p class="warn-text">Couldn\'t reach GitHub to compare, so this list may be out of date. Check your internet connection.</p>' : ''}
+    ${drafts ? `<p class="warn-text">You have ${drafts} unsaved change${drafts === 1 ? '' : 's'} above. Only saved changes are published, so save first.</p>` : ''}
+    ${n ? `<p>${n} saved file${n === 1 ? '' : 's'} the live site doesn't have yet:</p><ul class="issues plain">${list}</ul>` : ''}
+    ${st.codeFiles ? `<p>The site's own code is also behind this copy (${st.codeFiles} file${st.codeFiles === 1 ? '' : 's'}), and will be updated too.</p>` : ''}
+    ${n || st.ahead ? `<div class="field"><label for="live-note" class="label">What changed (for the history)</label><input type="text" id="live-note" placeholder="e.g. New lesson on grep"></div>
+      <div class="row"><button type="button" id="live-go" class="primary">Publish to the live site</button></div>` : '<p class="good-text">The live site already has everything you\'ve saved.</p>'}
+    <ol class="log-lines" id="live-log"></ol>`;
+  app.querySelector('#live-go')?.addEventListener('click', async (e) => {
+    if (!confirm('Publish to the live site? Students will see these changes in about two minutes.')) return;
+    const log = app.querySelector('#live-log');
+    e.target.disabled = true;
+    log.innerHTML = '<li>Publishing…</li>';
+    try {
+      const res = await fetch('__local/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: app.querySelector('#live-note').value.trim() }),
+      });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error ?? res.status);
+      const repo = out.repo ?? settings.repo;
+      const [owner, name] = repo.split('/');
+      log.innerHTML = `<li class="good-text">Published as <a href="https://github.com/${esc(repo)}/commit/${esc(out.commit)}" target="_blank" rel="noopener">${esc(out.commit)}</a>. Watch the <a href="https://github.com/${esc(repo)}/actions" target="_blank" rel="noopener">tests and deploy</a>; then the <a href="https://${esc(owner)}.github.io/${esc(name)}/" target="_blank" rel="noopener">live site</a> has it.</li>`;
+    } catch (x) {
+      log.innerHTML = `<li class="bad-text">Nothing was published: ${esc(x.message)}</li>`;
+      e.target.disabled = false;
+    }
+  });
 }
 
 async function saveLocal() {

@@ -26,10 +26,27 @@ npm run serve        # same as: node serve.mjs
 - Practice site: http://localhost:8000
 - Instructor dashboard: http://localhost:8000/admin.html
 
-The server only answers this computer. When the dashboard runs from it, **Publish**
-saves your drafts into `scenarios/` here instead of committing to GitHub; reload the
-practice site to try them. Push to GitHub when you're ready for students to see them.
-Use `PORT=9000 npm run serve` for another port.
+The server only answers this computer. When the dashboard runs from it, **Publish** has
+two steps: **Save** writes your drafts into `scenarios/` and `tutorials/` here (reload the
+practice site to try them), and **Publish to the live site** commits what you saved and
+pushes it to `main`, which GitHub Pages deploys, and to `local-sync`. Use
+`PORT=9000 npm run serve` for another port.
+
+If `node` is not on your PATH, VS Code ships one:
+
+```bash
+ELECTRON_RUN_AS_NODE=1 "/Applications/Visual Studio Code.app/Contents/MacOS/Code" serve.mjs
+```
+
+### Desktop app (Mac)
+
+```bash
+bash tools/make_app.sh
+```
+
+That puts **Linux Practice Dashboard.app** on the Desktop. Double click it to start the
+server (on port 8000, or the next free port if something else holds it) and open the
+dashboard, like the GROMACS and RFD4 dashboards. Run it again after moving the folder.
 
 ## Tests
 
