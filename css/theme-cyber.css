@@ -1,0 +1,141 @@
+/* "Night City" theme: loaded after app.css and overrides it. Dark only.
+   Electric yellow for actions, cyan for links and the terminal, hot pink for
+   warnings, clipped corners instead of rounded ones. Fonts are free (Google
+   Fonts); nothing here is taken from the game itself. */
+:root, :root:not([data-theme="light"]) {
+  --bg: #08080d;
+  --surface: #11111a;
+  --surface-2: #171724;
+  --fg: #ecead8;
+  --muted: #8d8ca3;
+  --line: #2b2b40;
+  --accent: #fcee0a;
+  --accent-soft: rgba(252, 238, 10, 0.08);
+  --cyan: #19f0ff;
+  --cyan-soft: rgba(25, 240, 255, 0.08);
+  --amber: #ff2a6d;
+  --good: #1effa0;
+  --good-soft: rgba(30, 255, 160, 0.07);
+  --star: #fcee0a;
+  --term-bg: #04050a;
+  --term-fg: #c9f6ff;
+  --term-dim: #5f7a88;
+  --term-ok: #1effa0;
+  --term-err: #ff2a6d;
+  --term-prompt: #19f0ff;
+  --term-path: #fcee0a;
+  --term-dir: #19f0ff;
+  --f-display: "Rajdhani", "Chakra Petch", system-ui, sans-serif;
+  --f-hud: "Share Tech Mono", "JetBrains Mono", ui-monospace, monospace;
+  --cut: 12px;
+  --clip: polygon(0 0, calc(100% - var(--cut)) 0, 100% var(--cut), 100% 100%, var(--cut) 100%, 0 calc(100% - var(--cut)));
+  --clip-sm: polygon(0 0, calc(100% - 7px) 0, 100% 7px, 100% 100%, 7px 100%, 0 calc(100% - 7px));
+  color-scheme: dark;
+}
+
+body {
+  background:
+    linear-gradient(rgba(25, 240, 255, 0.035) 1px, transparent 1px) 0 0 / 100% 32px,
+    linear-gradient(90deg, rgba(25, 240, 255, 0.035) 1px, transparent 1px) 0 0 / 32px 100%,
+    radial-gradient(ellipse at 50% -10%, rgba(252, 238, 10, 0.07), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+}
+a { color: var(--cyan); }
+::selection { background: var(--accent); color: #000; }
+
+h1, h2, h3 { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
+h1 { font-weight: 700; font-size: clamp(2.1rem, 4.6vw, 3rem); line-height: 1.02; text-shadow: -2px 0 rgba(255, 42, 109, .55), 2px 0 rgba(25, 240, 255, .45); }
+h2 { font-weight: 700; font-size: 1.5rem; }
+h3 { font-weight: 600; font-size: 1.15rem; }
+.label, .pill, .host, .crumbs, th { font-family: var(--f-hud); }
+.label { color: var(--accent); letter-spacing: .14em; }
+code { background: var(--cyan-soft); color: var(--cyan); border-radius: 0; }
+
+/* buttons: clipped plates, yellow for the main action */
+button, .btn { font-family: var(--f-display); font-weight: 600; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; border-radius: 0; background: var(--surface-2); border-color: var(--line); clip-path: var(--clip-sm); }
+button:hover, .btn:hover { border-color: var(--cyan); color: var(--cyan); }
+button.primary, .btn.primary { background: var(--accent); border-color: var(--accent); color: #000; }
+button.primary:hover, .btn.primary:hover { color: #000; filter: none; background: #fff35a; box-shadow: 0 0 18px rgba(252, 238, 10, .45); }
+input[type="text"] { border-radius: 0; background: var(--term-bg); }
+.pill { border-radius: 0; background: transparent; border: 1px solid currentColor; color: var(--cyan); }
+
+/* top bar: black strip with a yellow edge */
+.topbar { background: #000; border-bottom: 2px solid var(--accent); box-shadow: 0 2px 24px rgba(252, 238, 10, .15); }
+.brand { font-size: 1.45rem; text-transform: uppercase; letter-spacing: .06em; }
+.brand-mark { background: var(--accent); color: #000; border-radius: 0; font-weight: 600; clip-path: var(--clip-sm); }
+.host { color: var(--cyan); text-transform: uppercase; letter-spacing: .1em; }
+.host::before { content: "// "; color: var(--accent); }
+
+/* cards: clipped corners, a yellow tick on the left */
+.pass, .track-card, .scen, .up-next, .guide-link, .lesson, .lz-try, .lz-quiz, .lz-cmd, .coach, .table-wrap, .bench, .done-card, .lz-flags {
+  border-radius: 0; clip-path: var(--clip);
+}
+.track-card, .pass, .up-next, .guide-link { background: linear-gradient(135deg, var(--surface-2), var(--surface) 60%); box-shadow: inset 3px 0 0 var(--accent); }
+.tracks { counter-reset: trk; }
+.track-card::before { counter-increment: trk; content: "// TRK_" counter(trk, decimal-leading-zero); font: 12px var(--f-hud); letter-spacing: .14em; color: var(--muted); }
+a.track-card:hover, a.scen:hover, a.guide-link:hover { border-color: var(--cyan); box-shadow: inset 3px 0 0 var(--cyan), 0 0 22px rgba(25, 240, 255, .12); }
+.track-card .cmds { color: var(--cyan); font-family: var(--f-hud); }
+.bar { height: 5px; border-radius: 0; background: var(--line); }
+.bar span { background: repeating-linear-gradient(90deg, var(--accent) 0 10px, #c9bd00 10px 12px); box-shadow: 0 0 10px rgba(252, 238, 10, .6); }
+.track-card.complete .bar span { background: var(--good); box-shadow: 0 0 10px rgba(30, 255, 160, .6); }
+.up-next { border-color: var(--accent); }
+.up-next .label { color: var(--cyan); }
+
+/* passphrase slots: dashed when locked, neon green when earned */
+.slot { border-radius: 0; border-color: var(--line); background: rgba(0, 0, 0, .25); }
+.slot .label { color: var(--muted); }
+.slot.earned { border-color: var(--good); background: var(--good-soft); box-shadow: 0 0 16px rgba(30, 255, 160, .15) inset; }
+.slot.earned .label { color: var(--good); }
+.slot.earned .word { color: var(--good); text-shadow: 0 0 8px rgba(30, 255, 160, .6); }
+
+/* track ladder */
+.scen { background: var(--surface); }
+.scen .num { color: var(--accent); font-family: var(--f-hud); }
+.lesson-row .scen { background: var(--cyan-soft); border-color: rgba(25, 240, 255, .25); }
+
+/* the terminal: a netrunner console with scanlines */
+.term { position: relative; text-shadow: 0 0 6px rgba(25, 240, 255, .25); }
+.term::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .28) 0 1px, transparent 1px 3px); mix-blend-mode: multiply; }
+.term-bar { background: #000; border-bottom: 1px solid rgba(252, 238, 10, .35); color: var(--accent); text-transform: uppercase; letter-spacing: .12em; font-family: var(--f-hud); }
+.term-bar::before { content: "▮ LINK ESTABLISHED"; color: var(--good); }
+.p-user, .lz-prompt { text-shadow: 0 0 8px rgba(25, 240, 255, .7); }
+.t-err { text-shadow: 0 0 8px rgba(255, 42, 109, .6); }
+.bench { border-color: rgba(252, 238, 10, .35); }
+.panel { background: var(--surface); }
+.tasks li { border-radius: 0; }
+.tasks .box { border-radius: 0; }
+.tasks li.current { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.coach { background: var(--term-bg); border-color: var(--line); }
+.coach.hint { border-color: var(--amber); }
+.coach strong { color: var(--amber); }
+
+/* lesson pages */
+.lz-cmd { border-left: 0; box-shadow: inset 4px 0 0 var(--accent); background: linear-gradient(135deg, var(--surface-2), var(--surface)); }
+.lz-cmd-name { background: var(--accent); color: #000; border-radius: 0; text-shadow: none; }
+.lz-stands { color: var(--cyan); text-transform: uppercase; letter-spacing: .06em; }
+.lz-flags th { color: var(--accent); }
+.lz-flags td:first-child code { color: var(--accent); background: var(--accent-soft); }
+.bd-cmd, .lz-example pre { border-radius: 0; border: 1px solid var(--line); }
+.lz-try { box-shadow: inset 3px 0 0 var(--cyan); }
+.lz-try.ok { border-color: var(--good); box-shadow: inset 3px 0 0 var(--good); }
+.lz-try .label, .lz-quiz .label { color: var(--cyan); }
+.lz-note { border-radius: 0; background: var(--cyan-soft); box-shadow: inset 3px 0 0 var(--cyan); }
+.lz-note .label { color: var(--cyan); }
+.lz-note.warn { background: rgba(255, 42, 109, .08); box-shadow: inset 3px 0 0 var(--amber); }
+.lz-note.warn .label { color: var(--amber); }
+.lz-options button.right { background: var(--good-soft); border-color: var(--good); color: var(--good); }
+.lz-options button.wrong { border-color: var(--amber); color: var(--amber); }
+
+/* one quick glitch on the page title when it appears */
+@keyframes glitch {
+  0%, 100% { transform: none; clip-path: none; }
+  20% { transform: translate(-3px, 1px); clip-path: inset(10% 0 55% 0); }
+  40% { transform: translate(3px, -1px); clip-path: inset(60% 0 8% 0); }
+  60% { transform: translate(-1px, 0); clip-path: inset(30% 0 40% 0); }
+  80% { transform: translate(1px, 0); clip-path: none; }
+}
+main h1 { animation: glitch .45s steps(2, end) 1; }
+.slot.earned .word { animation: glitch .5s steps(2, end) 1; }
+@media (prefers-reduced-motion: reduce) { main h1, .slot.earned .word { animation: none; } }
+.lz-term, .term { border-radius: 0; }
