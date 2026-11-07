@@ -1,6 +1,7 @@
 /* "Night City" theme: loaded after app.css and overrides it. Dark only.
-   Electric yellow for actions, cyan for links and the terminal, hot pink for
-   warnings, clipped corners instead of rounded ones. Fonts are free (Google
+   Electric yellow for actions, cyan for links and the terminal, red for
+   heading marks, card edges and warnings, clipped corners instead of rounded
+   ones. Fonts are free (Google
    Fonts); nothing here is taken from the game itself. */
 :root, :root:not([data-theme="light"]) {
   --bg: #08080d;
@@ -13,7 +14,9 @@
   --accent-soft: rgba(252, 238, 10, 0.08);
   --cyan: #19f0ff;
   --cyan-soft: rgba(25, 240, 255, 0.08);
-  --amber: #ff2a6d;
+  --red: #ff003c;
+  --red-soft: rgba(255, 0, 60, 0.1);
+  --amber: var(--red);
   --good: #1effa0;
   --good-soft: rgba(30, 255, 160, 0.07);
   --star: #fcee0a;
@@ -21,7 +24,7 @@
   --term-fg: #c9f6ff;
   --term-dim: #5f7a88;
   --term-ok: #1effa0;
-  --term-err: #ff2a6d;
+  --term-err: #ff3355;
   --term-prompt: #19f0ff;
   --term-path: #fcee0a;
   --term-dir: #19f0ff;
@@ -38,6 +41,7 @@ body {
     linear-gradient(rgba(25, 240, 255, 0.035) 1px, transparent 1px) 0 0 / 100% 32px,
     linear-gradient(90deg, rgba(25, 240, 255, 0.035) 1px, transparent 1px) 0 0 / 32px 100%,
     radial-gradient(ellipse at 50% -10%, rgba(252, 238, 10, 0.07), transparent 60%),
+    radial-gradient(ellipse at 100% 100%, rgba(255, 0, 60, 0.09), transparent 55%),
     var(--bg);
   background-attachment: fixed;
 }
@@ -45,7 +49,9 @@ a { color: var(--cyan); }
 ::selection { background: var(--accent); color: #000; }
 
 h1, h2, h3 { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
-h1 { font-weight: 700; font-size: clamp(2.1rem, 4.6vw, 3rem); line-height: 1.02; text-shadow: -2px 0 rgba(255, 42, 109, .55), 2px 0 rgba(25, 240, 255, .45); }
+h1 { font-weight: 700; font-size: clamp(2.1rem, 4.6vw, 3rem); line-height: 1.02; text-shadow: -2px 0 rgba(255, 0, 60, .7), 2px 0 rgba(25, 240, 255, .45); }
+main h2::before { content: "// "; color: var(--red); }
+.pass-head h2::before, .lz h2::before { content: "// "; color: var(--red); }
 h2 { font-weight: 700; font-size: 1.5rem; }
 h3 { font-weight: 600; font-size: 1.15rem; }
 .label, .pill, .host, .crumbs, th { font-family: var(--f-hud); }
@@ -61,11 +67,12 @@ input[type="text"] { border-radius: 0; background: var(--term-bg); }
 .pill { border-radius: 0; background: transparent; border: 1px solid currentColor; color: var(--cyan); }
 
 /* top bar: black strip with a yellow edge */
-.topbar { background: #000; border-bottom: 2px solid var(--accent); box-shadow: 0 2px 24px rgba(252, 238, 10, .15); }
+.topbar { background: #000; border-bottom: 2px solid var(--accent); box-shadow: 0 3px 0 var(--red), 0 4px 28px rgba(255, 0, 60, .25); }
 .brand { font-size: 1.45rem; text-transform: uppercase; letter-spacing: .06em; }
 .brand-mark { background: var(--accent); color: #000; border-radius: 0; font-weight: 600; clip-path: var(--clip-sm); }
 .host { color: var(--cyan); text-transform: uppercase; letter-spacing: .1em; }
-.host::before { content: "// "; color: var(--accent); }
+.host::before { content: "// "; color: var(--red); }
+.brand-mark { box-shadow: 3px 3px 0 var(--red); }
 
 /* cards: clipped corners, a yellow tick on the left */
 .pass, .track-card, .scen, .up-next, .guide-link, .lesson, .lz-try, .lz-quiz, .lz-cmd, .coach, .table-wrap, .bench, .done-card, .lz-flags {
@@ -73,20 +80,25 @@ input[type="text"] { border-radius: 0; background: var(--term-bg); }
 }
 .track-card, .pass, .up-next, .guide-link { background: linear-gradient(135deg, var(--surface-2), var(--surface) 60%); box-shadow: inset 3px 0 0 var(--accent); }
 .tracks { counter-reset: trk; }
-.track-card::before { counter-increment: trk; content: "// TRK_" counter(trk, decimal-leading-zero); font: 12px var(--f-hud); letter-spacing: .14em; color: var(--muted); }
+.track-card::before { counter-increment: trk; content: "// TRK_" counter(trk, decimal-leading-zero); font: 12px var(--f-hud); letter-spacing: .14em; color: var(--red); }
+/* a red tab on the bottom-right edge of the big cards */
+.track-card, .pass, .up-next, .guide-link, .lz-cmd { position: relative; }
+.track-card::after, .pass::after, .up-next::after, .guide-link::after, .lz-cmd::after { content: ""; position: absolute; right: var(--cut); bottom: 0; width: 44px; height: 4px; background: var(--red); box-shadow: 0 0 10px rgba(255, 0, 60, .6); }
+.track-card.soon::before { content: "// LOCKED"; }
 a.track-card:hover, a.scen:hover, a.guide-link:hover { border-color: var(--cyan); box-shadow: inset 3px 0 0 var(--cyan), 0 0 22px rgba(25, 240, 255, .12); }
 .track-card .cmds { color: var(--cyan); font-family: var(--f-hud); }
 .bar { height: 5px; border-radius: 0; background: var(--line); }
 .bar span { background: repeating-linear-gradient(90deg, var(--accent) 0 10px, #c9bd00 10px 12px); box-shadow: 0 0 10px rgba(252, 238, 10, .6); }
 .track-card.complete .bar span { background: var(--good); box-shadow: 0 0 10px rgba(30, 255, 160, .6); }
 .up-next { border-color: var(--accent); }
-.up-next .label { color: var(--cyan); }
+.up-next .label { color: var(--red); }
 
 /* passphrase slots: dashed when locked, neon green when earned */
 .slot { border-radius: 0; border-color: var(--line); background: rgba(0, 0, 0, .25); }
 .slot .label { color: var(--muted); }
 .slot.earned { border-color: var(--good); background: var(--good-soft); box-shadow: 0 0 16px rgba(30, 255, 160, .15) inset; }
 .slot.earned .label { color: var(--good); }
+.slot:not(.earned) { border-color: rgba(255, 0, 60, .28); }
 .slot.earned .word { color: var(--good); text-shadow: 0 0 8px rgba(30, 255, 160, .6); }
 
 /* track ladder */
@@ -101,7 +113,8 @@ a.track-card:hover, a.scen:hover, a.guide-link:hover { border-color: var(--cyan)
 .term-bar::before { content: "▮ LINK ESTABLISHED"; color: var(--good); }
 .p-user, .lz-prompt { text-shadow: 0 0 8px rgba(25, 240, 255, .7); }
 .t-err { text-shadow: 0 0 8px rgba(255, 42, 109, .6); }
-.bench { border-color: rgba(252, 238, 10, .35); }
+.bench { border-color: rgba(252, 238, 10, .35); box-shadow: inset 0 3px 0 var(--red); }
+.tasks li.done .box { background: var(--good); }
 .panel { background: var(--surface); }
 .tasks li { border-radius: 0; }
 .tasks .box { border-radius: 0; }
@@ -122,7 +135,9 @@ a.track-card:hover, a.scen:hover, a.guide-link:hover { border-color: var(--cyan)
 .lz-try .label, .lz-quiz .label { color: var(--cyan); }
 .lz-note { border-radius: 0; background: var(--cyan-soft); box-shadow: inset 3px 0 0 var(--cyan); }
 .lz-note .label { color: var(--cyan); }
-.lz-note.warn { background: rgba(255, 42, 109, .08); box-shadow: inset 3px 0 0 var(--amber); }
+.lz-note.warn { background: var(--red-soft); box-shadow: inset 3px 0 0 var(--red); }
+.lz-head .label { color: var(--red); }
+.lz-flags th, .guide th { border-bottom-color: var(--red); }
 .lz-note.warn .label { color: var(--amber); }
 .lz-options button.right { background: var(--good-soft); border-color: var(--good); color: var(--good); }
 .lz-options button.wrong { border-color: var(--amber); color: var(--amber); }
