@@ -1,0 +1,35 @@
+{
+  "id": "python-01-hello",
+  "track": "python",
+  "order": 1,
+  "tier": 1,
+  "title": "Hello, Python",
+  "story": "Your lab mate left a tiny test script, `hello.py`, in ~/scripts. Run it with Python to check that Python works for you on Geiss-01.",
+  "vars": {},
+  "machines": {
+    "cluster": {
+      "cwd": "~/scripts",
+      "files": {
+        "~/scripts/hello.py": "print(\"Hello from Geiss-01\")\nprint(\"Python is working.\")\n"
+      }
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run hello.py with python3",
+      "check": {
+        "ran": "python3",
+        "argHas": "hello.py",
+        "ok": true
+      }
+    }
+  ],
+  "hints": [
+    "Type `python3` followed by the name of the script.",
+    "python3 hello.py",
+    "Type exactly: python3 hello.py"
+  ],
+  "solution": [
+    "python3 hello.py"
+  ]
+}

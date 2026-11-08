@@ -170,6 +170,7 @@ export class Session {
       gpusBusy: Number(machine.gpusBusy ?? 2),
       jobRules: machine.jobRules ?? [],
       liveJobs: !!machine.liveJobs,
+      pythonRules: machine.pythonRules ?? [],
       processes: (machine.processes ?? []).map((p) => ({ ...p, pid: p.pid === undefined ? undefined : Number(p.pid) })),
     });
     this.shell = new Shell({ vfs, user, cwd: vfs.resolve(machine.cwd ?? '~', home, home), cluster });

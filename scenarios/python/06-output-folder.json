@@ -1,0 +1,72 @@
+{
+  "id": "python-06-output-folder",
+  "track": "python",
+  "order": 6,
+  "tier": 3,
+  "title": "It needs a folder",
+  "story": "`split_fasta.py all.fasta OUT_DIR` writes each sequence of all.fasta to its own file in OUT_DIR. Split all.fasta into a folder called {{out}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "out": [
+      "split",
+      "per_design",
+      "singles"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/split_fasta.py": "\"\"\"Write each sequence of a FASTA file to its own file in OUT_DIR.\"\"\"\nimport sys\n\nfasta, out_dir = sys.argv[1], sys.argv[2]\nrecords = []\nwith open(fasta) as handle:\n    for line in handle:\n        if line.startswith(\">\"):\n            records.append([line[1:].split()[0], line])\n        else:\n            records[-1][1] += line\n\nfor name, text in records:\n    out_path = f\"{out_dir}/{name}.fasta\"\n    with open(out_path, \"w\") as out:\n        out.write(text)\nprint(f\"wrote {len(records)} files to {out_dir}/\")\n",
+        "~/{{project}}/all.fasta": ">des_1\nMKVLAAGLLA\n>des_2\nMSEELKKLLE\n>des_3\nMPKRIEELLK\n"
+      },
+      "pythonRules": [
+        {
+          "match": "split_fasta.py",
+          "args": 2,
+          "usage": "usage: split_fasta.py FASTA OUT_DIR",
+          "inputs": [
+            1
+          ],
+          "outDir": 2,
+          "out": "wrote 3 files to $2/\n",
+          "creates": {
+            "$2/des_1.fasta": ">des_1\nMKVLAAGLLA\n",
+            "$2/des_2.fasta": ">des_2\nMSEELKKLLE\n",
+            "$2/des_3.fasta": ">des_3\nMPKRIEELLK\n"
+          }
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Split all.fasta into {{out}}/",
+      "check": {
+        "dirHas": {
+          "path": "~/{{project}}/{{out}}",
+          "names": [
+            "des_1.fasta",
+            "des_2.fasta",
+            "des_3.fasta"
+          ]
+        }
+      }
+    }
+  ],
+  "hints": [
+    "If Python says No such file or directory for a file it is writing, the folder is missing. mkdir {{out}} first."
+  ],
+  "solution": [
+    "python3 split_fasta.py all.fasta {{out}}",
+    "mkdir {{out}}",
+    "python3 split_fasta.py all.fasta {{out}}"
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "id": "python-08-batch",
+  "track": "python",
+  "order": 8,
+  "tier": 3,
+  "title": "Python in a batch job",
+  "story": "`round_means.py` uses pandas to average pLDDT per design round. Run it on scores.csv as a Slurm batch job (it needs no GPU), wait for it to finish, and report round 2's mean from the log.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "a": [
+      "d01",
+      "bnd_17",
+      "hlx_03",
+      "mb_22"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "liveJobs": true,
+      "files": {
+        "~/{{project}}/round_means.py": "\"\"\"Average pLDDT per design round, with pandas.\"\"\"\nimport sys\nimport pandas as pd\n\ndf = pd.read_csv(sys.argv[1])\nprint(df.groupby(\"round\")[\"plddt\"].mean().round(1).to_string())\n",
+        "~/{{project}}/scores.csv": "name,plddt,round\n{{a}},91.2,1\nd02,78.5,1\nd03,84.0,1\nd04,62.3,2\nd05,88.7,2\nd06,73.9,2\n"
+      },
+      "pythonRules": [
+        {
+          "match": "round_means.py",
+          "args": 1,
+          "usage": "usage: round_means.py SCORES.csv",
+          "inputs": [
+            1
+          ],
+          "out": "round\n1    84.6\n2    75.0\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Submit round_means.py on scores.csv as a batch job",
+      "check": {
+        "jobSubmitted": {}
+      }
+    },
+    {
+      "text": "Type round 2's mean pLDDT from the job's log",
+      "check": {
+        "answer": "75.0"
+      }
+    }
+  ],
+  "hints": [
+    "pandas comes with anaconda, so load it first (the job inherits it). sbatch --wrap=\"python round_means.py scores.csv\" runs one command as a job; its output lands in slurm-JOBID.out."
+  ],
+  "solution": [
+    "module load anaconda",
+    "sbatch --wrap=\"python round_means.py scores.csv\"",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "squeue --me",
+    "cat slurm-*.out",
+    {
+      "answer": "75.0"
+    }
+  ]
+}

@@ -38,6 +38,7 @@ export const MODULES = [
 export const CONDA_ENVS = {
   base: {},
   proteinmpnn: {
+    packages: ['numpy', 'torch'],
     scripts: [
       '/opt/ProteinMPNN/protein_mpnn_run.py',
       '/opt/ProteinMPNN/helper_scripts/parse_multiple_chains.py',
@@ -45,8 +46,8 @@ export const CONDA_ENVS = {
       '/opt/ProteinMPNN/helper_scripts/make_fixed_positions_dict.py',
     ],
   },
-  chai: { commands: ['chai-lab'] },
-  rfd4: { commands: ['rfd4-generate', 'rfd4-evaluate'] },
+  chai: { commands: ['chai-lab'], packages: ['numpy', 'torch', 'chai_lab', 'pandas'] },
+  rfd4: { commands: ['rfd4-generate', 'rfd4-evaluate'], packages: ['numpy', 'torch', 'rfd4_proteina'] },
 };
 
 export const REPO_SCRIPTS = Object.fromEntries(
@@ -59,7 +60,9 @@ export const envForCommand = (name) => Object.keys(CONDA_ENVS).find((env) => CON
 const MINUTE = 60_000;
 
 export class Cluster {
-  constructor({ user = 'student', now = Date.now(), modules = [], conda = null, jobs = [], gpusBusy = 2, jobRules = [], liveJobs = false, processes = [] } = {}) {
+  constructor({ user = 'student', now = Date.now(), modules = [], conda = null, jobs = [], gpusBusy = 2, jobRules = [], liveJobs = false, processes = [], pythonRules = [] } = {}) {
+    // Output and errors for students' own Python scripts (see commands/python.js).
+    this.pythonRules = pythonRules;
     // jobRules let a scenario decide how a submitted script behaves, e.g.
     // { "match": "run_mpnn.sh", "needsGpu": true, "needsTimeMin": 90, "creates": ["outputs/seqs.fa"] }
     this.jobRules = jobRules;

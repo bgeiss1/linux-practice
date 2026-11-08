@@ -173,6 +173,30 @@
       ]
     },
     {
+      "id": "python",
+      "title": "Run Python scripts",
+      "keyword": "cobra",
+      "blurb": "Run Python scripts with arguments, pick the right Python, read tracebacks, and run scripts as programs and Slurm jobs.",
+      "commands": [
+        "python3",
+        "python",
+        "module load anaconda",
+        "chmod +x",
+        "./script.py",
+        ">"
+      ],
+      "scenarios": [
+        "python/01-hello",
+        "python/02-arguments",
+        "python/03-which-python",
+        "python/04-save-output",
+        "python/05-shebang",
+        "python/06-output-folder",
+        "python/07-traceback",
+        "python/08-batch"
+      ]
+    },
+    {
       "id": "slurm",
       "title": "Run Slurm jobs",
       "keyword": "walrus",

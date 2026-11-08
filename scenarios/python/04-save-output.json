@@ -1,0 +1,62 @@
+{
+  "id": "python-04-save-output",
+  "track": "python",
+  "order": 4,
+  "tier": 2,
+  "title": "Keep what it prints",
+  "story": "`summarize.py` prints a short summary of scores.csv. You want to keep that summary: save what it prints to a file called summary.txt, without changing the script.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "a": [
+      "d01",
+      "bnd_17",
+      "hlx_03",
+      "mb_22"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/summarize.py": "\"\"\"Summarise a CSV of design scores: count, mean and best pLDDT.\"\"\"\nimport csv\nimport sys\nimport statistics\n\nwith open(sys.argv[1]) as handle:\n    rows = list(csv.DictReader(handle))\n\nplddt = [float(r[\"plddt\"]) for r in rows]\nbest = max(rows, key=lambda r: float(r[\"plddt\"]))\nprint(f\"designs: {len(rows)}\")\nprint(f\"mean pLDDT: {statistics.mean(plddt):.1f}\")\nprint(f\"best: {best['name']} ({best['plddt']})\")\n",
+        "~/{{project}}/scores.csv": "name,plddt,round\n{{a}},91.2,1\nd02,78.5,1\nd03,84.0,1\nd04,62.3,2\nd05,88.7,2\nd06,73.9,2\n"
+      },
+      "pythonRules": [
+        {
+          "match": "summarize.py",
+          "args": 1,
+          "usage": "usage: summarize.py SCORES.csv",
+          "inputs": [
+            1
+          ],
+          "out": "designs: 6\nmean pLDDT: 79.8\nbest: {{a}} (91.2)\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Save the summary of scores.csv to summary.txt",
+      "check": {
+        "fileContains": {
+          "path": "~/{{project}}/summary.txt",
+          "text": "mean pLDDT: 79.8"
+        }
+      }
+    }
+  ],
+  "hints": [
+    "`>` sends what a command prints into a file: COMMAND > FILE.",
+    "python3 summarize.py scores.csv > summary.txt"
+  ],
+  "solution": [
+    "python3 summarize.py scores.csv > summary.txt"
+  ]
+}

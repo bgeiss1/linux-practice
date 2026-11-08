@@ -1,0 +1,270 @@
+{
+  "track": "python",
+  "lessons": [
+    {
+      "id": "run-script",
+      "title": "Running a Python script",
+      "before": "python-01-hello",
+      "summary": "A script is a text file of Python code. python3 runs it.",
+      "blocks": [
+        {
+          "text": "A Python script is a plain text file, usually ending in `.py`, full of Python code. You don't open it like a document; you hand it to the Python interpreter, which reads it top to bottom and runs it. Anything the script prints shows up in your terminal.\n\nOn Geiss-01 there are two kinds of Python. `python3` is the system's own Python and is always there. `python` (and a fuller `python3`) appear once you load anaconda with `module load anaconda`. More on that choice two lessons from now."
+        },
+        {
+          "command": {
+            "name": "python3",
+            "stands": "Python, version 3",
+            "syntax": "python3 SCRIPT.py [ARGUMENTS...]",
+            "what": "Runs the script. Your prompt comes back when it finishes. `python3 --version` tells you which version you have."
+          }
+        },
+        {
+          "example": {
+            "cmd": "python3 hello.py",
+            "out": "Hello from Geiss-01\nPython is working.",
+            "note": "`cat hello.py` would show you the code. `python3 hello.py` runs it."
+          }
+        },
+        {
+          "try": {
+            "text": "Run `hello.py`.",
+            "cwd": "~/scripts",
+            "files": {
+              "~/scripts/hello.py": "print(\"Hello from Geiss-01\")\nprint(\"Python is working.\")\n"
+            },
+            "check": {
+              "ran": "python3",
+              "argHas": "hello.py",
+              "ok": true
+            },
+            "hint": "python3 hello.py",
+            "solution": [
+              "python3 hello.py"
+            ]
+          }
+        },
+        {
+          "tip": "`cat` shows what a script will do before you run it. It's a good habit with any script someone hands you."
+        },
+        {
+          "quiz": {
+            "q": "You have `count.py` in the folder you're in. How do you run it?",
+            "options": [
+              "count.py",
+              "python3 count.py",
+              "open count.py",
+              "cat count.py"
+            ],
+            "answer": 1,
+            "why": "python3 runs the code in the file. cat only shows the code; typing the bare name only works for a script made executable (a later lesson)."
+          }
+        }
+      ]
+    },
+    {
+      "id": "args-errors",
+      "title": "Arguments, usage lines and tracebacks",
+      "before": "python-02-arguments",
+      "summary": "Tell a script which file to work on, and read what it says when something goes wrong.",
+      "blocks": [
+        {
+          "text": "Most useful scripts work on a file you name: `python3 count_residues.py inputs/target.fasta`. Everything after the script's name is an argument, passed to the script (inside it, they are in `sys.argv`). Paths work the same as for any command: relative to the folder you're in.\n\nIf you leave a required argument out, a well-written script prints a usage line and stops. Square brackets mean optional; plain words are what you must supply. Most scripts also answer `-h` with a short help page."
+        },
+        {
+          "example": {
+            "cmd": "python3 count_residues.py",
+            "out": "usage: count_residues.py [-h] fasta\ncount_residues.py: error: the following arguments are required: fasta",
+            "note": "It wants one thing after its name: a FASTA file."
+          }
+        },
+        {
+          "text": "When a script crashes, Python prints a traceback. Read it from the bottom up. The last line says what went wrong; the line above it shows the code that failed; above that is the file name and line number."
+        },
+        {
+          "example": {
+            "cmd": "python3 top_designs.py scores.csv",
+            "out": "Traceback (most recent call last):\n  File \"top_designs.py\", line 8, in <module>\n    rows.sort(key=lambda r: float(r[\"pLDDT\"]), reverse=True)\nKeyError: 'pLDDT'",
+            "note": "KeyError: the script looked up a column called `pLDDT`, and scores.csv doesn't have one. The fault is on line 8."
+          }
+        },
+        {
+          "flags": [
+            [
+              "FileNotFoundError",
+              "",
+              "A file or folder in the path doesn't exist. Check spelling and where you are."
+            ],
+            [
+              "ModuleNotFoundError",
+              "",
+              "This Python doesn't have a package the script imports. Wrong Python, or a missing environment."
+            ],
+            [
+              "KeyError / IndexError",
+              "",
+              "The script looked for something (a column, an item) that isn't in the data."
+            ],
+            [
+              "SyntaxError",
+              "",
+              "The code itself is broken, often from an edit."
+            ]
+          ]
+        },
+        {
+          "quiz": {
+            "q": "A traceback ends with `FileNotFoundError: [Errno 2] No such file or directory: 'inputs/targt.fasta'`. What is the likely fix?",
+            "options": [
+              "Reinstall Python",
+              "Fix the spelling of the file name",
+              "Run it with sudo",
+              "Use python instead of python3"
+            ],
+            "answer": 1,
+            "why": "The file it was told to open doesn't exist; 'targt' is a typo. ls inputs/ shows the real name."
+          }
+        }
+      ]
+    },
+    {
+      "id": "which-python",
+      "title": "Which Python? Packages and environments",
+      "before": "python-03-which-python",
+      "summary": "System python3 versus anaconda's Python, and why imports fail.",
+      "blocks": [
+        {
+          "text": "A script's `import` lines name the packages it needs: `import pandas`, `from Bio import SeqIO`. Each Python on the server has its own set of packages, and a script only works with a Python that has everything it imports.\n\nThe system `python3` (/usr/bin/python3) has only Python's standard library: csv, json, os, sys, math and friends. `module load anaconda` adds anaconda's Python, which also has numpy, pandas, matplotlib, scipy and Biopython (`Bio`). The design tools each have their own conda environment (`conda activate proteinmpnn`, `chai`, `rfd4`) with exactly what that tool needs."
+        },
+        {
+          "example": {
+            "cmd": "python3 gc_content.py genes.fasta",
+            "out": "Traceback (most recent call last):\n  File \"gc_content.py\", line 3, in <module>\n    from Bio import SeqIO\nModuleNotFoundError: No module named 'Bio'",
+            "note": "Nothing is wrong with the script. This Python just doesn't have Biopython."
+          }
+        },
+        {
+          "command": {
+            "name": "which",
+            "stands": "which program will run",
+            "syntax": "which python3   |   which python",
+            "what": "Shows the path of the Python a name points to: /usr/bin/python3 for the system one, /opt/conda/... for anaconda's or a conda environment's."
+          }
+        },
+        {
+          "try": {
+            "text": "`gc_content.py` needs Biopython. Run it, see it fail, load anaconda, and run it again.",
+            "cwd": "~/proj",
+            "files": {
+              "~/proj/gc_content.py": "\"\"\"GC content of every sequence in a FASTA file, with Biopython.\"\"\"\nimport sys\nfrom Bio import SeqIO\nfrom Bio.SeqUtils import gc_fraction\n\nfor record in SeqIO.parse(sys.argv[1], \"fasta\"):\n    print(f\"{record.id}\\t{len(record.seq)} bp\\tGC {gc_fraction(record.seq) * 100:.1f}%\")\n",
+              "~/proj/genes.fasta": ">g1\nATGGCTAGCAAGGAG\n"
+            },
+            "machines": {
+              "cluster": {
+                "cwd": "~/proj",
+                "files": {
+                  "~/proj/gc_content.py": "\"\"\"GC content of every sequence in a FASTA file, with Biopython.\"\"\"\nimport sys\nfrom Bio import SeqIO\nfrom Bio.SeqUtils import gc_fraction\n\nfor record in SeqIO.parse(sys.argv[1], \"fasta\"):\n    print(f\"{record.id}\\t{len(record.seq)} bp\\tGC {gc_fraction(record.seq) * 100:.1f}%\")\n",
+                  "~/proj/genes.fasta": ">g1\nATGGCTAGCAAGGAG\n"
+                },
+                "pythonRules": [
+                  {
+                    "match": "gc_content.py",
+                    "args": 1,
+                    "inputs": [
+                      1
+                    ],
+                    "out": "g1\t15 bp\tGC 53.3%\n"
+                  }
+                ]
+              }
+            },
+            "tasks": [
+              {
+                "text": "Run `python3 gc_content.py genes.fasta`",
+                "check": {
+                  "ran": "python3",
+                  "argHas": "gc_content.py"
+                }
+              },
+              {
+                "text": "Load anaconda",
+                "check": {
+                  "moduleLoaded": "anaconda"
+                }
+              },
+              {
+                "text": "Run the script again so it works",
+                "check": {
+                  "ran": [
+                    "python",
+                    "python3"
+                  ],
+                  "argHas": "gc_content.py",
+                  "ok": true
+                }
+              }
+            ],
+            "hint": "python3 gc_content.py genes.fasta, module load anaconda, python gc_content.py genes.fasta",
+            "solution": [
+              "python3 gc_content.py genes.fasta",
+              "module load anaconda",
+              "python gc_content.py genes.fasta"
+            ]
+          }
+        },
+        {
+          "warn": "You can't `pip install` into the system Python on a shared server, and you shouldn't need to. Load anaconda, or ask for a conda environment."
+        },
+        {
+          "quiz": {
+            "q": "A script fails with `ModuleNotFoundError: No module named 'pandas'`. What do you try first?",
+            "options": [
+              "Edit the script to remove the import",
+              "module load anaconda, then run it with python",
+              "sudo pip install pandas",
+              "Rename the script"
+            ],
+            "answer": 1,
+            "why": "pandas is there, just not in the system Python. anaconda's Python has it."
+          }
+        }
+      ]
+    },
+    {
+      "id": "scripts-programs",
+      "title": "Scripts as programs: ./, > and jobs",
+      "before": "python-04-save-output",
+      "summary": "Save output, run a script by its name, and run it as a Slurm job.",
+      "blocks": [
+        {
+          "text": "Everything you learned about commands works for scripts too. `python3 summarize.py scores.csv > summary.txt` saves what the script prints to a file instead of the screen (`>>` adds to the end). `python3 loop.py &` runs it in the background so you get your prompt back."
+        },
+        {
+          "text": "A script whose first line is `#!/usr/bin/env python3` (the \"shebang\") can run like any program, once it is marked executable: `chmod +x filter_plddt.py`, then `./filter_plddt.py scores.csv 80`. The `./` means \"the file in this folder\"."
+        },
+        {
+          "example": {
+            "cmd": "head -1 filter_plddt.py",
+            "out": "#!/usr/bin/env python3",
+            "note": "This line tells the system which Python to run the file with."
+          }
+        },
+        {
+          "text": "For anything long, run Python in a batch job like any other command. The job inherits the modules you loaded before `sbatch`, so load anaconda first if the script needs it:\n\n`sbatch --wrap=\"python analyze.py scores.csv\"`\n\nor put `module load anaconda` and the python line in a job script. What the script prints goes to `slurm-JOBID.out`."
+        },
+        {
+          "quiz": {
+            "q": "`./filter_plddt.py` gives `Permission denied`. Why?",
+            "options": [
+              "The script has a bug",
+              "The file isn't marked executable; chmod +x it",
+              "You need sudo",
+              "Python isn't installed"
+            ],
+            "answer": 1,
+            "why": "./NAME only runs files with the executable bit set. chmod +x filter_plddt.py fixes it (or run python3 filter_plddt.py)."
+          }
+        }
+      ]
+    }
+  ]
+}

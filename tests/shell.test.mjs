@@ -381,3 +381,23 @@ test('a looping python script started with & runs until killed', () => {
   sh.run(`kill ${pid}`);
   assert.doesNotMatch(text(sh.run('htop | cat')), /spin\.py/);
 });
+
+test('python scripts: arguments, imports, tracebacks and ./script.py', () => {
+  const sh = new Shell();
+  sh.vfs.writeFile('/home/student/hi.py', 'import sys\nprint("hi")\nprint(sys.argv[1])\n');
+  assert.equal(text(sh.run('python3 hi.py there')), 'hi\nthere\n');
+  assert.match(errors(sh.run('python3 hi.py')), /IndexError: list index out of range/);
+  assert.equal(text(sh.run('python3 -c "print(6*7)"')), '42\n');
+  sh.vfs.writeFile('/home/student/gc.py', '#!/usr/bin/env python3\nimport sys\nfrom Bio import SeqIO\n');
+  sh.cluster.pythonRules = [{ match: 'gc.py', args: 1, usage: 'usage: gc.py FASTA', inputs: [1], out: 'read $1\n' }];
+  assert.match(errors(sh.run('python3 gc.py a.fa')), /line 3, in <module>\n    from Bio import SeqIO\nModuleNotFoundError: No module named 'Bio'/);
+  assert.match(errors(sh.run('./gc.py')), /Permission denied/);
+  sh.run('chmod +x gc.py');
+  sh.run('module load anaconda');
+  assert.match(errors(sh.run('./gc.py')), /required: FASTA/);
+  assert.match(errors(sh.run('./gc.py a.fa')), /FileNotFoundError: \[Errno 2\] No such file or directory: 'a.fa'/);
+  sh.run('touch a.fa');
+  assert.equal(text(sh.run('./gc.py a.fa')), 'read a.fa\n');
+  sh.run('conda activate proteinmpnn');
+  assert.match(errors(sh.run('python gc.py a.fa')), /No module named 'Bio'/);
+});

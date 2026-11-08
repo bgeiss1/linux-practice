@@ -1,0 +1,75 @@
+{
+  "id": "python-03-which-python",
+  "track": "python",
+  "order": 3,
+  "tier": 2,
+  "title": "No module named Bio",
+  "story": "`gc_content.py` uses Biopython. The system's `python3` doesn't have it, but the anaconda module's Python does. Run the script on genes.fasta and report the GC content of {{gene}}.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "gene": [
+      "nsp5",
+      "nsp12",
+      "ns3",
+      "ns5"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/gc_content.py": "\"\"\"GC content of every sequence in a FASTA file, with Biopython.\"\"\"\nimport sys\nfrom Bio import SeqIO\nfrom Bio.SeqUtils import gc_fraction\n\nfor record in SeqIO.parse(sys.argv[1], \"fasta\"):\n    print(f\"{record.id}\\t{len(record.seq)} bp\\tGC {gc_fraction(record.seq) * 100:.1f}%\")\n",
+        "~/{{project}}/genes.fasta": ">{{gene}}\nATGGCTAGCAAGGAGATCGTTCTGAAAGCCGCTGGTGAGCTGAAAGCAGCCGTTGCGGAACTGAAGCAGCGT\n>ctrl\nATGAAACGCATTAGCACCACCATTACCACCACCATCACCATTACCACAGGTAACGGTGCGGGCTGA\n"
+      },
+      "pythonRules": [
+        {
+          "match": "gc_content.py",
+          "args": 1,
+          "usage": "usage: gc_content.py FASTA",
+          "inputs": [
+            1
+          ],
+          "out": "{{gene}}\t72 bp\tGC 55.6%\nctrl\t66 bp\tGC 51.5%\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run gc_content.py on genes.fasta",
+      "check": {
+        "ran": [
+          "python",
+          "python3"
+        ],
+        "argHas": "genes.fasta",
+        "ok": true
+      }
+    },
+    {
+      "text": "Type the GC content of {{gene}} (the number only)",
+      "check": {
+        "answer": "55.6"
+      }
+    }
+  ],
+  "hints": [
+    "The ModuleNotFoundError means this Python has no Biopython. `module load anaconda` gives you a Python that does; then run the script again.",
+    "module load anaconda, then python gc_content.py genes.fasta, then type 55.6."
+  ],
+  "solution": [
+    "python3 gc_content.py genes.fasta",
+    "module load anaconda",
+    "python gc_content.py genes.fasta",
+    {
+      "answer": "55.6"
+    }
+  ]
+}

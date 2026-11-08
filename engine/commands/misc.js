@@ -7,6 +7,7 @@ import { runRepoScript } from './tools.js';
 import { endInteractive } from './slurm.js';
 import { MODULES, REPO_SCRIPTS, repoScriptNamed, envForCommand, NODE } from '../cluster.js';
 import { HELP, MANUAL } from './help.js';
+import { runUserScript, runSnippet } from './python.js';
 
 export function help(ctx) {
   ctx.out(HELP);
@@ -105,6 +106,10 @@ export function python(ctx) {
     ctx.out('(practice site: there is no interactive Python here. Run a script: python SCRIPT.py)\n', 'dim');
     return 0;
   }
+  if (arg === '-c') {
+    if (ctx.args[1] === undefined) { ctx.err('Argument expected for the -c option\n'); return 2; }
+    return runSnippet(ctx, ctx.args[1], ctx.args.slice(2));
+  }
   const path = ctx.sh.resolve(arg);
   if (REPO_SCRIPTS[path]) return runRepoScript(ctx, path, ctx.args.slice(1));
   if (!ctx.sh.vfs.get(path)) {
@@ -119,8 +124,11 @@ export function python(ctx) {
     ctx.out(`(practice site: ${basename(arg)} loops forever. On a real server your prompt would not come back until you press Ctrl+C. Start it with & at the end to keep using the terminal, then find it with htop.)\n`, 'dim');
     return 0;
   }
-  ctx.out('(practice site: only the design tools run here; other Python scripts do nothing)\n', 'dim');
-  return 0;
+  if (ctx.sh.vfs.get(path).type === 'dir') {
+    ctx.err(`${ctx.name}: can't find '__main__' module in '${arg}'\n`);
+    return 1;
+  }
+  return runUserScript(ctx, path, arg, ctx.args.slice(1));
 }
 
 export function sudo(ctx) {
@@ -229,6 +237,23 @@ export function script(ctx, name) {
       return 127;
     }
     return runRepoScript(ctx, path, ctx.args);
+  }
+  const node = ctx.sh.vfs.get(path);
+  const shebang = node?.type === 'file' ? (node.content ?? '').match(/^#!\s*(?:\/usr\/bin\/env\s+|\S*\/)(python3?)\b/) : null;
+  if (shebang) {
+    // #!/usr/bin/env python3 at the top: the system hands the file to that Python.
+    if (!(node.mode & 0o100)) {
+      ctx.err(`bash: ${name}: Permission denied\n`);
+      ctx.coach('noexec', `The file isn't marked as runnable. Either run \`python3 ${name}\`, or make it executable with \`chmod +x ${name}\` first.`);
+      return 126;
+    }
+    const py = shebang[1];
+    if (py === 'python' && !ctx.sh.cluster.condaEnv && !ctx.sh.cluster.modules.includes('anaconda')) {
+      ctx.err("/usr/bin/env: 'python': No such file or directory\n");
+      ctx.coach('python-env', 'The first line asks for `python`, which only exists after `module load anaconda`. Load it, or change the first line to `#!/usr/bin/env python3`.');
+      return 127;
+    }
+    return python({ ...ctx, name: py, args: [name, ...ctx.args] });
   }
   return runScript(ctx, name, ctx.args, true);
 }

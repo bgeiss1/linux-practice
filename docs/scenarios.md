@@ -140,6 +140,33 @@ and conda environment active at submission, and with only the GPUs, memory and t
 for. Its output becomes the log, and it ends as COMPLETED, FAILED (last command failed),
 OUT_OF_MEMORY or TIMEOUT. mdrun saves a checkpoint before a TIMEOUT so `-cpi` can continue.
 
+#### Python scripts
+
+Students' own Python scripts don't really run. `python3 FILE.py` checks the script's imports
+against the Python that would run it (system `python3`: standard library only; after
+`module load anaconda`: numpy, pandas, matplotlib, scipy, Biopython; a conda environment: its own
+`packages` in engine/cluster.js) and prints a real-looking `ModuleNotFoundError` traceback
+if one is missing. A script that only prints string literals, numbers or `sys.argv[N]` prints for
+real. Anything else needs a `pythonRules` entry in `machines.cluster`:
+
+```json
+"pythonRules": [{
+  "match": "count_residues.py",
+  "args": 1, "usage": "usage: count_residues.py [-h] fasta", "help": "longer -h text",
+  "inputs": [1], "outDir": 2,
+  "out": "$1: 1 sequence(s), 226 residues\n",
+  "creates": { "$2/a.fasta": ">a\nMK\n" },
+  "error": { "line": 8, "type": "KeyError", "message": "'pLDDT'" }
+}]
+```
+
+Every key but `match` is optional. Too few arguments gives an argparse-style usage error;
+`inputs` are argument numbers that must be existing files (else `FileNotFoundError` pointing at
+the script's `open(` line); `outDir` must be an existing folder; `$1`, `$2` are the script's
+arguments; `error` makes it crash with a traceback at that line. A script starting with
+`#!/usr/bin/env python3` runs as `./script.py` once it is `chmod +x`. Rules also apply inside
+`liveJobs` batch jobs, so `sbatch --wrap="python script.py"` writes `out` to the log.
+
 #### Running processes
 
 `"processes"` in `machines.cluster` starts programs that are already running when the

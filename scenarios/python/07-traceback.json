@@ -1,0 +1,72 @@
+{
+  "id": "python-07-traceback",
+  "track": "python",
+  "order": 7,
+  "tier": 3,
+  "title": "Read the traceback",
+  "story": "`top_designs.py` crashes on scores.csv. Run it, read the traceback, and report the line number where it failed. (Hint for later: compare what the script looks for with the header of scores.csv.)",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "a": [
+      "d01",
+      "bnd_17",
+      "hlx_03",
+      "mb_22"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/top_designs.py": "\"\"\"Print the five best designs by confidence.\"\"\"\nimport csv\nimport sys\n\nwith open(sys.argv[1]) as handle:\n    rows = list(csv.DictReader(handle))\n\nrows.sort(key=lambda r: float(r[\"pLDDT\"]), reverse=True)\nfor r in rows[:5]:\n    print(r[\"name\"], r[\"pLDDT\"])\n",
+        "~/{{project}}/scores.csv": "name,plddt,round\n{{a}},91.2,1\nd02,78.5,1\nd03,84.0,1\nd04,62.3,2\nd05,88.7,2\nd06,73.9,2\n"
+      },
+      "pythonRules": [
+        {
+          "match": "top_designs.py",
+          "args": 1,
+          "usage": "usage: top_designs.py SCORES.csv",
+          "inputs": [
+            1
+          ],
+          "error": {
+            "line": 8,
+            "type": "KeyError",
+            "message": "'pLDDT'"
+          }
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run top_designs.py on scores.csv",
+      "check": {
+        "ran": "python3",
+        "argHas": "scores.csv"
+      }
+    },
+    {
+      "text": "Type the line number where it failed",
+      "check": {
+        "answer": "8"
+      }
+    }
+  ],
+  "hints": [
+    "Read a traceback from the bottom up: the last line is the error, and the line above names the file and line number."
+  ],
+  "solution": [
+    "python3 top_designs.py scores.csv",
+    {
+      "answer": "8"
+    }
+  ]
+}

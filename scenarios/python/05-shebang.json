@@ -1,0 +1,79 @@
+{
+  "id": "python-05-shebang",
+  "track": "python",
+  "order": 5,
+  "tier": 2,
+  "title": "Run it like a program",
+  "story": "`filter_plddt.py` starts with `#!/usr/bin/env python3`, so it can run on its own as `./filter_plddt.py`. Make it runnable, then use it to keep the designs in scores.csv with pLDDT of at least 85.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "a": [
+      "d01",
+      "bnd_17",
+      "hlx_03",
+      "mb_22"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/filter_plddt.py": "#!/usr/bin/env python3\n\"\"\"Keep designs whose pLDDT is at or above a cutoff. Writes passing.txt.\"\"\"\nimport csv\nimport sys\n\nscores_file, cutoff = sys.argv[1], float(sys.argv[2])\nwith open(scores_file) as handle:\n    keep = [r[\"name\"] for r in csv.DictReader(handle) if float(r[\"plddt\"]) >= cutoff]\n\nwith open(\"passing.txt\", \"w\") as out:\n    out.write(\"\\n\".join(keep) + \"\\n\")\nprint(f\"{len(keep)} designs at or above {cutoff:g}; names written to passing.txt\")\n",
+        "~/{{project}}/scores.csv": "name,plddt,round\n{{a}},91.2,1\nd02,78.5,1\nd03,84.0,1\nd04,62.3,2\nd05,88.7,2\nd06,73.9,2\n"
+      },
+      "pythonRules": [
+        {
+          "match": "filter_plddt.py",
+          "args": 2,
+          "usage": "usage: filter_plddt.py SCORES.csv CUTOFF",
+          "inputs": [
+            1
+          ],
+          "out": "2 designs at or above $2; names written to passing.txt\n",
+          "creates": {
+            "passing.txt": "{{a}}\nd05\n"
+          }
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Make filter_plddt.py executable",
+      "check": {
+        "executable": "~/{{project}}/filter_plddt.py"
+      }
+    },
+    {
+      "text": "Run it as ./filter_plddt.py with scores.csv and 85",
+      "check": {
+        "all": [
+          {
+            "ran": "./filter_plddt.py",
+            "argHas": "85",
+            "ok": true
+          },
+          {
+            "exists": "~/{{project}}/passing.txt"
+          }
+        ]
+      }
+    }
+  ],
+  "hints": [
+    "`chmod +x FILE` makes a file runnable. Then run it with ./ in front of its name, followed by its two arguments.",
+    "chmod +x filter_plddt.py, then ./filter_plddt.py scores.csv 85"
+  ],
+  "solution": [
+    "./filter_plddt.py scores.csv 85",
+    "chmod +x filter_plddt.py",
+    "./filter_plddt.py scores.csv 85"
+  ]
+}

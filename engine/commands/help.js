@@ -9,6 +9,8 @@ export const HELP = `Commands on this practice server (try "man NAME" for detail
   Reading           cat  less  head [-n N]  tail [-n N]  wc [-l]  sort  uniq  cut  diff
   Scripts           bash SCRIPT   ./SCRIPT   echo   >  >>  2>  |  &&   NAME=value   $(command)
                     for f in *.pdb; do echo $f; done   basename   nano FILE
+  Python            python3 SCRIPT.py [ARGS]   python3 -h   ./SCRIPT.py (after chmod +x)
+                    python SCRIPT.py (after module load anaconda: numpy, pandas, Biopython)
   Software          module avail | list | load NAME | purge
                     conda env list | activate NAME | deactivate
   GPUs and jobs     sinfo  nvidia-smi  sbatch SCRIPT  squeue --me  scancel ID
@@ -109,6 +111,11 @@ Finished jobs leave the queue; use sacct to see them.`),
   sinfo: page('sinfo - partitions and nodes', 'sinfo [-o "%P %G"]', 'Geiss-01 has two partitions: gpu (2 days) and short (1 hour). -o "%P %G" also shows the GPUs (GRES).'),
   srun: page('srun - run inside a Slurm allocation', 'srun [OPTIONS] COMMAND', `srun --gres=gpu:1 --pty bash   interactive shell with one GPU
 exit                            leave and give the GPU back`),
+  python3: page('python3 - run a Python script', 'python3 SCRIPT.py [ARGUMENTS...]   python3 -c "CODE"   python3 --version', `python3 is the system Python: the standard library only.
+module load anaconda gives python (and python3) with numpy, pandas,
+matplotlib, scipy and Biopython. Design tools have their own conda environments.
+A traceback is read from the bottom up: the error, then the line that failed.`),
+  python: page('python - run a Python script', 'python SCRIPT.py [ARGUMENTS...]', 'Exists after "module load anaconda" or "conda activate NAME". See "man python3".'),
   ps: page('ps - list running processes', 'ps | ps -u USER | ps ux | ps aux | ps -ef | ps -p PID', `ps          processes started from this terminal
 ps -u NAME  every process that NAME owns
 ps ux       all of your processes, with CPU and memory

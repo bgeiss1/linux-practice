@@ -1,0 +1,75 @@
+{
+  "id": "python-02-arguments",
+  "track": "python",
+  "order": 2,
+  "tier": 1,
+  "title": "Give it a file",
+  "story": "`count_residues.py` counts the residues in a FASTA file, but it needs to be told which file. Run it once with no file to see what it asks for, then run it on inputs/target.fasta and report the number of residues.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "files": {
+        "~/{{project}}/count_residues.py": "#!/usr/bin/env python3\n\"\"\"Count the residues in each sequence of a FASTA file.\"\"\"\nimport argparse\n\nparser = argparse.ArgumentParser(description=\"Count residues in a FASTA file\")\nparser.add_argument(\"fasta\", help=\"the FASTA file to read\")\nargs = parser.parse_args()\n\ncounts = {}\nname = None\nwith open(args.fasta) as handle:\n    for line in handle:\n        line = line.strip()\n        if line.startswith(\">\"):\n            name = line[1:]\n            counts[name] = 0\n        elif name:\n            counts[name] += len(line)\n\ntotal = sum(counts.values())\nprint(f\"{args.fasta}: {len(counts)} sequence(s), {total} residues\")\n",
+        "~/{{project}}/inputs/target.fasta": ">target\nMKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHSLAKWKRQTLGQHDFSAGEGLYTHMKALRPDEDRLSPLHSVYVDQWDWERVMGDGERQFSTLKSTVEAIWAGIKATEAAVSEEFGLAPFLPDQIHFVHSQELLSRYPDLDAKGRERAIAKDLGAVFLVGIGGKLSDGHRHDVRAPDYDDWAVGLG\n"
+      },
+      "pythonRules": [
+        {
+          "match": "count_residues.py",
+          "args": 1,
+          "usage": "usage: count_residues.py [-h] fasta",
+          "help": "Count residues in a FASTA file\n\npositional arguments:\n  fasta       the FASTA file to read\n\noptions:\n  -h, --help  show this help message and exit",
+          "inputs": [
+            1
+          ],
+          "out": "$1: 1 sequence(s), 226 residues\n"
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Run count_residues.py without a file and read its usage line",
+      "check": {
+        "ran": "python3",
+        "argHas": "count_residues.py",
+        "ok": false
+      }
+    },
+    {
+      "text": "Run it on inputs/target.fasta",
+      "check": {
+        "ran": "python3",
+        "argHas": "target.fasta",
+        "ok": true
+      }
+    },
+    {
+      "text": "Type the number of residues in the answer box",
+      "check": {
+        "answer": "226"
+      }
+    }
+  ],
+  "hints": [
+    "`python3 count_residues.py` on its own prints a usage line. The word after the script name is what it wants.",
+    "Put the file after the script name: python3 count_residues.py inputs/target.fasta",
+    "python3 count_residues.py, then python3 count_residues.py inputs/target.fasta, then type 226."
+  ],
+  "solution": [
+    "python3 count_residues.py",
+    "python3 count_residues.py inputs/target.fasta",
+    {
+      "answer": "226"
+    }
+  ]
+}
