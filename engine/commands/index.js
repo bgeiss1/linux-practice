@@ -6,6 +6,7 @@ import * as slurm from './slurm.js';
 import * as misc from './misc.js';
 import * as archive from './archive.js';
 import * as transfer from './transfer.js';
+import * as procs from './procs.js';
 
 export const COMMANDS = {
   // files and folders
@@ -49,6 +50,13 @@ export const COMMANDS = {
   sinfo: slurm.sinfo,
   srun: slurm.srun,
   'nvidia-smi': slurm.nvidiaSmi,
+  // running programs (processes), which are not the same as Slurm jobs
+  ps: procs.ps,
+  top: procs.top,
+  htop: procs.htop,
+  kill: procs.kill,
+  pkill: procs.pkill,
+  pgrep: procs.pgrep,
   // everything else
   help: misc.help,
   man: misc.man,

@@ -140,6 +140,25 @@ and conda environment active at submission, and with only the GPUs, memory and t
 for. Its output becomes the log, and it ends as COMPLETED, FAILED (last command failed),
 OUT_OF_MEMORY or TIMEOUT. mdrun saves a checkpoint before a TIMEOUT so `-cpi` can continue.
 
+#### Running processes
+
+`"processes"` in `machines.cluster` starts programs that are already running when the
+scenario opens, for `htop`, `ps` and `kill` practice:
+
+```json
+"processes": [
+  { "pid": "{{pid}}", "command": "python train_loop.py", "cpu": 99.8, "memGB": 6, "ignoresTerm": true },
+  { "pid": 29874, "user": "mlee", "command": "python plot_scores.py", "cpu": 97 }
+]
+```
+
+Every key but `command` is optional. `user` defaults to the student (anyone else's process
+can't be killed: "Operation not permitted"). `ignoresTerm` makes a plain `kill` do nothing, so
+it takes `kill -9`. `tty` defaults to `"?"` (started from a terminal that has since closed), so
+plain `ps` doesn't list it but `ps ux`, `ps -u student` and `htop` do. `startStep` is how many
+minutes ago it started, as a negative number. The list also holds the system daemons, a
+process for every running Slurm job, the student's login shell, and anything they start with `&`.
+
 #### Binary files
 
 `{ "binary": "what it is", "meta": { ... } }` makes a binary file such as a GROMACS .tpr or
@@ -188,6 +207,7 @@ Tasks complete in order and stay complete. Pick checks that look at the outcome.
 | `{ "inInteractiveJob": 1 }`, `{ "inInteractiveJob": { "gpus": 2, "memGB": 64 } }`, `{ "notInInteractiveJob": true }` | inside an `srun --pty` job with at least that much, or not |
 | `{ "jobSubmitted": { "name": "mpnn", "gpus": 1, "memGB": 32, "timeMin": 60, "partition": "gpu", "array": 4, "dependency": true, "after": "rfd" } }` | the student submitted a batch job like that (every key optional; numbers are minimums; `after` names the job it waits for) |
 | `{ "jobState": { "name": "mpnn", "state": "CD" } }` | same keys, plus the state: PD, R, CD, F, TO, OOM, CA |
+| `{ "processGone": "score.py" }`, `{ "processRunning": "score.py" }` | none / at least one of the student's processes has that text in its command line; `{ "processRunning": { "match": "plot.py", "user": "mlee" } }` looks at someone else's |
 | `{ "archiveHas": { "path": p, "names": ["run/a.pdb"], "gz": true, "only": false } }` | p is a tar archive holding those files |
 | `{ "isCompressed": path }`, `{ "modeIs": { "path": p, "mode": "755" } }` | gzip'd file; exact permissions |
 | `{ "laptop": { ...any check... } }` | the check passes on the laptop instead (`~` = /Users/student there) |

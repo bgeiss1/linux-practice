@@ -59,7 +59,7 @@ export const envForCommand = (name) => Object.keys(CONDA_ENVS).find((env) => CON
 const MINUTE = 60_000;
 
 export class Cluster {
-  constructor({ user = 'student', now = Date.now(), modules = [], conda = null, jobs = [], gpusBusy = 2, jobRules = [], liveJobs = false } = {}) {
+  constructor({ user = 'student', now = Date.now(), modules = [], conda = null, jobs = [], gpusBusy = 2, jobRules = [], liveJobs = false, processes = [] } = {}) {
     // jobRules let a scenario decide how a submitted script behaves, e.g.
     // { "match": "run_mpnn.sh", "needsGpu": true, "needsTimeMin": 90, "creates": ["outputs/seqs.fa"] }
     this.jobRules = jobRules;
@@ -75,6 +75,21 @@ export class Cluster {
     this.jobs = [];
     this.background = [];
     this.interactive = null; // an srun session: { jobId, gpus }
+    // Processes a scenario starts, e.g. a stuck script left running yesterday:
+    // { "command": "python score.py", "pid": 31877, "cpu": 99.8, "memGB": 22, "ignoresTerm": true }
+    // A process with no terminal (tty "?") only shows in ps -u / ps ux / htop.
+    this.procs = processes.map((p, i) => ({
+      pid: Number(p.pid ?? 32051 + i * 113),
+      user: p.user ?? user,
+      command: p.command,
+      cpu: Number(p.cpu ?? 0),
+      memGB: Number(p.memGB ?? 0.2),
+      state: p.state ?? (Number(p.cpu ?? 0) > 5 ? 'R' : 'S'),
+      tty: p.tty ?? '?',
+      ignoresTerm: !!p.ignoresTerm,
+      startStep: Number(p.startStep ?? -900),
+      gone: null,
+    }));
     // Other people's jobs keep some GPUs busy so the queue looks real.
     const others = [
       { user: 'ahernandez', name: 'rfdiff', gpus: 1, memGB: 16 },
@@ -162,8 +177,62 @@ export class Cluster {
 
   startBackground(name, args) {
     const pid = 31000 + this.background.length * 7 + this.step;
-    this.background.push({ pid, command: [name, ...args].join(' '), doneStep: this.step + 3 });
+    // Time moves one minute per command, so `sleep 600 &` runs for ten commands.
+    const secs = name === 'sleep' ? parseFloat(args[0]) : NaN;
+    const steps = Number.isFinite(secs) ? Math.max(1, Math.ceil(secs / 60)) : 3;
+    this.background.push({ pid, command: [name, ...args].join(' '), startStep: this.step, doneStep: this.step + steps, signal: null });
     return pid;
+  }
+
+  // Every process on the machine right now, as ps, top and htop see it.
+  // laptop: only the student's own shell and what they started.
+  processList({ laptop = false } = {}) {
+    const me = this.user;
+    const list = [];
+    const add = (p) => list.push({ ppid: 1, tty: '?', state: 'S', cpu: 0, memGB: 0.01, startStep: -17_000, ...p });
+    if (!laptop) {
+      add({ pid: 1, user: 'root', command: '/sbin/init splash', comm: 'systemd', memGB: 0.01 });
+      add({ pid: 812, user: 'root', command: 'sshd: /usr/sbin/sshd -D [listener]', comm: 'sshd' });
+      add({ pid: 1033, user: 'munge', command: '/usr/sbin/munged', comm: 'munged' });
+      add({ pid: 1104, user: 'slurm', command: '/usr/sbin/slurmctld --systemd', comm: 'slurmctld', cpu: 0.3, memGB: 0.2 });
+      add({ pid: 1121, user: 'root', command: '/usr/sbin/slurmd --systemd', comm: 'slurmd', cpu: 0.1, memGB: 0.05 });
+      add({ pid: 1188, user: 'root', command: '/usr/bin/nvidia-persistenced --verbose', comm: 'nvidia-persistenced' });
+      const PROGRAMS = {
+        rfdiff: ['python run_inference.py inference.num_designs=200', 98.7],
+        af2_screen: ['python run_alphafold.py --fasta_paths=screen.fasta', 101.2],
+        colabfold: ['colabfold_batch batch.fasta out/', 187.5],
+        relax: ['relax.linuxgccrelease -s design.pdb -nstruct 50', 99.9],
+        gmx_md: ['gmx mdrun -deffnm md -nb gpu', 391.4],
+        chai_fold: ['chai-lab fold complex.fasta out/', 96.3],
+      };
+      for (const job of this.jobs) {
+        if (job.state !== 'R' || job.interactive) continue;
+        const base = 20_000 + ((Number(String(job.id).split('_')[0]) * 37 + (String(job.id).split('_')[1] ?? 0) * 11) % 9_000);
+        add({ pid: base, ppid: 1121, user: 'root', command: `slurmstepd: [${job.id}.batch]`, comm: 'slurmstepd', memGB: 0.01, startStep: job.startStep });
+        if (job.user === me) {
+          add({ pid: base + 3, ppid: base, user: me, command: `/bin/bash /var/spool/slurmd/job${job.id}/slurm_script`, comm: 'slurm_script', state: 'R', cpu: 97.6, memGB: Math.min(job.memGB, job.memUsedGB ?? 3.1), startStep: job.startStep, jobId: job.id });
+        } else {
+          const [command, cpu] = PROGRAMS[job.name] ?? [`python ${job.name}.py`, 99.1];
+          add({ pid: base + 3, ppid: base, user: job.user, command, state: 'R', cpu, memGB: job.memGB * 0.62, startStep: job.startStep, jobId: job.id });
+        }
+      }
+    }
+    add({ pid: 30408, user: me, command: `sshd: ${me}@pts/0`, comm: 'sshd', ppid: 812, startStep: -2 });
+    add({ pid: 30412, user: me, command: '-bash', comm: 'bash', ppid: 30408, tty: 'pts/0', memGB: 0.005, startStep: -2, login: true });
+    if (this.interactive && !this.interactive.batch) {
+      const id = this.interactive.jobId;
+      const srun = 33_000 + (Number(id) % 1_000) * 3;
+      const job = this.jobs.find((j) => j.id === id);
+      add({ pid: srun, ppid: 30412, user: me, command: `srun --gres=gpu:${this.interactive.gpus} --pty bash`, comm: 'srun', tty: 'pts/0', startStep: job?.startStep ?? 0, interactive: true });
+      add({ pid: srun + 9, ppid: srun, user: me, command: '/bin/bash', comm: 'bash', tty: 'pts/1', startStep: job?.startStep ?? 0, interactive: true });
+    }
+    this.background.forEach((b, i) => {
+      if (b.signal || this.step >= b.doneStep) return;
+      const busy = !b.command.startsWith('sleep');
+      add({ pid: b.pid, ppid: 30412, user: me, command: b.command, tty: 'pts/0', state: busy ? 'R' : 'S', cpu: busy ? 99.5 : 0, memGB: busy ? 1.4 : 0.001, startStep: b.startStep ?? this.step, jobSpec: i + 1 });
+    });
+    for (const p of this.procs) if (!p.gone) add({ ...p, ppid: 1, proc: p });
+    return list.sort((a, b) => a.pid - b.pid);
   }
 
   // Advance simulated time by one step after every command.

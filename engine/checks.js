@@ -55,6 +55,12 @@ const CHECKS = {
   isCompressed: (sh, v) => !!sh.vfs.get(norm(sh, v))?.gz,
   modeIs: (sh, v) => (sh.vfs.get(norm(sh, v.path))?.mode & 0o777) === parseInt(v.mode, 8),
 
+  // One of the student's processes whose command line contains this text is
+  // (not) running: { "processGone": "score_designs.py" }. To look at someone
+  // else's: { "processRunning": { "match": "plot.py", "user": "mlee" } }.
+  processGone: (sh, v) => !findProcess(sh, v),
+  processRunning: (sh, v) => findProcess(sh, v),
+
   moduleLoaded: (sh, v) => sh.cluster.modules.includes(v),
   condaEnv: (sh, v) => sh.cluster.condaEnv === v,
   // true, a GPU count, or { "gpus": 2, "memGB": 64, "timeMin": 180 } (at least that much of each).
@@ -97,6 +103,11 @@ const CHECKS = {
   any: (sh, v, ctx) => v.some((c) => evaluate(c, sh, ctx)),
   not: (sh, v, ctx) => !evaluate(v, sh, ctx),
 };
+
+function findProcess(sh, v) {
+  const { match, user } = typeof v === 'string' ? { match: v, user: sh.user } : { user: sh.user, ...v };
+  return sh.cluster.processList().some((p) => p.user === user && p.command.includes(match));
+}
 
 function matchJob(sh, j, v) {
   if (j.user !== sh.user || j.interactive) return false;

@@ -1,7 +1,7 @@
 {
   "id": "slurm-08-oom",
   "track": "slurm",
-  "order": 8,
+  "order": 11,
   "tier": 3,
   "title": "Killed for memory",
   "story": "relax_all.sh keeps dying a few minutes in. Submit it, work out what went wrong, fix it, and get a run that completes.",

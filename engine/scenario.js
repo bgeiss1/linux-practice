@@ -16,7 +16,7 @@ export const TIERS = {
 };
 
 // Coach messages that explain something rather than react to a mistake.
-const INFO_COACH = new Set(['sbatch-ok', 'cat-sbatch', 'less', 'tail-f', 'srun-in', 'exit-job', 'exit', 'smi-host', 'cut-d', 'editor-nano']);
+const INFO_COACH = new Set(['sbatch-ok', 'cat-sbatch', 'less', 'tail-f', 'srun-in', 'exit-job', 'exit', 'smi-host', 'cut-d', 'editor-nano', 'htop']);
 
 export function rng(seed) {
   let a = seed >>> 0;
@@ -169,6 +169,7 @@ export class Session {
       gpusBusy: Number(machine.gpusBusy ?? 2),
       jobRules: machine.jobRules ?? [],
       liveJobs: !!machine.liveJobs,
+      processes: (machine.processes ?? []).map((p) => ({ ...p, pid: p.pid === undefined ? undefined : Number(p.pid) })),
     });
     this.shell = new Shell({ vfs, user, cwd: vfs.resolve(machine.cwd ?? '~', home, home), cluster });
     this.machines = { cluster: this.shell };

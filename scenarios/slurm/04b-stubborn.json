@@ -1,0 +1,69 @@
+{
+  "id": "slurm-04b-stubborn",
+  "track": "slurm",
+  "order": 6,
+  "tier": 2,
+  "title": "It won't stop",
+  "story": "You tested `train_loop.py` outside Slurm and left it running. It catches the polite stop signal that plain `kill` sends, prints nothing, and carries on. Find it and make sure it is really gone. (Plain `ps` won't list it, because you started it from a terminal you have since closed.)",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "pid": [
+      32203,
+      33718,
+      34066,
+      35501,
+      36912,
+      37345
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "gpusBusy": 3,
+      "processes": [
+        {
+          "pid": "{{pid}}",
+          "command": "python train_loop.py --epochs 1000",
+          "cpu": 100.3,
+          "memGB": 6.2,
+          "ignoresTerm": true,
+          "startStep": -300
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Find the PID of train_loop.py and type it in the answer box",
+      "check": {
+        "answer": "{{pid}}"
+      }
+    },
+    {
+      "text": "Stop train_loop.py for good",
+      "check": {
+        "processGone": "train_loop.py"
+      }
+    }
+  ],
+  "hints": [
+    "`ps ux` (or `htop`) lists all of your processes. After `kill PID`, look again: if it is still listed, `kill -9 PID` forces it.",
+    "Answer {{pid}}, then `kill -9 {{pid}}`."
+  ],
+  "solution": [
+    "ps ux",
+    {
+      "answer": "{{pid}}"
+    },
+    "kill {{pid}}",
+    "ps ux",
+    "kill -9 {{pid}}"
+  ]
+}

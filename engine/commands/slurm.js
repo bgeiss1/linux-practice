@@ -380,7 +380,13 @@ export function scancel(ctx) {
     if (!rest.length) { ctx.err('scancel: error: No job identification provided\n'); return 1; }
     for (const id of rest) {
       const found = cluster.jobs.filter((j) => String(j.id) === id || String(j.id).startsWith(id + '_'));
-      if (!found.length) { ctx.err(`scancel: error: Invalid job id ${id}\n`); return 1; }
+      if (!found.length) {
+        ctx.err(`scancel: error: Invalid job id ${id}\n`);
+        if (cluster.processList().some((p) => String(p.pid) === id)) {
+          ctx.coach('scancel-pid', `${id} is a process ID (PID), not a Slurm job ID. Stop a process with \`kill ${id}\`. \`scancel\` takes the JOBID from \`squeue --me\`.`);
+        }
+        return 1;
+      }
       targets.push(...found);
     }
   }

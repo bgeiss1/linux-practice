@@ -1,7 +1,7 @@
 {
   "id": "slurm-07-timeout",
   "track": "slurm",
-  "order": 7,
+  "order": 10,
   "tier": 2,
   "title": "Out of time",
   "story": "Last night's AlphaFold job, af2_screen, died before it finished. Its log is slurm-{{jid}}.out. Find out why, fix fold.sh, and resubmit it so it completes.",

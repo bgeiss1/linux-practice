@@ -87,7 +87,7 @@ function locate(name, cluster) {
   return COMMANDS_ON_PATH.has(name) ? `/usr/bin/${name}` : null;
 }
 
-const COMMANDS_ON_PATH = new Set(['ls', 'cat', 'grep', 'find', 'sort', 'head', 'tail', 'wc', 'cut', 'uniq', 'diff', 'cp', 'mv', 'rm', 'mkdir', 'rmdir', 'touch', 'chmod', 'less', 'more', 'sbatch', 'squeue', 'scancel', 'sacct', 'sinfo', 'srun', 'seff', 'nvidia-smi', 'bash', 'ssh', 'scp', 'date', 'hostname', 'whoami', 'which', 'man']);
+const COMMANDS_ON_PATH = new Set(['ls', 'cat', 'grep', 'find', 'sort', 'head', 'tail', 'wc', 'cut', 'uniq', 'diff', 'cp', 'mv', 'rm', 'mkdir', 'rmdir', 'touch', 'chmod', 'less', 'more', 'sbatch', 'squeue', 'scancel', 'sacct', 'sinfo', 'srun', 'seff', 'nvidia-smi', 'bash', 'ssh', 'scp', 'date', 'hostname', 'whoami', 'which', 'man', 'ps', 'top', 'htop', 'kill', 'pkill', 'pgrep']);
 
 export function python(ctx) {
   const { cluster } = ctx.sh;
@@ -187,8 +187,8 @@ export const falseCmd = () => 1;
 export function jobs(ctx) {
   const { cluster } = ctx.sh;
   cluster.background.forEach((b, i) => {
-    const done = cluster.step >= b.doneStep;
-    ctx.out(`[${i + 1}]${i === cluster.background.length - 1 ? '+' : '-'}  ${done ? 'Done   ' : 'Running'}                 ${b.command}\n`);
+    const state = b.signal ?? (cluster.step >= b.doneStep ? 'Done' : 'Running');
+    ctx.out(`[${i + 1}]${i === cluster.background.length - 1 ? '+' : '-'}  ${state.padEnd(24)}${b.command}\n`);
   });
 }
 

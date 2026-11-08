@@ -1,7 +1,7 @@
 {
   "id": "slurm-11-partition",
   "track": "slurm",
-  "order": 11,
+  "order": 14,
   "tier": 4,
   "title": "Stuck in the queue",
   "story": "Your job {{jname}} has been pending for an hour while GPUs sit free. Find out why, and get it running.",

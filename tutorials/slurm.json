@@ -373,6 +373,137 @@
       ]
     },
     {
+      "id": "processes",
+      "title": "Running programs: htop, ps and kill",
+      "before": "slurm-04a-runaway",
+      "summary": "See what is running on the server, and stop a program that isn't a Slurm job.",
+      "blocks": [
+        {
+          "text": "Every program running on Geiss-01 is a process: your login shell, a Python script, each program inside a Slurm job. The system gives every process a number, its PID (process ID). Slurm jobs have a different number, the JOBID.\n\nTwo numbers, two tools. A Slurm job is stopped with `scancel JOBID`, which stops everything in the job and gives its GPUs and memory back. A program you ran yourself, straight from the command line (for example `python score.py &`, or something you left running and forgot), is not a Slurm job. squeue doesn't list it and scancel can't touch it. You find it with `htop` or `ps` and stop it with `kill PID`."
+        },
+        {
+          "command": {
+            "name": "htop",
+            "stands": "an improved top",
+            "syntax": "htop   |   htop -u USER",
+            "what": "A live table of processes, busiest first, under bars for CPU and memory. The columns that matter: PID, USER (whose process it is), CPU%, MEM%, and Command. Press q to quit. `top` is the older version and is on every Linux machine."
+          }
+        },
+        {
+          "command": {
+            "name": "ps",
+            "stands": "process status",
+            "syntax": "ps   |   ps ux   |   ps aux | grep python",
+            "what": "Prints the process list once. Plain `ps` shows only what you started from this terminal. `ps ux` shows all of your processes, and `ps aux` shows everyone's, which is handy with `grep`."
+          }
+        },
+        {
+          "example": {
+            "cmd": "ps ux",
+            "out": "USER         PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND\nstudent    30408  0.0  0.0  21059 10486 ?        S    14:42   0:00 sshd: student@pts/0\nstudent    30412  0.0  0.0  15029  5243 pts/0    Ss   14:42   0:00 -bash\nstudent    32410 99.8  6.1 14003421 12163481 ?   R    Nov06 1097:12 python score_designs.py\nstudent    40006  0.0  0.0  13823  4194 pts/0    R    14:46   0:00 ps ux",
+            "note": "The python row is the problem: 99.8% CPU since yesterday. Its PID is 32410. `-bash` is your own login shell; leave it alone."
+          }
+        },
+        {
+          "command": {
+            "name": "kill",
+            "stands": "send a signal to a process",
+            "syntax": "kill PID   |   kill -9 PID   |   kill %1",
+            "what": "Plain `kill` asks the program to stop (the TERM signal), so it can save and clean up. If the program ignores that and is still listed, `kill -9` forces it to stop at once. `kill %1` stops background job 1 from `jobs`."
+          }
+        },
+        {
+          "flags": [
+            [
+              "(none)",
+              "TERM, signal 15",
+              "Asks politely. Try this first."
+            ],
+            [
+              "-9",
+              "KILL",
+              "Forces it. The program can't save anything, so use it only when plain kill didn't work."
+            ],
+            [
+              "%1",
+              "job 1",
+              "The first background job that `jobs` lists, instead of a PID."
+            ]
+          ]
+        },
+        {
+          "try": {
+            "text": "Start a program in the background, find it, and stop it.",
+            "cwd": "~",
+            "tasks": [
+              {
+                "text": "Run `sleep 600 &` (a program that waits ten minutes)",
+                "check": {
+                  "processRunning": "sleep 600"
+                }
+              },
+              {
+                "text": "Find its PID with `ps` or `jobs`",
+                "check": {
+                  "ran": [
+                    "ps",
+                    "jobs",
+                    "htop",
+                    "top",
+                    "pgrep"
+                  ]
+                }
+              },
+              {
+                "text": "Stop it with kill",
+                "check": {
+                  "processGone": "sleep 600"
+                }
+              }
+            ],
+            "hint": "sleep 600 &, then ps, then kill PID (or kill %1)",
+            "solution": [
+              "sleep 600 &",
+              "ps",
+              "kill %1"
+            ]
+          }
+        },
+        {
+          "warn": "You can only kill your own processes; anyone else's gives \"Operation not permitted\". Check the USER column before you kill. And if a program belongs to a Slurm job, use scancel, not kill: killing the job's processes just makes the job fail."
+        },
+        {
+          "tip": "`pgrep -a python` lists your Python processes with their PIDs, and `pkill -f score.py` kills by name. Run the pgrep version first so you know exactly what pkill will hit."
+        },
+        {
+          "quiz": {
+            "q": "squeue --me shows your job 48213 running, and you want it stopped. What do you type?",
+            "options": [
+              "kill 48213",
+              "scancel 48213",
+              "kill -9 48213",
+              "pkill 48213"
+            ],
+            "answer": 1,
+            "why": "48213 is a Slurm JOBID, so scancel is the tool. kill takes a PID, which is a different number."
+          }
+        },
+        {
+          "quiz": {
+            "q": "You ran `python plot.py &` on Geiss-01 without Slurm, and it hung. How do you stop it?",
+            "options": [
+              "scancel with its number",
+              "Find its PID with ps or htop, then kill PID",
+              "Log out and hope",
+              "Ask Slurm with squeue"
+            ],
+            "answer": 1,
+            "why": "It isn't a Slurm job, so squeue and scancel don't know about it. Find the PID and kill it; use kill -9 only if plain kill doesn't work."
+          }
+        }
+      ]
+    },
+    {
       "id": "failures",
       "title": "Why jobs fail",
       "before": "slurm-05-no-gpu",

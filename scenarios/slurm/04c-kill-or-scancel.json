@@ -1,0 +1,98 @@
+{
+  "id": "slurm-04c-kill-or-scancel",
+  "track": "slurm",
+  "order": 7,
+  "tier": 3,
+  "title": "Process or Slurm job?",
+  "story": "Before the weekend, clean up two things of yours. Your Slurm job {{job}} is still running and holding a GPU. And `plot_scores.py`, which you ran straight from the command line, is still going. Each one needs a different command. mlee is running a plot_scores.py too; leave theirs alone.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "job": [
+      "rfd_scan",
+      "af2_batch",
+      "mpnn_big",
+      "chai_set"
+    ],
+    "jid": [
+      50317,
+      50842,
+      51466,
+      51923
+    ],
+    "pid": [
+      33141,
+      34287,
+      35720,
+      36654
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "gpusBusy": 3,
+      "jobs": [
+        {
+          "id": "{{jid}}",
+          "name": "{{job}}",
+          "gpus": 1,
+          "memGB": 32,
+          "state": "R",
+          "startStep": -40,
+          "runSteps": 100000,
+          "timeMin": 1440,
+          "memUsedGB": 18.4
+        }
+      ],
+      "processes": [
+        {
+          "pid": "{{pid}}",
+          "command": "python plot_scores.py scores.csv",
+          "cpu": 98.9,
+          "memGB": 3.8,
+          "startStep": -200
+        },
+        {
+          "pid": 29874,
+          "user": "mlee",
+          "command": "python plot_scores.py mlee_scores.csv",
+          "cpu": 97.1,
+          "memGB": 4.1,
+          "startStep": -90
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Stop the Slurm job {{job}}",
+      "check": {
+        "jobState": {
+          "name": "{{job}}",
+          "state": "CA"
+        }
+      }
+    },
+    {
+      "text": "Stop your plot_scores.py",
+      "check": {
+        "processGone": "plot_scores.py"
+      }
+    }
+  ],
+  "hints": [
+    "Slurm jobs: `squeue --me`, then `scancel JOBID`. Processes you started yourself: find the PID with `ps ux` or `htop` (check the USER column), then `kill PID`."
+  ],
+  "solution": [
+    "squeue --me",
+    "scancel {{jid}}",
+    "ps ux",
+    "kill {{pid}}"
+  ]
+}

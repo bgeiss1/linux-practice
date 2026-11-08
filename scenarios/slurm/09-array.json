@@ -1,7 +1,7 @@
 {
   "id": "slurm-09-array",
   "track": "slurm",
-  "order": 9,
+  "order": 12,
   "tier": 3,
   "title": "One script, many targets",
   "story": "You have {{ntarget}} targets in inputs/, target_1.pdb to target_{{ntarget}}.pdb. mpnn_array.sh uses $SLURM_ARRAY_TASK_ID to pick one. Submit it as a job array with one task per target.",

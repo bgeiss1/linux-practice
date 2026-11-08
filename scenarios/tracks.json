@@ -176,19 +176,25 @@
       "id": "slurm",
       "title": "Run Slurm jobs",
       "keyword": "walrus",
-      "blurb": "Submit, watch, cancel, and fix jobs on Geiss-01's 8 GPUs.",
+      "blurb": "Submit, watch, cancel, and fix jobs on Geiss-01's 8 GPUs, and stop stray programs with htop and kill.",
       "commands": [
         "sbatch",
         "squeue",
         "scancel",
         "sacct",
-        "seff"
+        "seff",
+        "htop",
+        "ps",
+        "kill"
       ],
       "scenarios": [
         "slurm/01-submit",
         "slurm/02-wait-read",
         "slurm/03-read-request",
         "slurm/04-cancel",
+        "slurm/04a-runaway",
+        "slurm/04b-stubborn",
+        "slurm/04c-kill-or-scancel",
         "slurm/05-no-gpu",
         "slurm/06-wrap",
         "slurm/07-timeout",

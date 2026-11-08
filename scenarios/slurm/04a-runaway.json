@@ -1,0 +1,80 @@
+{
+  "id": "slurm-04a-runaway",
+  "track": "slurm",
+  "order": 5,
+  "tier": 1,
+  "title": "Something is hogging the CPU",
+  "story": "Geiss-01 feels slow today. Yesterday you started `python score_designs.py` straight from the command line (not through Slurm), closed your laptop, and it never finished: it is stuck in a loop, burning a whole CPU core. Find it with `htop` and stop it with `kill`. Leave everyone else's work alone.",
+  "vars": {
+    "project": [
+      "binder_design",
+      "il7r_binders",
+      "spike_minibinders",
+      "pdl1_binders",
+      "tnf_traps",
+      "her2_binders"
+    ],
+    "pid": [
+      31877,
+      32410,
+      33952,
+      34519,
+      35083,
+      36260
+    ]
+  },
+  "machines": {
+    "cluster": {
+      "cwd": "~/{{project}}",
+      "gpusBusy": 4,
+      "files": {
+        "~/{{project}}/score_designs.py": "import glob\n\n# Score every design in designs/ and write scores.csv\nwhile True:\n    files = glob.glob('designs/*.pdb')\n",
+        "~/{{project}}/designs/": {}
+      },
+      "processes": [
+        {
+          "pid": "{{pid}}",
+          "command": "python score_designs.py --in designs/ --out scores.csv",
+          "cpu": 99.8,
+          "memGB": 11.6,
+          "startStep": -1100
+        }
+      ]
+    }
+  },
+  "tasks": [
+    {
+      "text": "Open `htop` (or `top`) and find the process using the most CPU",
+      "check": {
+        "ran": [
+          "htop",
+          "top"
+        ]
+      }
+    },
+    {
+      "text": "Type the PID of your score_designs.py in the answer box",
+      "check": {
+        "answer": "{{pid}}"
+      }
+    },
+    {
+      "text": "Stop it with kill",
+      "check": {
+        "processGone": "score_designs.py"
+      }
+    }
+  ],
+  "hints": [
+    "`htop` lists the busiest processes first. Find the row whose USER is you and whose Command is score_designs.py; the PID is the first column.",
+    "The PID is {{pid}}. Stop the process with `kill PID`.",
+    "Type {{pid}} in the answer box, then run `kill {{pid}}`."
+  ],
+  "solution": [
+    "htop",
+    {
+      "answer": "{{pid}}"
+    },
+    "kill {{pid}}"
+  ]
+}

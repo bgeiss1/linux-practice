@@ -13,6 +13,8 @@ export const HELP = `Commands on this practice server (try "man NAME" for detail
                     conda env list | activate NAME | deactivate
   GPUs and jobs     sinfo  nvidia-smi  sbatch SCRIPT  squeue --me  scancel ID
                     sacct  seff ID  srun --gres=gpu:1 --pty bash  exit
+  Running programs  htop  top  ps [-u USER | ux | aux]  kill PID  kill -9 PID
+                    pgrep NAME  pkill NAME  jobs  kill %1   (processes, not Slurm jobs)
   Design tools      colabfold_batch IN OUT        (module load colabfold)
                     chai-lab fold IN.fasta OUT    (conda activate chai)
                     python /opt/ProteinMPNN/protein_mpnn_run.py   (conda activate proteinmpnn)
@@ -107,5 +109,30 @@ Finished jobs leave the queue; use sacct to see them.`),
   sinfo: page('sinfo - partitions and nodes', 'sinfo [-o "%P %G"]', 'Geiss-01 has two partitions: gpu (2 days) and short (1 hour). -o "%P %G" also shows the GPUs (GRES).'),
   srun: page('srun - run inside a Slurm allocation', 'srun [OPTIONS] COMMAND', `srun --gres=gpu:1 --pty bash   interactive shell with one GPU
 exit                            leave and give the GPU back`),
+  ps: page('ps - list running processes', 'ps | ps -u USER | ps ux | ps aux | ps -ef | ps -p PID', `ps          processes started from this terminal
+ps -u NAME  every process that NAME owns
+ps ux       all of your processes, with CPU and memory
+ps aux      everyone's processes (try: ps aux | grep python)
+ps -ef      everyone's, with the parent PID (PPID)
+The PID column is the number kill needs.`),
+  top: page('top - live view of the busiest processes', 'top [-u USER]', `Lists processes, busiest first, and redraws every few seconds.
+Keys inside top: q quit, k kill a PID, M sort by memory, P sort by CPU, u one user.`),
+  htop: page('htop - friendlier top', 'htop [-u USER]', `Bars for CPU and memory, then one row per process, busiest first.
+Columns: PID, USER (owner), CPU%, MEM%, RES (memory in use), Command.
+Keys: arrows to select, F9 kill, F6 sort, F4 filter, u one user, q or F10 quit.`),
+  kill: page('kill - send a signal to a process', 'kill [-SIGNAL] PID...   kill %JOB', `kill PID       ask the program to stop (SIGTERM, signal 15)
+kill -9 PID    force it to stop now (SIGKILL); use when plain kill fails
+kill %1        stop background job 1 from "jobs"
+kill -l        list signals
+You can only kill your own processes. kill works on PIDs (from ps or htop);
+Slurm jobs have JOBIDs and are stopped with scancel instead.`),
+  pkill: page('pkill - kill processes by name', 'pkill [-9] [-f] [-u USER] PATTERN', `pkill python           stop your processes named python
+pkill -f score.py      match anywhere in the command line
+pkill -u student NAME  only your own processes
+Check first with pgrep (same options) so you don't stop the wrong thing.`),
+  pgrep: page('pgrep - find PIDs by name', 'pgrep [-a] [-f] [-u USER] PATTERN', `-a   show the whole command line
+-f   match anywhere in the command line, not just the program name
+-u   only this user's processes`),
+  jobs: page('jobs - background programs from this shell', 'jobs', 'Lists programs you started with & at the end of the line. kill %N stops job N.'),
   'nvidia-smi': page('nvidia-smi - GPU status', 'nvidia-smi', 'Lists GPUs, memory in use and utilization.'),
 };

@@ -148,6 +148,8 @@ a.scen:hover { border-color: var(--accent); }
 .t-err { color: var(--term-err); }
 .t-ok { color: var(--term-ok); }
 .t-dim { color: var(--term-dim); }
+/* The header and footer bars of top and htop. */
+.t-hl { color: var(--term-bg, #0b0f14); background: var(--term-ok); }
 .t-dir { color: var(--term-dir); font-weight: 600; }
 .t-exe { color: var(--term-ok); font-weight: 600; }
 .inrow { display: flex; align-items: baseline; }

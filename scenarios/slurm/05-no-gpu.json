@@ -1,7 +1,7 @@
 {
   "id": "slurm-05-no-gpu",
   "track": "slurm",
-  "order": 5,
+  "order": 8,
   "tier": 2,
   "title": "It failed in seconds",
   "story": "design.sh runs ProteinMPNN, but someone deleted a line from its #SBATCH header. Submit it, see why it fails, fix the script, and get a run that completes.",

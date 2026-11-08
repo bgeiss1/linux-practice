@@ -290,3 +290,50 @@ test('scp copies between the laptop and Geiss-01', () => {
   assert.match(errors(server.run('scp a.pdb laptop:')), /Connection refused/);
   assert.match(errors(laptop.run('sbatch run.sh')), /command not found/);
 });
+
+test('ps, htop and kill work on processes; scancel works on Slurm jobs', () => {
+  const sh = new Shell();
+  // Other people's jobs show up as processes owned by them.
+  assert.match(text(sh.run('ps aux')), /kpatel .*python run_alphafold\.py/);
+  assert.match(text(sh.run('htop')), /PID USER .*CPU% MEM%/);
+  assert.match(text(sh.run('top -u student')), /student .* -?bash|bash/);
+  // A background job: listed by ps and jobs, stopped by kill %1.
+  const pid = text(sh.run('sleep 600 &')).match(/\[1\] (\d+)/)[1];
+  assert.match(text(sh.run('ps')), new RegExp(`${pid} pts/0 .* sleep`));
+  assert.match(text(sh.run('pgrep sleep')), new RegExp(pid));
+  assert.match(text(sh.run('kill %1')), /Terminated\s+sleep 600/);
+  assert.match(text(sh.run('jobs')), /Terminated/);
+  assert.doesNotMatch(text(sh.run('ps')), /sleep/);
+  assert.match(errors(sh.run(`kill ${pid}`)), /No such process/);
+  // Not your process, or not a process at all.
+  assert.match(errors(sh.run('kill 1121')), /Operation not permitted/);
+  const r = sh.run('kill 48213');
+  assert.match(errors(r), /No such process/);
+  assert.ok(r.coach.some((c) => /scancel 48213/.test(c.text)));
+  assert.ok(sh.run('scancel 30412').coach.some((c) => /kill 30412/.test(c.text)));
+  assert.match(errors(sh.run('kill -FOO 1')), /invalid signal/);
+  assert.match(text(sh.run('kill -l')), /SIGKILL/);
+});
+
+test('a process that ignores TERM needs kill -9; killing a batch job fails it', async () => {
+  const { Cluster } = await import('../engine/cluster.js');
+  const cluster = new Cluster({ processes: [{ pid: 32203, command: 'python train_loop.py', cpu: 100, ignoresTerm: true }], gpusBusy: 0 });
+  const sh = new Shell({ cluster });
+  assert.doesNotMatch(text(sh.run('ps')), /train_loop/, 'plain ps only shows this terminal');
+  assert.match(text(sh.run('ps -u student')), /32203/);
+  sh.run('kill 32203');
+  assert.match(text(sh.run('ps ux')), /train_loop/);
+  sh.run('kill -9 32203');
+  assert.doesNotMatch(text(sh.run('ps ux')), /train_loop/);
+
+  sh.vfs.writeFile('/home/student/long.sh', '#!/bin/bash\n#SBATCH --gres=gpu:1\n#SBATCH --job-name=long\nsleep 9999\n');
+  sh.run('sbatch long.sh');
+  const job = cluster.jobs.find((j) => j.name === 'long');
+  job.runSteps = 1000;
+  for (let i = 0; i < 3; i++) sh.run('true');
+  assert.equal(job.state, 'R');
+  const line = text(sh.run('ps ux')).split('\n').find((l) => l.includes('slurm_script'));
+  const r = sh.run(`kill ${line.split(/\s+/)[1]}`);
+  assert.equal(job.state, 'F');
+  assert.ok(r.coach.some((c) => /scancel/.test(c.text)));
+});

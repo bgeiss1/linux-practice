@@ -1,7 +1,7 @@
 {
   "id": "slurm-10-dependency",
   "track": "slurm",
-  "order": 10,
+  "order": 13,
   "tier": 3,
   "title": "One after the other",
   "story": "ProteinMPNN (mpnn.sh) needs the backbones that RFdiffusion (rfd.sh) makes. Submit rfd.sh, then submit mpnn.sh so that it only starts after rfd.sh finishes successfully.",
