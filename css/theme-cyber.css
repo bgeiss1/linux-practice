@@ -155,3 +155,7 @@ main h1 { animation: glitch .45s steps(2, end) 1; }
 .slot.earned .word { animation: glitch .5s steps(2, end) 1; }
 @media (prefers-reduced-motion: reduce) { main h1, .slot.earned .word { animation: none; } }
 .lz-term, .term { border-radius: 0; }
+
+.t-sel { background: var(--accent); color: #08080d; text-shadow: none; }
+.live-keys kbd { background: var(--cyan); color: #08080d; border-radius: 0; }
+.live-status { color: var(--accent); }

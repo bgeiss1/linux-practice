@@ -133,38 +133,87 @@ function readUserFilter(ctx, name) {
   return { user };
 }
 
-function snapshot(sh, name, args, user) {
-  const all = [...procs(sh), selfProc(sh, name, args)];
+// Each redraw of a live top/htop is a "frame": time moves on a couple of
+// seconds and busy processes wobble a little, like the real screen.
+const FRAME_SECS = { htop: 2, top: 3 };
+
+function wobble(p, frame) {
+  if (!frame || p.cpu < 1) return p.cpu;
+  return Math.max(0, p.cpu + Math.sin(p.pid * 0.37 + frame * 1.7) * Math.min(4, p.cpu * 0.03));
+}
+
+function snapshot(sh, name, args, user, frame = 0) {
+  const extra = frame * (FRAME_SECS[name] ?? 2);
+  const all = [...procs(sh), selfProc(sh, name, args)].map((p) => ({ ...p, cpu: wobble(p, frame), secs: cpuSeconds(sh, p) + Math.round((p.cpu / 100) * extra) }));
   const usedGB = all.reduce((n, p) => n + p.memGB, 0) + 3.4;
   const cpuTotal = all.reduce((n, p) => n + p.cpu, 0);
   const shown = (user ? all.filter((p) => p.user === user) : all).sort((a, b) => b.cpu - a.cpu || a.pid - b.pid);
   const running = all.filter((p) => p.state === 'R').length;
   const load = cpuTotal / 100;
-  return { all, shown, usedGB, cpuPct: Math.min(100, cpuTotal / NODE.cpus), running, load };
+  const clock = new Date(sh.cluster.clock() + extra * 1000);
+  return { all, shown, usedGB, cpuPct: Math.min(100, cpuTotal / NODE.cpus), running, load, clock, extra };
 }
 
 const bar = (frac, width) => '|'.repeat(Math.round(Math.min(1, frac) * width)).padEnd(width);
+
+function uptime(extra) {
+  const secs = 12 * 86400 + 4 * 3600 + 13 * 60 + 22 + extra;
+  return `12 days, ${two(Math.floor(secs / 3600) % 24)}:${two(Math.floor(secs / 60) % 60)}:${two(secs % 60)}`;
+}
+
+// One screen of htop as output segments. selected: the highlighted PID.
+// Returns { segments, pids } where pids lists the rows in order.
+export function htopFrame(sh, { user = null, frame = 0, selected = null, args = [] } = {}) {
+  const s = snapshot(sh, 'htop', args, user, frame);
+  const out = [];
+  const o = (text, cls) => out.push({ text, cls });
+  o(`  CPU[${bar(s.cpuPct / 100, 30)}${s.cpuPct.toFixed(1).padStart(5)}%]   Tasks: ${s.all.length}, ${s.all.length * 4 + 37} thr; ${s.running} running\n`);
+  o(`  Mem[${bar(s.usedGB / NODE.memGB, 23)}${`${s.usedGB.toFixed(1)}G/${NODE.memGB}G`.padStart(12)}]   Load average: ${s.load.toFixed(2)} ${(s.load * 0.94).toFixed(2)} ${(s.load * 0.88).toFixed(2)}\n`);
+  o(`  Swp[${''.padEnd(25)}${'0K/8.00G'.padStart(10)}]   Uptime: ${uptime(s.extra)}\n`);
+  o(`  (${NODE.cpus} cores in one bar here; real htop draws a bar for every core)\n\n`, 'dim');
+  o('    PID USER       PRI  NI  VIRT   RES   SHR S  CPU% MEM%   TIME+  Command\n', 'hl');
+  for (const p of s.shown) {
+    const virt = fmtMem(p.memGB * 1.12 + 0.3);
+    const shr = fmtMem(Math.min(p.memGB, 0.05 + p.memGB * 0.04));
+    o(`${String(p.pid).padStart(7)} ${userCol(p.user, 10)}  20   0 ${virt.padStart(5)} ${fmtMem(p.memGB).padStart(5)} ${shr.padStart(5)} ${p.state} ${p.cpu.toFixed(1).padStart(5)} ${memPct(p).toFixed(1).padStart(4)} ${timePlus(p.secs).padStart(9)}  ${p.command}\n`, p.pid === selected ? 'sel' : undefined);
+  }
+  return { segments: out, pids: s.shown.map((p) => p.pid) };
+}
+
+export function topFrame(sh, { user = null, frame = 0, args = [] } = {}) {
+  const s = snapshot(sh, 'top', args, user, frame);
+  const out = [];
+  const o = (text, cls) => out.push({ text, cls });
+  const d = s.clock;
+  const totalMiB = NODE.memGB * 1024;
+  const usedMiB = s.usedGB * 1024;
+  const cache = 21_480.3;
+  o(`top - ${two(d.getUTCHours())}:${two(d.getUTCMinutes())}:${two(d.getUTCSeconds())} up 12 days,  4:13,  3 users,  load average: ${s.load.toFixed(2)}, ${(s.load * 0.94).toFixed(2)}, ${(s.load * 0.88).toFixed(2)}\n`);
+  o(`Tasks: ${String(s.all.length).padStart(3)} total, ${String(s.running).padStart(3)} running, ${String(s.all.length - s.running).padStart(3)} sleeping,   0 stopped,   0 zombie\n`);
+  o(`%Cpu(s): ${s.cpuPct.toFixed(1).padStart(4)} us,  0.4 sy,  0.0 ni, ${(99.6 - s.cpuPct).toFixed(1).padStart(4)} id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st\n`);
+  o(`MiB Mem : ${totalMiB.toFixed(1).padStart(8)} total, ${(totalMiB - usedMiB - cache).toFixed(1).padStart(8)} free, ${usedMiB.toFixed(1).padStart(8)} used, ${cache.toFixed(1).padStart(8)} buff/cache\n`);
+  o(`MiB Swap:   8192.0 total,   8192.0 free,      0.0 used. ${(totalMiB - usedMiB).toFixed(1).padStart(8)} avail Mem\n\n`);
+  o('    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND\n', 'hl');
+  for (const p of s.shown) {
+    const rss = p.memGB * 1024 * 1024;
+    const k = (n) => (n >= 1e7 ? `${(n / 1024 / 1024).toFixed(1)}g` : String(Math.round(n)));
+    o(`${String(p.pid).padStart(7)} ${userCol(p.user, 9)} 20   0 ${k(rss * 1.12 + 300_000).padStart(7)} ${k(rss).padStart(6)} ${k(Math.min(rss, 50_000 + rss * 0.04)).padStart(6)} ${p.state} ${p.cpu.toFixed(1).padStart(5)} ${memPct(p).toFixed(1).padStart(5)} ${timePlus(p.secs).padStart(9)} ${commOf(p)}\n`);
+  }
+  return { segments: out, pids: s.shown.map((p) => p.pid) };
+}
 
 export function htop(ctx) {
   const { sh } = ctx;
   const f = readUserFilter(ctx, 'htop');
   if (f.bad) { ctx.err(`htop: unrecognized option '${f.bad}'\nThe practice htop knows: htop, htop -u USER\n`); return 1; }
   if (f.help) { ctx.out('htop [-u USER]   show running processes, busiest first. q quits.\n'); return 0; }
-  const s = snapshot(sh, 'htop', ctx.args, f.user);
-  const uptime = '12 days, 04:13:22';
-  ctx.out(`  CPU[${bar(s.cpuPct / 100, 30)}${s.cpuPct.toFixed(1).padStart(5)}%]   Tasks: ${s.all.length}, ${s.all.length * 4 + 37} thr; ${s.running} running\n`);
-  ctx.out(`  Mem[${bar(s.usedGB / NODE.memGB, 23)}${`${s.usedGB.toFixed(1)}G/${NODE.memGB}G`.padStart(12)}]   Load average: ${s.load.toFixed(2)} ${(s.load * 0.94).toFixed(2)} ${(s.load * 0.88).toFixed(2)}\n`);
-  ctx.out(`  Swp[${''.padEnd(25)}${'0K/8.00G'.padStart(10)}]   Uptime: ${uptime}\n`);
-  ctx.out(`  (${NODE.cpus} cores in one bar here; real htop draws a bar for every core)\n\n`, 'dim');
-  ctx.out('    PID USER       PRI  NI  VIRT   RES   SHR S  CPU% MEM%   TIME+  Command\n', 'hl');
-  for (const p of s.shown) {
-    const virt = fmtMem(p.memGB * 1.12 + 0.3);
-    const shr = fmtMem(Math.min(p.memGB, 0.05 + p.memGB * 0.04));
-    ctx.out(`${String(p.pid).padStart(7)} ${userCol(p.user, 10)}  20   0 ${virt.padStart(5)} ${fmtMem(p.memGB).padStart(5)} ${shr.padStart(5)} ${p.state} ${p.cpu.toFixed(1).padStart(5)} ${memPct(p).toFixed(1).padStart(4)} ${timePlus(cpuSeconds(sh, p)).padStart(9)}  ${p.command}\n`);
+  ctx.coach('htop', 'Busiest processes are at the top. The PID column is what `kill` needs, and USER tells you whose process it is. Press q (or F10) to leave htop.');
+  if (ctx.piped || !ctx.live) {
+    // No screen to draw on: print one frame, like htop's output when redirected.
+    for (const seg of htopFrame(sh, { user: f.user, args: ctx.args }).segments) ctx.out(seg.text, seg.cls);
+    return 0;
   }
-  ctx.out('\nF1Help  F2Setup F3Search F4Filter F5Tree  F6SortBy F7Nice- F8Nice+ F9Kill  F10Quit\n', 'hl');
-  ctx.out('(practice site: real htop keeps redrawing until you press q or F10. To stop a process, note its PID and use kill, or select it in htop and press F9.)\n', 'dim');
-  ctx.coach('htop', 'Busiest processes are at the top. The PID column is what `kill` needs, and USER tells you whose process it is.');
+  ctx.live({ kind: 'htop', user: f.user, args: ctx.args });
   return 0;
 }
 
@@ -173,24 +222,27 @@ export function top(ctx) {
   const f = readUserFilter(ctx, 'top');
   if (f.bad) { ctx.err(`top: unknown option '${f.bad}'\nThe practice top knows: top, top -u USER, top -b -n 1\n`); return 1; }
   if (f.help) { ctx.out('top [-u USER]   show running processes, busiest first. q quits.\n'); return 0; }
-  const s = snapshot(sh, 'top', ctx.args, f.user);
-  const d = new Date(sh.cluster.clock());
-  const totalMiB = NODE.memGB * 1024;
-  const usedMiB = s.usedGB * 1024;
-  const cache = 21_480.3;
-  ctx.out(`top - ${two(d.getUTCHours())}:${two(d.getUTCMinutes())}:${two(d.getUTCSeconds())} up 12 days,  4:13,  3 users,  load average: ${s.load.toFixed(2)}, ${(s.load * 0.94).toFixed(2)}, ${(s.load * 0.88).toFixed(2)}\n`);
-  ctx.out(`Tasks: ${String(s.all.length).padStart(3)} total, ${String(s.running).padStart(3)} running, ${String(s.all.length - s.running).padStart(3)} sleeping,   0 stopped,   0 zombie\n`);
-  ctx.out(`%Cpu(s): ${s.cpuPct.toFixed(1).padStart(4)} us,  0.4 sy,  0.0 ni, ${(99.6 - s.cpuPct).toFixed(1).padStart(4)} id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st\n`);
-  ctx.out(`MiB Mem : ${totalMiB.toFixed(1).padStart(8)} total, ${(totalMiB - usedMiB - cache).toFixed(1).padStart(8)} free, ${usedMiB.toFixed(1).padStart(8)} used, ${cache.toFixed(1).padStart(8)} buff/cache\n`);
-  ctx.out(`MiB Swap:   8192.0 total,   8192.0 free,      0.0 used. ${(totalMiB - usedMiB).toFixed(1).padStart(8)} avail Mem\n\n`);
-  ctx.out('    PID USER      PR  NI    VIRT    RES    SHR S  %CPU  %MEM     TIME+ COMMAND\n', 'hl');
-  for (const p of s.shown) {
-    const rss = p.memGB * 1024 * 1024;
-    const k = (n) => (n >= 1e7 ? `${(n / 1024 / 1024).toFixed(1)}g` : String(Math.round(n)));
-    ctx.out(`${String(p.pid).padStart(7)} ${userCol(p.user, 9)} 20   0 ${k(rss * 1.12 + 300_000).padStart(7)} ${k(rss).padStart(6)} ${k(Math.min(rss, 50_000 + rss * 0.04)).padStart(6)} ${p.state} ${p.cpu.toFixed(1).padStart(5)} ${memPct(p).toFixed(1).padStart(5)} ${timePlus(cpuSeconds(sh, p)).padStart(9)} ${commOf(p)}\n`);
+  // -b (batch mode) prints frames instead of taking over the screen.
+  if (ctx.piped || !ctx.live || ctx.args.some((a) => /^-b/.test(a))) {
+    for (const seg of topFrame(sh, { user: f.user, args: ctx.args }).segments) ctx.out(seg.text, seg.cls);
+    return 0;
   }
-  ctx.out('\n(practice site: real top redraws every few seconds until you press q. Press k inside top to kill a PID, or quit and use kill.)\n', 'dim');
+  ctx.live({ kind: 'top', user: f.user, args: ctx.args });
   return 0;
+}
+
+// A signal sent from inside top or htop (F9 / k). Returns the outcome and any
+// output or coaching, so the page can show it.
+export function signalFromScreen(sh, pid, sigText) {
+  const output = [];
+  const coach = [];
+  const ctx = { sh, out: (text, cls) => output.push({ text, cls }), err: (text) => output.push({ text, cls: 'err' }), coach: (key, text) => coach.push({ key, text }) };
+  const sig = readSignal(String(sigText)) ?? 'TERM';
+  const p = procs(sh).find((x) => x.pid === Number(pid));
+  if (!p) return { result: 'ESRCH', output, coach };
+  const result = signalProcess(ctx, p, sig);
+  if (result === 'EPERM') coach.push({ key: 'kill-other', text: `PID ${pid} belongs to ${p.user}, not you. You can only kill your own processes.` });
+  return { result, output, coach, sig };
 }
 
 // Signals students meet: TERM asks a program to stop (the default),
@@ -211,7 +263,7 @@ function signalProcess(ctx, p, sig) {
   if (p.user !== sh.user) return 'EPERM';
   if (sig === 'CONT' || sig === 'STOP' || sig === 'USR1' || sig === 'USR2') return 'ok';
   const forced = sig === 'KILL';
-  if (p.login) {
+  if (p.login || p.session) {
     // An interactive bash ignores TERM. KILL would log you out.
     if (forced) {
       ctx.out(`Connection to ${NODE.name} closed.\n`);

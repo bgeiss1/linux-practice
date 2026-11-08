@@ -7,6 +7,7 @@ import { Cluster } from './cluster.js';
 import { fromLibrary } from './library.js';
 import { evaluate } from './checks.js';
 import { BINARY } from './commands/archive.js';
+import { signalFromScreen } from './commands/procs.js';
 
 export const TIERS = {
   1: { name: 'Guided', maxHints: 3, gated: false, coach: 'all' },
@@ -213,6 +214,13 @@ export class Session {
   save(path, text, machine = 'cluster') {
     (this.machines[machine] ?? this.shell).saveEdit(path, text);
     return { newlyDone: this.updateTasks(), complete: this.complete };
+  }
+
+  // A signal sent from inside top or htop (F9 / k), then what changed.
+  signal(pid, sig, machine = 'cluster') {
+    const r = signalFromScreen(this.machines[machine] ?? this.shell, pid, sig);
+    r.coach = r.coach.filter((c) => this.coachAllowed(c.key));
+    return { ...r, newlyDone: this.updateTasks(), complete: this.complete };
   }
 
   // Answers go in the answer box on the page, not the terminal, because there is

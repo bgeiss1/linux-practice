@@ -386,7 +386,7 @@
             "name": "htop",
             "stands": "an improved top",
             "syntax": "htop   |   htop -u USER",
-            "what": "A live table of processes, busiest first, under bars for CPU and memory. The columns that matter: PID, USER (whose process it is), CPU%, MEM%, and Command. Press q to quit. `top` is the older version and is on every Linux machine."
+            "what": "A live table of processes, busiest first, under bars for CPU and memory. The columns that matter: PID, USER (whose process it is), CPU%, MEM%, and Command. It redraws every couple of seconds until you press q. Arrow keys pick a row, and F9 (or k) sends the highlighted process a kill signal. `top` is the older version and is on every Linux machine."
           }
         },
         {

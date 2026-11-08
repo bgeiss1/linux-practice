@@ -307,6 +307,7 @@ export class Shell {
         coach: (key, text) => result.coach.push({ key, text }),
         clear: () => { result.clear = true; },
         edit: (edit) => { result.edit = edit; },
+        live: (live) => { result.live = live; },
       };
 
       if (this.pendingErrors?.length) {
@@ -325,7 +326,7 @@ export class Shell {
       this.events.push({ cmd: name, args, flags: flagsOf(args), code, cwd: cwdBefore, line });
 
       if (list.background && isLast) {
-        const id = this.cluster.startBackground(name, args);
+        const id = this.cluster.startBackground(name, args, code);
         result.output.push({ text: `[1] ${id}\n` });
       }
 

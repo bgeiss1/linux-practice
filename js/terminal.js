@@ -2,6 +2,7 @@
 // and the instructor dashboard's preview.
 
 import { COMMANDS } from '../engine/commands/index.js';
+import { htopFrame, topFrame } from '../engine/commands/procs.js';
 
 export function esc(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -115,6 +116,11 @@ export class Terminal {
     this.afterRun(r, wasComplete);
     if (r.edit) {
       new Editor(this, r.edit);
+      return;
+    }
+    if (r.live) {
+      this.hi = this.shell.history.length;
+      new LiveView(this, r.live);
       return;
     }
     this.hi = this.shell.history.length;
@@ -283,5 +289,138 @@ class Editor {
       this.text.setRangeText('    ', this.text.selectionStart, this.text.selectionEnd, 'end');
       this.markModified();
     }
+  }
+}
+
+
+// top and htop take over the terminal and redraw every few seconds until the
+// student presses q (or F10 in htop). F9 / k send a signal from inside.
+class LiveView {
+  constructor(term, live) {
+    this.term = term;
+    this.live = live;
+    this.htop = live.kind === 'htop';
+    this.frame = 0;
+    this.selected = null;
+    this.mode = null; // htop: 'signal'; top: 'pid', then 'sig'
+    this.typed = '';
+    this.target = null;
+    this.status = '';
+    this.later = []; // job notices bash prints once you're back at the prompt
+    const keys = this.htop
+      ? '<button type="button" data-k="kill"><kbd>F9</kbd>Kill</button><button type="button" data-k="quit"><kbd>F10</kbd>Quit</button><span class="live-tip">↑ ↓ pick a row · F9 or k kills it · q quits</span>'
+      : '<button type="button" data-k="kill"><kbd>k</kbd> Kill</button><button type="button" data-k="quit"><kbd>q</kbd> Quit</button><span class="live-tip">k asks for a PID · q quits</span>';
+    this.el = h(`
+      <div class="live" tabindex="0" role="application" aria-label="${this.live.kind}: press q to quit">
+        <pre class="live-pre"></pre>
+        <div class="live-status" aria-live="polite"></div>
+        <div class="live-keys">${keys}</div>
+      </div>`).firstElementChild;
+    this.pre = this.el.querySelector('.live-pre');
+    this.statusEl = this.el.querySelector('.live-status');
+    term.screen.hidden = true;
+    term.screen.parentElement.appendChild(this.el);
+    this.el.addEventListener('keydown', (e) => this.onKey(e));
+    this.el.querySelector('[data-k=quit]').addEventListener('click', () => this.close());
+    this.el.querySelector('[data-k=kill]').addEventListener('click', () => { this.startKill(); this.el.focus({ preventScroll: true }); });
+    this.draw();
+    this.timer = setInterval(() => {
+      if (!this.el.isConnected) { clearInterval(this.timer); return; }
+      this.frame++;
+      this.draw();
+    }, this.htop ? 2000 : 3000);
+    setTimeout(() => this.el.focus({ preventScroll: true }));
+  }
+
+  draw() {
+    const shell = this.term.shell;
+    const opts = { user: this.live.user, frame: this.frame, args: this.live.args };
+    let f = this.htop ? htopFrame(shell, { ...opts, selected: this.selected }) : topFrame(shell, opts);
+    if (this.htop && !f.pids.includes(this.selected)) {
+      this.selected = f.pids[0] ?? null;
+      f = htopFrame(shell, { ...opts, selected: this.selected });
+    }
+    this.pids = f.pids;
+    this.pre.replaceChildren(...f.segments.map((seg) => {
+      const span = document.createElement('span');
+      if (seg.cls) span.className = `t-${seg.cls}`;
+      span.textContent = seg.text;
+      return span;
+    }));
+    this.statusEl.textContent = this.mode ? this.prompt() : this.status;
+    this.pre.querySelector('.t-sel')?.scrollIntoView({ block: 'nearest' });
+  }
+
+  prompt() {
+    if (this.mode === 'signal') return `Send signal to PID ${this.target}: ${this.typed || '15'} ${this.typed === '9' ? 'SIGKILL' : this.typed ? '' : 'SIGTERM'}   (Enter sends · type 9 for SIGKILL · Esc cancels)`;
+    if (this.mode === 'pid') return `PID to signal/kill [default pid = ${this.pids[0]}] ${this.typed}`;
+    return `Send pid ${this.target} signal [15/sigterm] ${this.typed}`;
+  }
+
+  startKill() {
+    this.typed = '';
+    this.status = '';
+    if (this.htop) {
+      if (this.selected === null) return;
+      this.target = this.selected;
+      this.mode = 'signal';
+    } else {
+      this.mode = 'pid';
+    }
+    this.draw();
+  }
+
+  send(pid, sig) {
+    const { session } = this.term;
+    const wasComplete = session.complete;
+    const r = session.signal(pid, sig, this.term.machine);
+    this.mode = null;
+    this.later.push(...r.output.filter((o) => o.cls !== 'err'));
+    if (r.result === 'EPERM') this.status = this.htop ? `Can't kill PID ${pid}: it belongs to someone else (Operation not permitted)` : `Failed signal pid '${pid}' with '${sig}': Operation not permitted`;
+    else if (r.result === 'ESRCH') this.status = this.htop ? `PID ${pid} is gone` : `Failed signal pid '${pid}' with '${sig}': No such process`;
+    else this.status = '';
+    this.term.afterRun({ output: [], ...r }, wasComplete);
+    this.draw();
+  }
+
+  onKey(e) {
+    const key = e.key;
+    if (e.ctrlKey && key.toLowerCase() === 'c') { e.preventDefault(); this.close(); return; }
+    if (this.mode) {
+      e.preventDefault();
+      if (key === 'Escape') { this.mode = null; this.status = ''; }
+      else if (key === 'Backspace') this.typed = this.typed.slice(0, -1);
+      else if (/^[0-9]$/.test(key) || (this.mode !== 'pid' && /^[a-zA-Z]$/.test(key))) this.typed += key;
+      else if (key === 'Enter') {
+        if (this.mode === 'pid') {
+          this.target = Number(this.typed || this.pids[0]);
+          this.typed = '';
+          this.mode = 'sig';
+        } else {
+          this.send(this.target, this.typed || '15');
+          return;
+        }
+      }
+      this.draw();
+      return;
+    }
+    if (key === 'q' || key === 'Q' || key === 'F10') { e.preventDefault(); this.close(); }
+    else if (key === 'F9' || key === 'k') { e.preventDefault(); this.startKill(); }
+    else if (this.htop && (key === 'ArrowDown' || key === 'ArrowUp')) {
+      e.preventDefault();
+      const i = this.pids.indexOf(this.selected) + (key === 'ArrowDown' ? 1 : -1);
+      this.selected = this.pids[Math.max(0, Math.min(this.pids.length - 1, i))];
+      this.draw();
+    }
+  }
+
+  close() {
+    clearInterval(this.timer);
+    this.el.remove();
+    this.term.screen.hidden = false;
+    this.term.write(this.later);
+    this.term.renderPrompt();
+    this.term.scroll();
+    this.term.focus();
   }
 }

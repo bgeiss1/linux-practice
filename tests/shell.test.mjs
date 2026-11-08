@@ -295,8 +295,12 @@ test('ps, htop and kill work on processes; scancel works on Slurm jobs', () => {
   const sh = new Shell();
   // Other people's jobs show up as processes owned by them.
   assert.match(text(sh.run('ps aux')), /kpatel .*python run_alphafold\.py/);
-  assert.match(text(sh.run('htop')), /PID USER .*CPU% MEM%/);
-  assert.match(text(sh.run('top -u student')), /student .* -?bash|bash/);
+  // On screen, htop and top take over the terminal and redraw until q.
+  assert.deepEqual(sh.run('htop -u student').live, { kind: 'htop', user: 'student', args: ['-u', 'student'] });
+  assert.equal(sh.run('top').live.kind, 'top');
+  // Piped, or top -b, they print one frame.
+  assert.match(text(sh.run('htop | cat')), /PID USER .*CPU% MEM%/);
+  assert.match(text(sh.run('top -b -n 1 -u student')), /student .* bash/);
   // A background job: listed by ps and jobs, stopped by kill %1.
   const pid = text(sh.run('sleep 600 &')).match(/\[1\] (\d+)/)[1];
   assert.match(text(sh.run('ps')), new RegExp(`${pid} pts/0 .* sleep`));
@@ -336,4 +340,33 @@ test('a process that ignores TERM needs kill -9; killing a batch job fails it', 
   const r = sh.run(`kill ${line.split(/\s+/)[1]}`);
   assert.equal(job.state, 'F');
   assert.ok(r.coach.some((c) => /scancel/.test(c.text)));
+});
+
+test('the live htop redraws, and killing from it removes the process', async () => {
+  const { Session } = await import('../engine/scenario.js');
+  const { htopFrame, topFrame } = await import('../engine/commands/procs.js');
+  const def = JSON.parse((await import('node:fs')).readFileSync(new URL('../scenarios/slurm/04b-stubborn.json', import.meta.url)));
+  const s = new Session(def, { seed: 11 });
+  const pid = Number(s.vars.pid);
+  const rows = (f) => f.segments.map((x) => x.text).join('');
+  const one = htopFrame(s.shell, { frame: 0, selected: pid });
+  const two = htopFrame(s.shell, { frame: 1, selected: pid });
+  assert.notEqual(rows(one), rows(two), 'later frames move on');
+  assert.ok(one.segments.some((x) => x.cls === 'sel' && x.text.includes('train_loop')));
+  assert.ok(one.pids.includes(pid));
+  assert.equal(s.signal(pid, 15).result, 'ok');
+  assert.ok(htopFrame(s.shell).pids.includes(pid), 'it ignores TERM');
+  assert.equal(s.signal(29_999, 9).result, 'ESRCH');
+  assert.equal(s.signal(1121, 9).result, 'EPERM');
+  s.submitAnswer(String(pid));
+  const r = s.signal(pid, 9);
+  assert.ok(r.complete);
+  assert.ok(!htopFrame(s.shell).pids.includes(pid));
+  assert.ok(!topFrame(s.shell).pids.includes(pid));
+});
+
+test('a background command that fails at once is not left running', () => {
+  const sh = new Shell();
+  sh.run('python3 missing.py &');
+  assert.doesNotMatch(text(sh.run('ps')), /python3/);
 });

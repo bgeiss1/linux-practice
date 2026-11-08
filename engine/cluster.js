@@ -175,11 +175,12 @@ export class Cluster {
     return null;
   }
 
-  startBackground(name, args) {
+  startBackground(name, args, code = 0) {
     const pid = 31000 + this.background.length * 7 + this.step;
     // Time moves one minute per command, so `sleep 600 &` runs for ten commands.
     const secs = name === 'sleep' ? parseFloat(args[0]) : NaN;
-    const steps = Number.isFinite(secs) ? Math.max(1, Math.ceil(secs / 60)) : 3;
+    // A command that failed straight away (missing file, typo) is already gone.
+    const steps = code !== 0 ? 0 : Number.isFinite(secs) ? Math.max(1, Math.ceil(secs / 60)) : 3;
     this.background.push({ pid, command: [name, ...args].join(' '), startStep: this.step, doneStep: this.step + steps, signal: null });
     return pid;
   }
@@ -217,7 +218,7 @@ export class Cluster {
         }
       }
     }
-    add({ pid: 30408, user: me, command: `sshd: ${me}@pts/0`, comm: 'sshd', ppid: 812, startStep: -2 });
+    add({ pid: 30408, user: me, command: `sshd: ${me}@pts/0`, comm: 'sshd', ppid: 812, startStep: -2, session: true });
     add({ pid: 30412, user: me, command: '-bash', comm: 'bash', ppid: 30408, tty: 'pts/0', memGB: 0.005, startStep: -2, login: true });
     if (this.interactive && !this.interactive.batch) {
       const id = this.interactive.jobId;
