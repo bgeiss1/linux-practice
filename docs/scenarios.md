@@ -156,7 +156,7 @@ Every key but `command` is optional. `user` defaults to the student (anyone else
 can't be killed: "Operation not permitted"). `ignoresTerm` makes a plain `kill` do nothing, so
 it takes `kill -9`. `tty` defaults to `"?"` (started from a terminal that has since closed), so
 plain `ps` doesn't list it but `ps ux`, `ps -u student` and `htop` do. `startStep` is how many
-minutes ago it started, as a negative number. The list also holds the system daemons, a
+minutes ago it started, as a negative number. A Python file with a `while True:` loop, started with `python3 FILE &`, also stays in the list until it is killed (see `dummy_spin.py` in Free play). The list also holds the system daemons, a
 process for every running Slurm job, the student's login shell, and anything they start with `&`.
 
 #### Binary files
@@ -211,7 +211,7 @@ Tasks complete in order and stay complete. Pick checks that look at the outcome.
 | `{ "archiveHas": { "path": p, "names": ["run/a.pdb"], "gz": true, "only": false } }` | p is a tar archive holding those files |
 | `{ "isCompressed": path }`, `{ "modeIs": { "path": p, "mode": "755" } }` | gzip'd file; exact permissions |
 | `{ "laptop": { ...any check... } }` | the check passes on the laptop instead (`~` = /Users/student there) |
-| `{ "ran": "ls", "flags": "a", "arg": "~/x", "argHas": "..", "lineHas": "*.pdb", "ok": true, "inDir": "~/x" }` | the student ran that command (all keys but `ran` optional; `lineHas` checks the line as typed, before wildcards expand) |
+| `{ "ran": "ls", "flags": "a", "arg": "~/x", "argHas": "..", "lineHas": "*.pdb", "ok": true, "inDir": "~/x", "times": 2 }` | the student ran that command (all keys but `ran` optional; `lineHas` checks the line as typed, before wildcards expand; `times` means at least that many times) |
 | `{ "answer": "value" }` | the student typed that value in the answer box under the task (case doesn't matter; numbers match by value, so 017 = 17). The box appears only while that task is current. There is no `answer` command in the terminal, so hints should say "type it in the answer box". Use this only when the result can't be checked another way; if running the command is the whole point, use `ran` instead |
 | `{ "all": [...] }`, `{ "any": [...] }`, `{ "not": {...} }` | combine checks |
 

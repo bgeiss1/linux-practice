@@ -81,7 +81,8 @@ const CHECKS = {
   jobState: (sh, v) => sh.cluster.jobs.some((j) => matchJob(sh, j, v) && j.state === v.state),
 
   // The student ran a command (optionally with flags or an argument).
-  // { "ran": "ls", "flags": "a", "arg": "~/inputs", "argHas": "..", "ok": true, "inDir": "~/x" }
+  // { "ran": "ls", "flags": "a", "arg": "~/inputs", "argHas": "..", "ok": true, "inDir": "~/x", "times": 2 }
+  // "times": it ran at least that many times.
   // "arg" is compared as a path, resolved from the folder the command ran in.
   // "lineHas" looks at the whole line as typed, before globs expand (e.g. "*.pdb").
   ran: (sh, v, ctx) => matchRan(sh, v, ctx),
@@ -129,7 +130,7 @@ function matchJob(sh, j, v) {
 function matchRan(sh, spec, ctx) {
   const v = typeof spec === 'string' ? { ran: spec } : spec;
   const names = Array.isArray(v.ran) ? v.ran : [v.ran];
-  return eventsSince(sh, ctx?.since ?? 0).some(
+  const hits = eventsSince(sh, ctx?.since ?? 0).filter(
     (e) =>
       names.includes(e.cmd) &&
       (!v.flags || [...v.flags].every((f) => e.flags.includes(f))) &&
@@ -139,6 +140,7 @@ function matchRan(sh, spec, ctx) {
       (v.ok === undefined || (e.code === 0) === v.ok) &&
       (!v.inDir || e.cwd === norm(sh, v.inDir)),
   );
+  return hits.length >= Number(v.times ?? 1);
 }
 
 export const CHECK_TYPES = Object.keys(CHECKS);

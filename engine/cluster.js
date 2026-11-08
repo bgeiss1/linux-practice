@@ -180,7 +180,8 @@ export class Cluster {
     // Time moves one minute per command, so `sleep 600 &` runs for ten commands.
     const secs = name === 'sleep' ? parseFloat(args[0]) : NaN;
     // A command that failed straight away (missing file, typo) is already gone.
-    const steps = code !== 0 ? 0 : Number.isFinite(secs) ? Math.max(1, Math.ceil(secs / 60)) : 3;
+    const steps = code !== 0 ? 0 : this.foreverNext ? Infinity : Number.isFinite(secs) ? Math.max(1, Math.ceil(secs / 60)) : 3;
+    this.foreverNext = false;
     this.background.push({ pid, command: [name, ...args].join(' '), startStep: this.step, doneStep: this.step + steps, signal: null });
     return pid;
   }

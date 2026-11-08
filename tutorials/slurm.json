@@ -433,39 +433,56 @@
         },
         {
           "try": {
-            "text": "Start a program in the background, find it, and stop it.",
-            "cwd": "~",
+            "text": "`dummy_spin.py` is a harmless practice program that never finishes; it just keeps one CPU core busy. It is already running. Find it, kill it, and watch it leave htop.",
+            "machines": {
+              "cluster": {
+                "cwd": "~",
+                "files": {
+                  "~/dummy_spin.py": "# dummy_spin.py: a harmless practice program that never finishes.\n# It just keeps one CPU core busy so you can find it in htop and kill it.\nimport time\n\nn = 0\nwhile True:\n    n += 1\n"
+                },
+                "processes": [
+                  {
+                    "pid": 32768,
+                    "command": "python3 dummy_spin.py",
+                    "cpu": 99.6,
+                    "memGB": 0.01,
+                    "startStep": -45
+                  }
+                ]
+              }
+            },
             "tasks": [
               {
-                "text": "Run `sleep 600 &` (a program that waits ten minutes)",
-                "check": {
-                  "processRunning": "sleep 600"
-                }
-              },
-              {
-                "text": "Find its PID with `ps` or `jobs`",
+                "text": "Open `htop` and find dummy_spin.py's PID (press q to leave htop)",
                 "check": {
                   "ran": [
-                    "ps",
-                    "jobs",
                     "htop",
-                    "top",
-                    "pgrep"
+                    "top"
                   ]
                 }
               },
               {
-                "text": "Stop it with kill",
+                "text": "Stop it with `kill PID`",
                 "check": {
-                  "processGone": "sleep 600"
+                  "processGone": "dummy_spin.py"
+                }
+              },
+              {
+                "text": "Open `htop` again and check it is gone",
+                "check": {
+                  "ran": [
+                    "htop",
+                    "top"
+                  ],
+                  "times": 2
                 }
               }
             ],
-            "hint": "sleep 600 &, then ps, then kill PID (or kill %1)",
+            "hint": "htop, note the PID next to dummy_spin.py (32768), q, then kill 32768, then htop again. Want another round? python3 dummy_spin.py & starts a new one.",
             "solution": [
-              "sleep 600 &",
-              "ps",
-              "kill %1"
+              "htop",
+              "kill 32768",
+              "htop"
             ]
           }
         },

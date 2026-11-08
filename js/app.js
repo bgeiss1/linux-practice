@@ -344,7 +344,7 @@ const SANDBOX = {
   track: null,
   tier: 1,
   title: 'Free play',
-  story: 'No tasks, no score. Try anything: make folders, submit jobs, delete everything. Restart puts it all back.',
+  story: 'No tasks, no score. Try anything: make folders, submit jobs, delete everything. Restart puts it all back. A harmless dummy program, `dummy_spin.py`, is running in the background: find it with `htop`, stop it with `kill`, and open `htop` again to see it gone. Start another with `python3 practice/dummy_spin.py &`.',
   vars: {},
   machines: {
     cluster: {
@@ -355,7 +355,9 @@ const SANDBOX = {
         '~/binder_design/inputs/designs.fasta': { lib: 'fasta:designs' },
         '~/binder_design/scripts/run_mpnn.sh': { lib: 'slurm:mpnn', exec: true },
         '~/binder_design/outputs/': {},
+        '~/practice/dummy_spin.py': '# dummy_spin.py: a harmless practice program that never finishes.\n# It just keeps one CPU core busy so you can find it in htop and kill it.\nimport time\n\nn = 0\nwhile True:\n    n += 1\n',
       },
+      processes: [{ pid: 32768, command: 'python3 practice/dummy_spin.py', cpu: 99.6, memGB: 0.01, startStep: -45 }],
       jobRules: [{ match: 'run_mpnn.sh', needsGpu: true, creates: ['outputs/seqs/target.fa'], log: 'Loading anaconda\nDesigning 8 sequences for inputs/target.pdb\nJob finished in 41.2 s\n' }],
     },
   },

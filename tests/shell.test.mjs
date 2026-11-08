@@ -370,3 +370,14 @@ test('a background command that fails at once is not left running', () => {
   sh.run('python3 missing.py &');
   assert.doesNotMatch(text(sh.run('ps')), /python3/);
 });
+
+test('a looping python script started with & runs until killed', () => {
+  const sh = new Shell();
+  sh.vfs.writeFile('/home/student/spin.py', 'n = 0\nwhile True:\n    n += 1\n');
+  assert.match(text(sh.run('python3 spin.py')), /loops forever/);
+  const pid = text(sh.run('python3 spin.py &')).match(/\[1\] (\d+)/)[1];
+  for (let i = 0; i < 20; i++) sh.run('true');
+  assert.match(text(sh.run('htop | cat')), /python3 spin\.py/);
+  sh.run(`kill ${pid}`);
+  assert.doesNotMatch(text(sh.run('htop | cat')), /spin\.py/);
+});

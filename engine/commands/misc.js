@@ -113,6 +113,12 @@ export function python(ctx) {
     if (known) ctx.coach('python-path', `${basename(arg)} isn't in this folder. It lives in ${known.slice(0, known.lastIndexOf('/'))}: \`python ${known}\`.`);
     return 2;
   }
+  if (/^\s*while True\s*:/m.test(ctx.sh.vfs.get(path).content ?? '')) {
+    // A script that never ends: in the background it shows up in ps and htop until killed.
+    if (ctx.background) { ctx.sh.cluster.foreverNext = true; return 0; }
+    ctx.out(`(practice site: ${basename(arg)} loops forever. On a real server your prompt would not come back until you press Ctrl+C. Start it with & at the end to keep using the terminal, then find it with htop.)\n`, 'dim');
+    return 0;
+  }
   ctx.out('(practice site: only the design tools run here; other Python scripts do nothing)\n', 'dim');
   return 0;
 }
