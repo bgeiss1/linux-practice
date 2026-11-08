@@ -341,6 +341,7 @@ class LiveView {
       f = htopFrame(shell, { ...opts, selected: this.selected });
     }
     this.pids = f.pids;
+    this.last = f.segments;
     this.pre.replaceChildren(...f.segments.map((seg) => {
       const span = document.createElement('span');
       if (seg.cls) span.className = `t-${seg.cls}`;
@@ -418,6 +419,11 @@ class LiveView {
     clearInterval(this.timer);
     this.el.remove();
     this.term.screen.hidden = false;
+    // Like a terminal on Ubuntu, the last screen stays in the scrollback, so
+    // the PIDs are still there to read when you're back at the prompt.
+    const last = this.last.map((seg) => (seg.cls === 'sel' ? { text: seg.text } : seg));
+    if (this.htop) last.push({ text: 'F1Help  F2Setup F3Search F4Filter F5Tree  F6SortBy F7Nice- F8Nice+ F9Kill  F10Quit\n', cls: 'hl' });
+    this.term.write(last);
     this.term.write(this.later);
     this.term.renderPrompt();
     this.term.scroll();
