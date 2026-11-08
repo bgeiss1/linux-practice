@@ -49,7 +49,7 @@ a { color: var(--cyan); }
 ::selection { background: var(--accent); color: #000; }
 
 h1, h2, h3 { font-family: var(--f-display); text-transform: uppercase; letter-spacing: .03em; }
-h1 { font-weight: 700; font-size: clamp(2.1rem, 4.6vw, 3rem); line-height: 1.02; text-shadow: -2px 0 rgba(255, 0, 60, .7), 2px 0 rgba(25, 240, 255, .45); }
+h1 { font-weight: 700; font-size: clamp(2.1rem, 4.6vw, 3rem); line-height: 1.02; }
 main h2::before { content: "// "; color: var(--red); }
 .pass-head h2::before, .lz h2::before { content: "// "; color: var(--red); }
 h2 { font-weight: 700; font-size: 1.5rem; }
@@ -143,7 +143,7 @@ a.track-card:hover, a.scen:hover, a.guide-link:hover { border-color: var(--cyan)
 .lz-options button.right { background: var(--good-soft); border-color: var(--good); color: var(--good); }
 .lz-options button.wrong { border-color: var(--amber); color: var(--amber); }
 
-/* one quick glitch on the page title when it appears */
+/* a quick glitch when a passphrase word is earned */
 @keyframes glitch {
   0%, 100% { transform: none; clip-path: none; }
   20% { transform: translate(-3px, 1px); clip-path: inset(10% 0 55% 0); }
@@ -151,9 +151,9 @@ a.track-card:hover, a.scen:hover, a.guide-link:hover { border-color: var(--cyan)
   60% { transform: translate(-1px, 0); clip-path: inset(30% 0 40% 0); }
   80% { transform: translate(1px, 0); clip-path: none; }
 }
-main h1 { animation: glitch .45s steps(2, end) 1; }
+/* Page titles stay crisp: no colour fringe or glitch (Brian, 2026-11-08). */
 .slot.earned .word { animation: glitch .5s steps(2, end) 1; }
-@media (prefers-reduced-motion: reduce) { main h1, .slot.earned .word { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .slot.earned .word { animation: none; } }
 .lz-term, .term { border-radius: 0; }
 
 .t-sel { background: var(--accent); color: #08080d; text-shadow: none; }
